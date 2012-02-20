@@ -14,7 +14,7 @@ we want to share them ;-)
 HOW TO RUN
 ==========
 
-  ./fg-create-cluster.sh xiuwen 1 ami-00000019
+* ./fg-create-cluster.sh xiuwen 1 ami-00000019
 
 ./deploy-slurm.sh xiuwen 1
 
