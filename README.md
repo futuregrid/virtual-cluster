@@ -11,9 +11,15 @@ make sure you define function or classes.
 
 we want to share them ;-)
 
+HOW TO RUN
+==========
+
 ./fg-create-cluster.sh xiuwen 1 ami-00000019
- 1061  ./deploy-slurm.sh xiuwen 1
- 1062  ./fg-cluster-checkpoint.sh
- 1063  ./fg-cluster-shutdown.sh
+
+./deploy-slurm.sh xiuwen 1
+
+./fg-cluster-checkpoint.sh
+
+./fg-cluster-shutdown.sh
 
 
