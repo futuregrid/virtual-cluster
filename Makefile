@@ -23,8 +23,9 @@ distall:
 #	make -f Makefile rpm
 
 test:
+	make -f Makefile clean	
 	make -f Makefile distall
-	make -f Makefile pipinstall
+	sudo pip install --upgrade dist/*.tar.gz
 	fg-cluster
 
 gitgregor:
