@@ -2,7 +2,7 @@ from setuptools import setup
 
 import sys, os
 
-version = '0.1'
+version = '0.1.2'
 
 setup(
     name='futuregrid.virtual.cluster',
@@ -18,7 +18,9 @@ The package allows the creation of a virtual cluster via SLURM and OpenStack
     url='http://futuregrid.org',
     license='Apache 2.0',
     package_dir = {'': '.'},
-    packages = ['futuregrid.virtual.cluster'],
+    packages = [
+        'futuregrid.virtual.cluster'
+        ],
     
     #include_package_data=True,
     #zip_safe=True,
@@ -28,11 +30,14 @@ The package allows the creation of a virtual cluster via SLURM and OpenStack
     
     entry_points={
         'console_scripts':
-            ['fg-cluster = futuregrid.virtual.cluster:main', 
+            ['fg-c = futuregrid.virtual.cluster.fgc:main', 
              ]},
-    
-    install_requires = [
-        'setuptools'
-        ],
-    
+
+             #    install_requires = [
+             #        'setuptools',
+             #        'pip',
+             #        'fabric',
+             #        'boto',
+             #        ],
+
     )
