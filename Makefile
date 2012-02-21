@@ -27,6 +27,7 @@ test:
 	make -f Makefile distall
 	sudo pip install --upgrade dist/*.tar.gz
 	fg-cluster
+	fg-local
 
 gitgregor:
 	git config --global user.name "Gregor von Laszewski"

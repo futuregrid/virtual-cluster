@@ -25,17 +25,29 @@ The package allows the creation of a virtual cluster via SLURM and OpenStack
     #install_requires=[
     #    # -*- Extra requirements: -*-
     #],
+
+    scripts = [
+        'bin/fg-deploy-slurm.sh',
+        'bin/fg-cluster-checkpoint.sh',
+        'bin/fg-cluster-restore.sh',
+        'bin/fg-cluster-shutdown.sh',
+        'bin/fg-create-cluster.sh',
+        'bin/fg-save-instances.sh',
+        ],
+
     
     entry_points={
-        'console_scripts':
-            ['fg-cluster = futuregrid.virtual.cluster.fgc:main', 
+        'console_scripts': [
+                'fg-cluster = futuregrid.virtual.cluster.fgc:main',
+                'fg-local = futuregrid.virtual.cluster.info:localinfo', 
+                'fg-info = futuregrid.virtual.cluster.info:info', 
              ]},
 
-    install_requires = [
-        'setuptools',
-        'pip',
-        'fabric',
-        'boto',
-        ],
+             #    install_requires = [
+             #'setuptools',
+             #'pip',
+             #'fabric',
+             #'boto',
+             #],
 
     )
