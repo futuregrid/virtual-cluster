@@ -1,6 +1,7 @@
 REPO=
 
 push:
+	make -f Makefile clean
 	git commit -a 
 	git push
 
@@ -48,4 +49,5 @@ rpm:
 
 clean:
 	find . -name "*~" -exec rm {} \;  
+	find . -name "*.pyc" -exec rm {} \;  
 	rm -rf build dist *.egg-info *~ #*
