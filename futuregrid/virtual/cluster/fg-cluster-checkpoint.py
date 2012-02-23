@@ -1,3 +1,4 @@
+
 #! /usr/bin/env python
 import socket, time, getopt, sys, os
 
@@ -67,7 +68,7 @@ class FgCheckpoint:
 				manifest = reval[len(reval)-1]
 				print '\nmanifest: %s' %manifest
 				print '\n...uploading bundle......'
-				reval = [x for x in self.__upload_bundle(line, self.control_b, manifest).split()]
+				reval = [x for x in self.__upload_bundle(line, self.compute_b, manifest).split()]
 				image = reval[len(reval)-1]
 				print 'image: %s' %image
 
