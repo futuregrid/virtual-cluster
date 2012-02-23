@@ -7,6 +7,21 @@ import os
 class Cloud:
     _ec2_conn = None
     _cloud_name = None
+
+    # TODO: gvl: I think we want to have a "type" which is what you
+    # currently have as a name, possibly a "version", but also a
+    # "label". This whil allow us to have multiple euca or nova clouds
+    # while refering to them via a label. A configuration file may
+    # need to be added via ConfigParser to manage the different
+    # clouds, this way we do not have to manage parameters in this
+    # file.
+
+    # TODO:gvl:  we may have to have a different program specific to FG
+    # that gathers the keys from the server (e.g. india). THis way we
+    # can than use them from within this program easily and have a
+    # mechnism to ptain them. This will simplify documentation for FG
+    # specific use.
+
     
     def __init__(self):
         if os.environ.has_key("EUCALYPTUS_CERT"):
