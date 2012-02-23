@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+
+# TODO: gvl: maybe we want to rename to "fg-create-virtual-cluster.py ?
+# TODO: gvl: maybe we want to add this to the console sript in setup.py
+
 import argparse
 from time import sleep
 
@@ -67,6 +71,11 @@ class FgCreate:
         env.parallel = True
         env.pool_size = 10
         env.connection_attempts = 3
+        #TODO:
+        # gvl: maybe we want to be able to give the connection time out
+        #     as an argv to this prg
+        #     Same with poolsize. 
+        #     However we make them optional and have these as default values
         env.timeout = 10
 
         print(hosts)
@@ -82,7 +91,10 @@ name            -- {0}
 number of nodes -- {1}
 instance type   -- {2}
 image id        -- {3}
-""".format(self.args.name, self.args.number, self.args.instance_type, self.args.image_id))   
+""".format(self.args.name, 
+           self.args.number, 
+           self.args.instance_type, 
+           self.args.image_id))   
         
         count = self.args.number + 1
 
@@ -116,6 +128,57 @@ def main():
     
     fgc = FgCreate(args)
     fgc.create_cluster()
+    # TODO: gvl: add a flag --services so we can pass a number of
+    # predefined services to this command. We may want more than to
+    # deploy slurm. services are simply a list. We want to handle each
+    # service in a separate .py file and be able to register them wih
+    # this command in some fashion. This way we can write the code
+    # modular and expand easily while having one called service-mpi.py
+    # service-slurm.py ... and so forth
+
+    # I realize that not everyone knows chef, so we may want to
+    # consider services that are included via chef, while others could
+    # use an apt-get method ... We need o discuss this in more detail
+    # ...
+    #
+    # --services slurm mpi chef
+    #
+    #      slurm - will install slurm on one of the nodes and the rest
+    #              become worker nodes. Jobs can be submtted from the
+    #              master node to the workers via slurm commands
+    #
+    #      mpi - a MPI library is installed on all nodes. If slurm is
+    #            one of the services only the worked nodes are
+    #            typically involved in execution of the mpi
+    #            program. This has to be worked out in a bt more
+    #            detail if we want mpi with and without slurm. I think
+    #            it does make sense
+    #
+    #      chef - This is an instalation of chef in the "master" all
+    #             other nodes are configured in such a way that the
+    #             register as nodes to chef running on the
+    #             master. This allows for an ideal test environment to
+    #             try out chef and build new recipies.
+    #
+    #      others - other services I could think about are hadoop,
+    #               twister, oracle grid engine, mysql, mongodb, ...
+    #
+    # --ttl 15d 
+    #
+    #      A time to live parameter is optionally passed along
+    #      specifying the duration for how long this service is up and
+    #      running. the format is specified in the usual time
+    #      parameters, specifying a duration: 
+    # 
+    #         <years>y <days>d <seconds>s 
+    # 
+    #      the total time will be simply calculated by adding up these
+    #      values. Once the time is reached the cluster will simple be
+    #      terminated.
+    
+
+
+
     #fgc.deploy_slurm()
     
 if __name__ == '__main__':
