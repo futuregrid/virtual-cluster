@@ -14,15 +14,17 @@ we want to share them ;-)
 HOW TO RUN
 ==========
 
-./fg-create-cluster.sh xiuwen 1 ami-00000019
+Create virtual cluster
+./fg-create-cluster.py -u userkey -n number of computation nodes -s instance type -i image type -a cluster name
 
-wait some 30 seconds
+Save virtual cluster
+./fg-cluster-checkpoint.py -u userkey -n openstack key zip -c control node bucket -t control node name -m compute bucket -e compute name
 
-./deploy-slurm.sh xiuwen 1
+Restore virtual cluster
+./fg-cluster-restore.py -u userkey -n number of computation nodes -i control node image id -c compute node image id -s type of instance -a name of cluster
 
-./fg-cluster-checkpoint.sh
-
-./fg-cluster-shutdown.sh
+Shutdown virtual cluster
+./fg-cluster-shutdown.py -a cluster name
 
 
 
