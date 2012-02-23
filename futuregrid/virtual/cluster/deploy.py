@@ -160,20 +160,24 @@ def main():
     #              master node to the workers via slurm commands
     #
     #      mpi - a MPI library is installed on all nodes. If slurm is
-    #            one of the services only the worked nodes are
+    #            one of the services only the worker nodes are
     #            typically involved in execution of the mpi
     #            program. This has to be worked out in a bt more
     #            detail if we want mpi with and without slurm. I think
-    #            it does make sense
+    #            it does make sense to have both options.
     #
-    #      chef - This is an instalation of chef in the "master" all
-    #             other nodes are configured in such a way that the
+    #      chef - This is an instalation of chef in the server all
+    #             other nodes are configured in such a way that they
     #             register as nodes to chef running on the
     #             master. This allows for an ideal test environment to
     #             try out chef and build new recipies.
     #
     #      others - other services I could think about are hadoop,
-    #               twister, oracle grid engine, mysql, mongodb, ...
+    #               twister, maui/torque, oracle grid engine, mysql,
+    #               mongodb, drupal, wordpress, ...  I included the
+    #               later to have something that classes may be
+    #               interested in that not specialize in the
+    #               development of parallel computing code
     #
     # --services
     #
