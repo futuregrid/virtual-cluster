@@ -21,8 +21,7 @@ class FgCheckpoint:
 		return result
 
 	def __upload_bundle(self, line, bucket_name, manifest):
-		print "ssh -i %s.pem ubuntu@%s 'euca-upload-bundle -b %s -m %s'" %(self.userkey, line[1], bucket_name, manifest)
-		result=os.popen("ssh -i %s.pem ubuntu@%s 'euca-upload-bundle -b %s -m %s'" %(self.userkey, line[1], bucket_name, manifest)).read()
+		result=os.popen("ssh -i %s.pem ubuntu@%s '. ~/.profile; euca-upload-bundle -b %s -m %s'" %(self.userkey, line[1], bucket_name, manifest)).read()
 		return result
 
 	def checkpoint_cluster(self):
@@ -53,13 +52,11 @@ class FgCheckpoint:
 				ramdisk_id = os.popen("euca-describe-images|awk {'if ($2 ~ /^%s/) print $9'}" %line[2]).read()				
 				reval = [x for x in self.__save_instance(kernel_id, ramdisk_id, line, self.control_n).split()]
 				manifest = reval[len(reval)-1]
-				print 'manifest: %s' %manifest
+				print '\nmanifest: %s' %manifest
 				print '\n...uploading bundle......'
-				print self.__upload_bundle(line, self.control_b, manifest)
-#				reval2 = [x for x in self.__upload_bundle(line, self.control_b, manifest)]
-#				print reval2
-#				image_id = reval2[len(reval2)-1]
-#				print 'image id: %s' %image_id
+				reval = [x for x in self.__upload_bundle(line, self.control_b, manifest).split()]
+				image = reval[len(reval)-1]
+				print 'image: %s' %image
 			
 			elif line_num == 1:
 				print '\n...Saving compute node......'
@@ -67,13 +64,16 @@ class FgCheckpoint:
 				ramdisk_id=os.popen("euca-describe-images|awk {'if ($2 ~ /^%s/) print $9'}" %line[2]).read()
 				#self.save_instance(kernel_id, ramdisk_id, line, self.compute_n)
 				reval = [x for x in self.__save_instance(kernel_id, ramdisk_id, line, self.compute_n).split()]
-				manifest = [x for x in reval[len(reval)-1].split()][2]
+				manifest = reval[len(reval)-1]
+				print '\nmanifest: %s' %manifest
 				print '\n...uploading bundle......'
-				reval = [x for x in self.__upload_bundle(line, self.compute_b, manifest)]
-				image_id = [x for x in reval[len(reval)-1].split()][3]
+				reval = [x for x in self.__upload_bundle(line, self.control_b, manifest).split()]
+				image = reval[len(reval)-1]
+				print 'image: %s' %image
 
 			print '\n...registering bundle......\n'
-			os.system("euca-register %s" %image_id)
+			os.system("euca-register %s" %image)
+			print '\n'
 
 			if line_num == 1:
 				break
