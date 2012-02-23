@@ -112,6 +112,7 @@ class FgCreate:
 			compute_node_list.append(line)
 			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get update'" %(self.userkey, line[1]))
 			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get install --yes slurm-llnl'" %(self.userkey, line[1]))
+			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get install --yes openmpi-bin openmpi-doc libopenmpi-dev'" %(self.userkey, line[1]))
 			if line_num == 1:
 				control_node = line
 				continue
