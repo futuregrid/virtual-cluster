@@ -8,6 +8,7 @@ class CloudInstances:
 	cloud_instances = {}
 	
 	def __init__(self):
+                slef.clear()
 		return
 
 	def list(self):
@@ -16,10 +17,16 @@ class CloudInstances:
 	def set(self, label, ip, id, type, image):
 		instance['ip'] = ip
 		instance['id'] = id
+		instance['no'] = size
+                coud_instances[size] = instance 
+                size +=1
+
+
 		# ...
 
 	def clear(self):
-		cloud_instances = {}
+                self.size = 0
+		self.cloud_instances = {}
 
 	def get (self, id):
 		return cloud_instance[id]
