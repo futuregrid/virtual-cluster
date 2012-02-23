@@ -2,6 +2,39 @@
 
 import socket, time, getopt, sys, os
 
+"""
+class CloudInstances:
+
+	cloud_instances = {}
+	
+	def __init__(self):
+		return
+
+	def list(self):
+		return cloud_instances
+
+	def set(self, label, ip, id, type, image):
+		instance['ip'] = ip
+		instance['id'] = id
+		# ...
+
+	def clear(self):
+		cloud_instances = {}
+
+	def get (self, id):
+		return cloud_instance[id]
+
+	# def run_instance(self, ...)
+
+	# def get_address(self, id)
+	
+	# whateve else you need
+
+	# save() pickle
+
+	# reload()
+"""
+
 class FgCreate:
 
 	userkey=number=image=name=size=None
@@ -45,7 +78,20 @@ class FgCreate:
 			# check if all vms are ready			
 			if ready == len(nodes_list):
 				break
+"""
+	def euca_run_instance (self, userkey, cluster_size, type, image)
+		os.system("euca-run-instances -k %s -n %d -t %s %s"  %(userkey, cluster_size, type, image))
+		#pipe output to string, take second argument and than simple reurn this
+		
 
+	def apt-get (slef, key, ip, packeName):
+		# fix this next line
+		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get update'" %(self.userkey, line[1]))
+
+	def ssh (self, key, ip, command)
+		# fix this
+"""
+			
         def create_cluster(self):
 		print '\n...Creating virtual cluster......'
 		print 'name   -- ', self.name

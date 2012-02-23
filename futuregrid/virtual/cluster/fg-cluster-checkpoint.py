@@ -52,8 +52,9 @@ class FgCheckpoint:
 				kernel_id = os.popen("euca-describe-images|awk {'if ($2 ~ /^%s/) print $8'}" %line[2]).read()
 				ramdisk_id = os.popen("euca-describe-images|awk {'if ($2 ~ /^%s/) print $9'}" %line[2]).read()				
 				reval = [x for x in self.__save_instance(kernel_id, ramdisk_id, line, self.control_n).split()]
-				manifest = reval[len(reval)-1]
-				print '\nmanifest: %s' %manifest
+				manifest = reval[len(reval)-1] # [:-1]
+			       #m anifest = [x for x in self.__save_instance(kernel_id, ramdisk_id, line, self.control_n).split()][:-1]
+ 				print '\nmanifest: %s' %manifest
 				print '\n...uploading bundle......'
 				reval = [x for x in self.__upload_bundle(line, self.control_b, manifest).split()]
 				image = reval[len(reval)-1]
