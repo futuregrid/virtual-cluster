@@ -1,6 +1,5 @@
 #! /usr/bin/env python
-import StringIO
-import ConfigParser
+
 import socket, time, getopt, sys, os
 
 class FgCreate:
@@ -14,21 +13,38 @@ class FgCreate:
 		self.name = name
 		self.size= size			
 
-	def _run(command):
-	        return os.popen(command)
-
-        def detect_port(self, ip, host):
-                while 1:
-                        try:
-                                sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                                sk.settimeout(1)
-                                sk.connect((ip, port))
-                                sk.close()
-                                print 'Ready to deploy...'
+        def detect_port(self):
+		line_num = 0
+		nodes_list = []
+		ready = 0
+		
+		# save all nodes info into list
+		f = file('my_instances_list.txt')
+                while True:
+                        line = f.readline()
+                        if len(line) == 0:
                                 break
-                        except Exception:
-                                print 'Waitting VMs ready to deploy...'
-                                time.sleep(2)
+                        line_num = line_num + 1
+                        line = [x for x in line.split()]
+                        nodes_list.append(line)
+                f.close()
+
+		# check if shh port of all VMs are alive
+		while 1:
+			for vm in nodes_list:
+                		try:
+					sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        	                        sk.settimeout(1)
+                	                sk.connect((vm[1], 22))
+                        	        sk.close()
+					ready = ready + 1					
+	                        except Exception:
+        	                        print 'Waitting VMs ready to deploy...'
+					ready = 0
+                        	        time.sleep(2)
+			# check if all vms are ready			
+			if ready == len(nodes_list):
+				break
 
         def create_cluster(self):
 		print '\n...Creating virtual cluster......'
@@ -38,6 +54,7 @@ class FgCreate:
 		print 'image  -- ', self.image
 		print '\n'		
 		
+		# create folder for cluster given name
 #		try:
 #			os.makedirs("futuregrid/cluster/%s" %self.name)
 #			os.chdir("futuregrid/cluster/%s" %self.name)
@@ -45,15 +62,23 @@ class FgCreate:
 #			print "Creating directory futuregrid/cluster/%s falied. Cluster name is in use?" %self.name
 #			sys.exit()
 
+		# size of cluster is user input + 1 control node
 		cluster_size = int(self.number)+1
+		# run instances given args
 		os.system("euca-run-instances -k %s -n %d -t %s %s"  %(self.userkey, cluster_size, self.size, self.image))
+
+		print '\n......Associating public IPs......'	
+		# save virtual cluster instances id into tmp
 		os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2'}|sort|tail -n%d > instance_id.tmp" %cluster_size) 
+		# save virtual cluster instances ip into tmp
 		os.system("euca-describe-addresses |grep -v 'i' |cut -f2 |sort |head -n%d > instance_ip.tmp" %cluster_size)
+		# save virtual cluster image id into tmp
 		os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2,$3'}|sort|tail -n%d|awk {'print $2'} > image_id.tmp" %cluster_size)
+		# sav virtual cluster intranet ip into tmp
 		os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2,$5'}|sort|tail -n%d|awk {'print $2'} > inner_ip.tmp" %cluster_size)
+		# combine all tmps into one file for managemnt
 		os.system("paste instance_id.tmp instance_ip.tmp image_id.tmp inner_ip.tmp> my_instances_list.txt")
 		
-		print '...Associating public IPs......'
 		f = file('my_instances_list.txt')	
 		while True:
 			line = f.readline()
@@ -82,25 +107,32 @@ class FgCreate:
 			line = f.readline()
 			if len(line) == 0:
 				break
+			line_num = line_num + 1
 			line = [x for x in line.split()]
-#			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get update'" %(self.userkey, line[1]))
-#			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get install --yes slurm-llnl'" %(self.userkey, line[1]))
+			compute_node_list.append(line)
+			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get update'" %(self.userkey, line[1]))
+			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get install --yes slurm-llnl'" %(self.userkey, line[1]))
+			if line_num == 1:
+				control_node = line
+				continue
+			
 		f.close()
-
-#		cp = ConfigParser.ConfigParser()
-		
-#		config = StringIO.StringIO()
-#		config.write('[dummysection]')
-#		config.write(open('slurm.conf', 'r').read())
-#		config.seek(0, os.SEEK_SET)
-
-#		cp.readfp(config)
-#		cp.set("dummysection","controlmachine", "aa")
-#		cp.write(open('slurm.conf', 'w'))
-		
-#		os.system("sed -i '1d' slurm.conf")
-		
+		print control_node
+		print compute_node_list
+		source_file = open('slurm.conf.in')
+		dest_file = open('slurm.conf', 'a')
+		while True:
+			line = source_file.readline()
+			if len(line) == 0:
+				break
+			if line.find('ControlMachine') > -1:
+				dest_file.write("ControlMachine=%s\n" %control_node[0])		
+			else:
+				dest_file.write(line)
+		source_file.close()
+		dest_file.close()
 		# add compute nodes info
+		line_num = 0
 		f = file('my_instances_list.txt')
 		conf_file = open('slurm.conf', 'a')
 		while True:
@@ -110,17 +142,14 @@ class FgCreate:
 			line_num = line_num + 1
 			line = [x for x in line.split()]
 			if line_num == 1:
-				control_node = line
 				continue
-			compute_node_list.append(line)
-#			line = [x for x in line.split()]
 			conf_file.write("NodeName=%s Procs=1 State=UNKNOWN\n" %line[0])
 			conf_file.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" %line[0])
 		f.close()
 
 		# copy slurm.conf to control node
 		os.system("scp -i %s.pem slurm.conf ubuntu@%s:~/" %(self.userkey, control_node[1]))
-		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo cp slurm.conf /etc/slurm-llnl/slurm.conf'" %(self.userkey, control_node[1]))
+		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo cp slurm.conf /etc/slurm-llnl'" %(self.userkey, control_node[1]))
 
 		# genreate munge key on control node and copy it to compute nodes
 		# copy slurm.conf to every compute node
@@ -139,12 +168,12 @@ class FgCreate:
 		print '\n...Starting SLURM system......\n'
 		# run slurm on control node
 		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /etc/init.d/slurm-llnl start'" %(self.userkey, control_node[1]))
-		os.system("ssh -i $1.pem -n ubuntu@%s 'sudo /etc/init.d/munge start'" %(self.userkey, control_node[1]))
+		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /etc/init.d/munge start'" %(self.userkey, control_node[1]))
 		
 		# run slurm on compute node
 		for nodes in compute_node_list:
 			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /etc/init.d/slurm-llnl start'" %(self.userkey, nodes[1]))
-	                os.system("ssh -i $1.pem -n ubuntu@%s 'sudo /etc/init.d/munge start'" %(self.userkey, nodes[1]))
+	                os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /etc/init.d/munge start'" %(self.userkey, nodes[1]))
 
 		
 
@@ -160,7 +189,8 @@ def main():
 	userkey=number=image=size=name=None
 
         try:
-                opts, args = getopt.getopt(sys.argv[1:], "hu:n:s:i:a:", ["help", "userkey=", "number=", "size=", "image=", "name="])
+                opts, args = getopt.getopt(sys.argv[1:], "hu:n:s:i:a:rc:", ["help", "userkey=", "number=", \
+			"size=", "image=", "name="])
         except getopt.GetoptError:
                 usage()
                 sys.exit()
@@ -179,14 +209,20 @@ def main():
  			image=arg
 		elif opt in ("-a", "--name"):
 			name=arg
-            						
+		   						
 	if size == None:
 	        fgc=FgCreate(userkey, number, image, name)
-	else:
+	else: 	
 		fgc=FgCreate(userkey, number, image, name, size)
-
+	
+	# create cluster
 	fgc.create_cluster()
+	#fgc.associate_ip()
+	# check if all alive
+	fgc.detect_port()
+	# deploy slurm
 	fgc.deploy_slurm()
+	# clean
 	fgc.clean()
 
 if __name__ == '__main__':
