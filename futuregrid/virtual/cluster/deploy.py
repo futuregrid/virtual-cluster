@@ -128,13 +128,25 @@ def main():
     
     fgc = FgCreate(args)
     fgc.create_cluster()
+    #
+    # not yet sure if the following is part of this command or part of
+    # another command that puts services ino the running images as Jon
+    # indicated. I think it makes sense to put it in here
+    #
     # TODO: gvl: add a flag --services so we can pass a number of
     # predefined services to this command. We may want more than to
     # deploy slurm. services are simply a list. We want to handle each
     # service in a separate .py file and be able to register them wih
     # this command in some fashion. This way we can write the code
     # modular and expand easily while having one called service-mpi.py
-    # service-slurm.py ... and so forth
+    # service-slurm.py ... and so forth.Here the pseudo code
+
+    # for service in a futuregrid.cluster.services
+    #    register service with this command:
+    #       adds a new argument to the commandline
+    #       puts in a list the service so when its passed as 
+    #       argument we can call it. 
+    #
 
     # I realize that not everyone knows chef, so we may want to
     # consider services that are included via chef, while others could
@@ -163,6 +175,30 @@ def main():
     #      others - other services I could think about are hadoop,
     #               twister, oracle grid engine, mysql, mongodb, ...
     #
+    # --services
+    #
+    #      services without any additional parameters lists simply all
+    #      services available the user could call.
+    #
+    # --chef arguments
+    #
+    #      besides the services parameters we have an alternative way
+    #      to specify roles for the machnes. This is simply a list in
+    #      which we specify a range of nodes that is associated with a
+    #      role. This is for advanced users wanting to benefit from
+    #      the chef repositories
+    #
+    #      Example: install chef_server on node 0, install
+    #      slurm_master on node 0, install slurm_worker on teh rest of
+    #      the nodes
+    #
+    #       --chef config="[0]=(slurm_master, chef_server) [1:]=(slurm_worker)"
+    #
+    #      in addition a chef repository can be specified while adding
+    #      somewhere in the chef parameter the string 
+    #
+    #          repo=<link to the chef repo>
+    #
     # --ttl 15d 
     #
     #      A time to live parameter is optionally passed along
@@ -175,9 +211,6 @@ def main():
     #      the total time will be simply calculated by adding up these
     #      values. Once the time is reached the cluster will simple be
     #      terminated.
-    
-
-
 
     #fgc.deploy_slurm()
     
