@@ -2,34 +2,35 @@
 
 import socket, time, getopt, sys, os
 
-"""
 class CloudInstances:
 
-	cloud_instances = {}
+	cloud_instances = []
 	
 	def __init__(self):
-                slef.clear()
+                self.clear()
 		return
 
 	def list(self):
-		return cloud_instances
+		return self.cloud_instances
 
-	def set(self, label, ip, id, type, image):
+	def set(self, instance_id, image_id, ip = ''): #label
+		instance = {}
+		instance['id'] = instance_id
+		instance['image'] = image_id
 		instance['ip'] = ip
-		instance['id'] = id
-		instance['no'] = size
-                coud_instances[size] = instance 
-                size +=1
-
-
-		# ...
+		self.cloud_instances.append(instance)
+	
+	def set_ip_by_id(self, instance_id, ip):
+		for instance in self.cloud_instances:
+			if instance['id'] == instance_id:
+				instance['ip'] = ip
 
 	def clear(self):
                 self.size = 0
-		self.cloud_instances = {}
+		self.cloud_instances = []
 
-	def get (self, id):
-		return cloud_instance[id]
+	def get_by_id (self, cloud_id):
+		return self.cloud_instances[cloud_id]
 
 	# def run_instance(self, ...)
 
@@ -40,42 +41,26 @@ class CloudInstances:
 	# save() pickle
 
 	# reload()
-"""
 
 class FgCreate:
-
-	userkey=number=image=name=size=None
-
         def __init__(self, userkey, number, image, name, size='m1.small'):
 		self.userkey = userkey
 		self.number = number
 		self.image = image
 		self.name = name
-		self.size= size			
+		self.size= size
+		self.cloud_instances = CloudInstances()			
 
         def detect_port(self):
-		line_num = 0
-		nodes_list = []
 		ready = 0
 		
-		# save all nodes info into list
-		f = file('my_instances_list.txt')
-                while True:
-                        line = f.readline()
-                        if len(line) == 0:
-                                break
-                        line_num = line_num + 1
-                        line = [x for x in line.split()]
-                        nodes_list.append(line)
-                f.close()
-
 		# check if shh port of all VMs are alive
 		while 1:
-			for vm in nodes_list:
+			for instace in self.cloud_instances.list():
                 		try:
 					sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         	                        sk.settimeout(1)
-                	                sk.connect((vm[1], 22))
+                	                sk.connect((instace['ip'], 22))
                         	        sk.close()
 					ready = ready + 1					
 	                        except Exception:
@@ -83,22 +68,43 @@ class FgCreate:
 					ready = 0
                         	        time.sleep(2)
 			# check if all vms are ready			
-			if ready == len(nodes_list):
+			if ready == len(self.cloud_instances.list()):
 				break
-"""
-	def euca_run_instance (self, userkey, cluster_size, type, image)
-		os.system("euca-run-instances -k %s -n %d -t %s %s"  %(userkey, cluster_size, type, image))
-		#pipe output to string, take second argument and than simple reurn this
+
+	def get_command_result(self, command):
+		return os.popen(command).read()	
+	
+	def euca_run_instance (self, userkey, cluster_size, image, instance_type):
+		eui_overhead = 3
+		eui_id_pos = 2
+		eui_len = 10
+		instances = [x for x in self.get_command_result("euca-run-instances -k %s -n %d -t %s %s"  %(userkey, cluster_size, instance_type, image)).split()]
+		for num in range(cluster_size):
+			self.cloud_instances.set(instances[num * eui_len + eui_id_pos + eui_overhead], image)
+
+		print self.cloud_instances.list()
+
+	def euca_associate_address (self, instance_id, ip):
+		os.system("euca-associate-address -i %s %s" %(instance_id, ip))
+		self.cloud_instances.set_ip_by_id(instance_id, ip)
+
+	def euca_describe_addresses (self):
+		ip_list = []
+		ips = [x for x in os.popen("euca-describe-addresses").read().split('\n')]
+		for ip in ips:
+			if  ip.find('i-') < 0 and len(ip) > 0:
+				ip_list.append(ip.split('\t')[1])
+		return ip_list
+	
+	def ssh (self, userkey, ip, command):
+		#print "ssh -i %s.pem ubuntu@%s '%s'" %(userkey, ip, command)
+		os.system("ssh -i %s.pem ubuntu@%s '%s'" %(userkey, ip, command))
 		
-
-	def apt-get (slef, key, ip, packeName):
-		# fix this next line
-		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get update'" %(self.userkey, line[1]))
-
-	def ssh (self, key, ip, command)
-		# fix this
-"""
+	def scp (self, userkey, ip, fileName):
+		#print "scp -i %s.pem %s ubuntu@%s:~/" %(userkey, fileName, ip)
+		os.system("ssh -i %s/pem %s ubuntu@%s:~/" %(userkey, fileName, ip))
 			
+
         def create_cluster(self):
 		print '\n...Creating virtual cluster......'
 		print 'name   -- ', self.name
@@ -106,6 +112,19 @@ class FgCreate:
 		print 'size   -- ', self.size
 		print 'image  -- ', self.image
 		print '\n'		
+		
+		cluster_size = int(self.number) + 1
+		self.euca_run_instance (self.userkey, cluster_size, self.image, self.size)
+		ip_lists = self.euca_describe_addresses ()
+
+		# immediatly associate ip after run instance may lead to error, use sleep
+		time.sleep(2)
+
+		print '...Associating IPs......'
+		for i in range(cluster_size):
+			instance = self.cloud_instances.get_by_id(i)
+			self.euca_associate_address (instance['id'], ip_lists[i])
+
 		
 		# create folder for cluster given name
 #		try:
@@ -115,122 +134,56 @@ class FgCreate:
 #			print "Creating directory futuregrid/cluster/%s falied. Cluster name is in use?" %self.name
 #			sys.exit()
 
-		# size of cluster is user input + 1 control node
-		cluster_size = int(self.number)+1
-		# run instances given args
-		os.system("euca-run-instances -k %s -n %d -t %s %s"  %(self.userkey, cluster_size, self.size, self.image))
-
-		print '\n......Associating public IPs......'	
-		# save virtual cluster instances id into tmp
-		os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2'}|sort|tail -n%d > instance_id.tmp" %cluster_size) 
-		# save virtual cluster instances ip into tmp
-		os.system("euca-describe-addresses |grep -v 'i' |cut -f2 |sort |head -n%d > instance_ip.tmp" %cluster_size)
-		# save virtual cluster image id into tmp
-		os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2,$3'}|sort|tail -n%d|awk {'print $2'} > image_id.tmp" %cluster_size)
-		# sav virtual cluster intranet ip into tmp
-		os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2,$5'}|sort|tail -n%d|awk {'print $2'} > inner_ip.tmp" %cluster_size)
-		# combine all tmps into one file for managemnt
-		os.system("paste instance_id.tmp instance_ip.tmp image_id.tmp inner_ip.tmp> my_instances_list.txt")
-		
-		f = file('my_instances_list.txt')	
-		while True:
-			line = f.readline()
-			if len(line) == 0:
-				break
-			line = [x for x in line.split()]
-			os.system("euca-associate-address -i %s %s" %(line[0], line[1]))
 
 	def clean(self):
 		print '...Clearing up......'
-		os.remove('instance_id.tmp')
-		os.remove('instance_ip.tmp')
-		os.remove('image_id.tmp')
-		os.remove('inner_ip.tmp')
 		print '...Done......'
 
 	def deploy_slurm(self):
 		print '\n...Deploying SLURM system......'
 
-		line_num = 0
-		control_node = None
-		compute_node_list = []
+		for instance in self.cloud_instances.list():
+			self.ssh(self.userkey, instance['ip'], "sudo apt-get update")
+			self.ssh(self.userkey, instance['ip'], "sudo apt-get install --yes slurm-llnl")
+			self.ssh(self.userkey, instance['ip'], "sudo apt-get install --yes openmpi-bin openmpi-doc libopenmpi-dev")
 
-		f = file('my_instances_list.txt')
-		while True:
-			line = f.readline()
-			if len(line) == 0:
-				break
-			line_num = line_num + 1
-			line = [x for x in line.split()]
-			compute_node_list.append(line)
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get update'" %(self.userkey, line[1]))
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get install --yes slurm-llnl'" %(self.userkey, line[1]))
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo apt-get install --yes openmpi-bin openmpi-doc libopenmpi-dev'" %(self.userkey, line[1]))
-			if line_num == 1:
-				control_node = line
-				continue
+		with open("slurm.conf.in") as srcf:
+    			input_content = srcf.readlines()
+		srcf.close()
+		
+		controlMachine=self.cloud_instances.get_by_id(0)['id']
+		output = "".join(input_content) % vars()
+
+		destf = open("slurm.conf","w")
+		print >> destf, output
+		destf.close()
+
+		with open("slurm.conf", "a") as conf:
+			for instance in self.cloud_instances.list()[1:]:
+				conf.write("NodeName=%s Procs=1 State=UNKNOWN\n" %instance['id'])
+				conf.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" %instance['id'])
+		conf.close()
+
+		# generate munge-key on control node
+		self.ssh(self.userkey, self.cloud_instances.get_by_id(0)['ip'], "sudo /usr/sbin/create-munge-key")
+		munge_key = open("munge.key","w")
+		print >>munge_key, self.get_command_result("ssh -i %s.pem ubuntu@%s 'sudo cat /etc/munge/munge.key'" %(self.userkey, self.cloud_instances.get_by_id(0)['ip']))
+
+		for instance in self.cloud_instances.list():
+			# copy slurm.conf
+			self.scp(self.userkey, instance['ip'], "slurm.conf")
+			self.ssh(self.userkey, instance['ip'], "sudo cp slurm.conf /etc/slurm-llnl")
+
+			# copy munge key
+			self.scp(self.userkey, instance['ip'], "munge.key")
+			self.ssh(self.userkey, instance['ip'], "sudo cp munge.key /etc/munge/munge.key")
+			self.ssh(self.userkey, instance['ip'], "sudo chown munge /etc/munge/munge.key")
+			self.ssh(self.userkey, instance['ip'], "sudo chgrp munge /etc/munge/munge.key")
+			self.ssh(self.userkey, instance['ip'], "sudo chmod 400 /etc/munge/mumge.key")
 			
-		f.close()
-		print control_node
-		print compute_node_list
-		source_file = open('slurm.conf.in')
-		dest_file = open('slurm.conf', 'a')
-		while True:
-			line = source_file.readline()
-			if len(line) == 0:
-				break
-			if line.find('ControlMachine') > -1:
-				dest_file.write("ControlMachine=%s\n" %control_node[0])		
-			else:
-				dest_file.write(line)
-		source_file.close()
-		dest_file.close()
-		# add compute nodes info
-		line_num = 0
-		f = file('my_instances_list.txt')
-		conf_file = open('slurm.conf', 'a')
-		while True:
-			line = f.readline()
-			if len(line) == 0:
-				break
-			line_num = line_num + 1
-			line = [x for x in line.split()]
-			if line_num == 1:
-				continue
-			conf_file.write("NodeName=%s Procs=1 State=UNKNOWN\n" %line[0])
-			conf_file.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" %line[0])
-		f.close()
-
-		# copy slurm.conf to control node
-		os.system("scp -i %s.pem slurm.conf ubuntu@%s:~/" %(self.userkey, control_node[1]))
-		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo cp slurm.conf /etc/slurm-llnl'" %(self.userkey, control_node[1]))
-
-		# genreate munge key on control node and copy it to compute nodes
-		# copy slurm.conf to every compute node
-		# print control_node, compute_node_list		
-		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /usr/sbin/create-munge-key'" %(self.userkey, control_node[1]))
-                os.system("ssh -i %s.pem -n ubuntu@%s 'sudo cat /etc/munge/munge.key' > munge.key" %(self.userkey, control_node[1]))
-		for nodes in compute_node_list:
-			os.system("scp -i %s.pem munge.key ubuntu@%s:~/" %(self.userkey, nodes[1]))
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo cp munge.key /etc/munge/munge.key'" %(self.userkey, nodes[1]))
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo chown munge /etc/munge/munge.key'" %(self.userkey, nodes[1]))
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo chgrp munge /etc/munge/munge.key'" %(self.userkey, nodes[1]))
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo chmod 400 /etc/munge/munge.key'" %(self.userkey, nodes[1]))
-			os.system("scp -i %s.pem slurm.conf ubuntu@%s:~/" %(self.userkey, nodes[1]))
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo cp slurm.conf /etc/slurm-llnl/slurm.conf'" %(self.userkey, nodes[1]))
-
-		print '\n...Starting SLURM system......\n'
-		# run slurm on control node
-		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /etc/init.d/slurm-llnl start'" %(self.userkey, control_node[1]))
-		os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /etc/init.d/munge start'" %(self.userkey, control_node[1]))
-		
-		# run slurm on compute node
-		for nodes in compute_node_list:
-			os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /etc/init.d/slurm-llnl start'" %(self.userkey, nodes[1]))
-	                os.system("ssh -i %s.pem -n ubuntu@%s 'sudo /etc/init.d/munge start'" %(self.userkey, nodes[1]))
-
-		
-
+			# start slurm
+			self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/slurm-llnl start")
+			self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/munge start")
 
 def usage():
         print '-h/--help    Display this help.'
@@ -240,9 +193,10 @@ def usage():
 	print '-a/--name    provide name of virtual cluster.' 
 
 def main():
-	userkey=number=image=size=name=None
-
-        try:
+	
+	size = None
+        
+	try:
                 opts, args = getopt.getopt(sys.argv[1:], "hu:n:s:i:a:rc:", ["help", "userkey=", "number=", \
 			"size=", "image=", "name="])
         except getopt.GetoptError:
@@ -268,10 +222,9 @@ def main():
 	        fgc=FgCreate(userkey, number, image, name)
 	else: 	
 		fgc=FgCreate(userkey, number, image, name, size)
-	
+
 	# create cluster
 	fgc.create_cluster()
-	#fgc.associate_ip()
 	# check if all alive
 	fgc.detect_port()
 	# deploy slurm
