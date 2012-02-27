@@ -1,13 +1,20 @@
 #! /usr/bin/env python
 
-import socket, time, getopt, sys, os
+import socket, time, getopt, sys, os, pickle
 
 class CloudInstances:
 
 	cloud_instances = []
 	
-	def __init__(self):
+	def __init__(self, name):
                 self.clear()
+		if self.check_name(name):
+			instance = {}
+			instance['name'] = name
+			self.cloud_instances.append(instance)
+		else:
+			print 'Error in creating virtual cluster. Name is in use?'
+			sys.exit()
 		return
 
 	def list(self):
@@ -22,25 +29,42 @@ class CloudInstances:
 	
 	def set_ip_by_id(self, instance_id, ip):
 		for instance in self.cloud_instances:
-			if instance['id'] == instance_id:
-				instance['ip'] = ip
+			if len(instance) == 3:
+				if instance['id'] == instance_id:
+					instance['ip'] = ip
 
 	def clear(self):
-                self.size = 0
 		self.cloud_instances = []
 
 	def get_by_id (self, cloud_id):
 		return self.cloud_instances[cloud_id]
 
-	# def run_instance(self, ...)
+	def save_instances(self):
+		
+		try:
+			f = open("cloud_instances.dat", "r")
+			instance_list = (self.cloud_instances, pickle.load(f))
+			f = open("cloud_instances.dat", "w")
+			pickle.dump(instance_list, f)	
+			f.close()		
+		except:
+			f = open("cloud_instances.dat", "w")
+			pickle.dump(self.cloud_instances, f)
+			f.close()
 
-	# def get_address(self, id)
-	
-	# whateve else you need
+	def check_name(self, name):
+		try:
+			f = open("cloud_instances.dat", "r")
+			cloud_list = pickle.load(f)
+			for cloud in cloud_list:	
+				if cloud['name'] == name:
+					return False
+			return True
+		except:
+			return True
+			
 
-	# save() pickle
-
-	# reload()
+#	def load()
 
 class FgCreate:
         def __init__(self, userkey, number, image, name, size='m1.small'):
@@ -49,7 +73,7 @@ class FgCreate:
 		self.image = image
 		self.name = name
 		self.size= size
-		self.cloud_instances = CloudInstances()			
+		self.cloud_instances = CloudInstances(name)			
 
         def detect_port(self):
 		ready = 0
@@ -82,7 +106,7 @@ class FgCreate:
 		for num in range(cluster_size):
 			self.cloud_instances.set(instances[num * eui_len + eui_id_pos + eui_overhead], image)
 
-		print self.cloud_instances.list()
+#		print self.cloud_instances.list()
 
 	def euca_associate_address (self, instance_id, ip):
 		os.system("euca-associate-address -i %s %s" %(instance_id, ip))
@@ -122,19 +146,11 @@ class FgCreate:
 
 		print '...Associating IPs......'
 		for i in range(cluster_size):
-			instance = self.cloud_instances.get_by_id(i)
+			instance = self.cloud_instances.get_by_id(i+1)
 			self.euca_associate_address (instance['id'], ip_lists[i])
 
+		self.cloud_instances.save_instances()
 		
-		# create folder for cluster given name
-#		try:
-#			os.makedirs("futuregrid/cluster/%s" %self.name)
-#			os.chdir("futuregrid/cluster/%s" %self.name)
-#		except Exception:
-#			print "Creating directory futuregrid/cluster/%s falied. Cluster name is in use?" %self.name
-#			sys.exit()
-
-
 	def clean(self):
 		print '...Clearing up......'
 		print '...Done......'
