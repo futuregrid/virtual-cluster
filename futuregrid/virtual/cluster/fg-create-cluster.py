@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+# Filename: hello.py
 
 import socket, time, getopt, sys, os, pickle
 
@@ -20,7 +21,7 @@ class CloudInstances:
 	def list(self):
 		return self.cloud_instances
 
-	def set(self, instance_id, image_id, ip = ''): #label
+	def set(self, instance_id, image_id, ip = ''):
 		instance = {}
 		instance['id'] = instance_id
 		instance['image'] = image_id
@@ -40,24 +41,24 @@ class CloudInstances:
 		return self.cloud_instances[cloud_id]
 
 	def save_instances(self):
-		
 		try:
 			f = open("cloud_instances.dat", "r")
-			instance_list = (self.cloud_instances, pickle.load(f))
+			instance_list = pickle.load(f)
+			instance_list.insert(0, self.cloud_instances)
 			f = open("cloud_instances.dat", "w")
 			pickle.dump(instance_list, f)	
 			f.close()		
 		except:
 			f = open("cloud_instances.dat", "w")
-			pickle.dump(self.cloud_instances, f)
+			pickle.dump([self.cloud_instances], f)
 			f.close()
 
 	def check_name(self, name):
 		try:
 			f = open("cloud_instances.dat", "r")
 			cloud_list = pickle.load(f)
-			for cloud in cloud_list:	
-				if cloud['name'] == name:
+			for cloud in cloud_list:
+				if cloud[0]['name'] == name:
 					return False
 			return True
 		except:
@@ -248,11 +249,11 @@ def main():
 	# create cluster
 	fgc.create_cluster()
 	# check if all alive
-	fgc.detect_port()
+#	fgc.detect_port()
 	# deploy slurm
-	fgc.deploy_slurm()
+#	fgc.deploy_slurm()
 	# clean
-	fgc.clean()
+#	fgc.clean()
 
 if __name__ == '__main__':
     main()
