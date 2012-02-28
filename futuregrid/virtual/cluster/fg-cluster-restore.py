@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import getopt, sys, os, time, pickle
+import socket, getopt, sys, os, time, pickle
 
 class CloudInstances:
 
@@ -110,19 +110,21 @@ class FgRestore:
 
                 # check if shh port of all VMs are alive
                 while 1:
-                        for instace in self.cloud_instances.list()[1:]:
+                        for instance in self.cloud_instances.list()[1:]:
                                 try:
                                     	sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                                        sk.settimeout(1)
-                                        sk.connect((instace['ip'], 22))
+                                        sk.settimeout(2)
+                                        sk.connect((instance['ip'], 22))
                                         sk.close()
                                        	ready = ready + 1
+					print '%s is ready', instance['ip']
                                 except Exception:
                                        	print 'Waitting VMs ready to deploy...'
                                        	ready = 0
                                         time.sleep(2)
 
                         # check if all vms are ready
+			print 'ready -- %d, len -- %d' %(ready, len(self.cloud_instances.list()[1:]))
                         if ready == len(self.cloud_instances.list()[1:]):
                                 break
 
@@ -165,7 +167,7 @@ class FgRestore:
 		destf.close()
 
 		with open("slurm.conf", "a") as conf:
-			for instance in self.cloud_instances.list()[1:]:
+			for instance in self.cloud_instances.list()[2:]:
 				conf.write("NodeName=%s Procs=1 State=UNKNOWN\n" %instance['id'])
 				conf.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" %instance['id'])
 		conf.close()
