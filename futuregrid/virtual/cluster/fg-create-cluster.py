@@ -81,7 +81,7 @@ class FgCreate:
 		
 		# check if shh port of all VMs are alive
 		while 1:
-			for instace in self.cloud_instances.list():
+			for instace in self.cloud_instances.list()[1:]:
                 		try:
 					sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         	                        sk.settimeout(1)
@@ -159,7 +159,7 @@ class FgCreate:
 	def deploy_slurm(self):
 		print '\n...Deploying SLURM system......'
 
-		for instance in self.cloud_instances.list():
+		for instance in self.cloud_instances.list()[1:]:
 			self.ssh(self.userkey, instance['ip'], "sudo apt-get update")
 			self.ssh(self.userkey, instance['ip'], "sudo apt-get install --yes slurm-llnl")
 #			self.ssh(self.userkey, instance['ip'], "sudo apt-get install --yes openmpi-bin openmpi-doc libopenmpi-dev")
@@ -169,7 +169,7 @@ class FgCreate:
     			input_content = srcf.readlines()
 		srcf.close()
 		
-		controlMachine=self.cloud_instances.get_by_id(0)['id']
+		controlMachine=self.cloud_instances.get_by_id(1)['id']
 		output = "".join(input_content) % vars()
 
 		destf = open("slurm.conf","w")
@@ -177,19 +177,19 @@ class FgCreate:
 		destf.close()
 
 		with open("slurm.conf", "a") as conf:
-			for instance in self.cloud_instances.list()[1:]:
+			for instance in self.cloud_instances.list()[2:]:
 				conf.write("NodeName=%s Procs=1 State=UNKNOWN\n" %instance['id'])
 				conf.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" %instance['id'])
 		conf.close()
 
 		print '\n...generate munge-key......'
 		# generate munge-key on control node
-		self.ssh(self.userkey, self.cloud_instances.get_by_id(0)['ip'], "sudo /usr/sbin/create-munge-key")
+		self.ssh(self.userkey, self.cloud_instances.get_by_id(1)['ip'], "sudo /usr/sbin/create-munge-key")
 		munge_key = open("munge.key","w")
-		print >>munge_key, self.get_command_result("ssh -i %s.pem ubuntu@%s 'sudo cat /etc/munge/munge.key'" %(self.userkey, self.cloud_instances.get_by_id(0)['ip']))
+		print >>munge_key, self.get_command_result("ssh -i %s.pem ubuntu@%s 'sudo cat /etc/munge/munge.key'" %(self.userkey, self.cloud_instances.get_by_id(1)['ip']))
 		munge_key.close()
 
-		for instance in self.cloud_instances.list():
+		for instance in self.cloud_instances.list()[1:]:
 			# copy slurm.conf
 			print '\n...copying slurm.conf to node......'
 			self.scp(self.userkey, "slurm.conf", instance['ip'])
@@ -249,11 +249,11 @@ def main():
 	# create cluster
 	fgc.create_cluster()
 	# check if all alive
-#	fgc.detect_port()
+	fgc.detect_port()
 	# deploy slurm
-#	fgc.deploy_slurm()
+	fgc.deploy_slurm()
 	# clean
-#	fgc.clean()
+	fgc.clean()
 
 if __name__ == '__main__':
     main()
