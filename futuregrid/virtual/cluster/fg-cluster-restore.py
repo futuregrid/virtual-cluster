@@ -1,8 +1,69 @@
 #! /usr/bin/env python
 
-import socket, time, getopt, sys, os
+import getopt, sys, os, time, pickle
 
-class FgCreate:
+class CloudInstances:
+
+	cloud_instances = []
+	
+	def __init__(self, name):
+                self.clear()
+		if self.check_name(name):
+			instance = {}
+			instance['name'] = name
+			self.cloud_instances.append(instance)
+		else:
+			print 'Error in restoring virtual cluster. name is in use?'
+			sys.exit()
+		return
+
+	def list(self):
+		return self.cloud_instances
+
+	def set(self, instance_id, image_id, ip = ''):
+		instance = {}
+		instance['id'] = instance_id
+		instance['image'] = image_id
+		instance['ip'] = ip
+		self.cloud_instances.append(instance)
+	
+	def set_ip_by_id(self, instance_id, ip):
+		for instance in self.cloud_instances:
+			if len(instance) == 3:
+				if instance['id'] == instance_id:
+					instance['ip'] = ip
+
+	def clear(self):
+		self.cloud_instances = []
+
+	def get_by_id (self, cloud_id):
+		return self.cloud_instances[cloud_id]
+
+	def save_instances(self):
+		try:
+			f = open("cloud_instances.dat", "r")
+			instance_list = pickle.load(f)
+			instance_list.insert(0, self.cloud_instances)
+			f = open("cloud_instances.dat", "w")
+			pickle.dump(instance_list, f)	
+			f.close()		
+		except:
+			f = open("cloud_instances.dat", "w")
+			pickle.dump([self.cloud_instances], f)
+			f.close()
+
+	def check_name(self, name):
+		try:
+			f = open("cloud_instances.dat", "r")
+			cloud_list = pickle.load(f)
+			for cloud in cloud_list:
+				if cloud[0]['name'] == name:
+					return False
+			return True
+		except:
+			return True
+
+class FgRestore:
 
         userkey=compute_number=control_image=compute_image=name=size=None
 
@@ -13,59 +74,120 @@ class FgCreate:
 		self.compute_image = compute_image
                 self.name = name
                 self.size= size
+		self.cloud_instances = CloudInstances(name)
+	
+	def get_command_result(self, command):
+		return os.popen(command).read()	
+
+	def euca_run_instance (self, userkey, cluster_size, image, instance_type):
+		eui_overhead = 3
+		eui_id_pos = 2
+		eui_len = 8
+		instances = [x for x in self.get_command_result("euca-run-instances -k %s -n %d -t %s %s"  %(userkey, cluster_size, instance_type, image)).split()]
+		for num in range(cluster_size):
+			self.cloud_instances.set(instances[num * eui_len + eui_id_pos + eui_overhead], image)
+		
+	def euca_associate_address (self, instance_id, ip):
+		os.system("euca-associate-address -i %s %s" %(instance_id, ip))
+		self.cloud_instances.set_ip_by_id(instance_id, ip)
+
+	def euca_describe_addresses (self):
+		ip_list = []
+		ips = [x for x in os.popen("euca-describe-addresses").read().split('\n')]
+		for ip in ips:
+			if  ip.find('i-') < 0 and len(ip) > 0:
+				ip_list.append(ip.split('\t')[1])
+		return ip_list
+
+	def ssh (self, userkey, ip, command):
+		os.system("ssh -i %s.pem ubuntu@%s '%s'" %(userkey, ip, command))
+		
+	def scp (self, userkey, fileName, ip):
+		os.system("scp -i %s.pem %s ubuntu@%s:~/" %(userkey, fileName, ip))
+
+	def detect_port(self):
+                ready = 0
+
+                # check if shh port of all VMs are alive
+                while 1:
+                        for instace in self.cloud_instances.list()[1:]:
+                                try:
+                                    	sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                                        sk.settimeout(1)
+                                        sk.connect((instace['ip'], 22))
+                                        sk.close()
+                                       	ready = ready + 1
+                                except Exception:
+                                       	print 'Waitting VMs ready to deploy...'
+                                       	ready = 0
+                                        time.sleep(2)
+
+                        # check if all vms are ready
+                        if ready == len(self.cloud_instances.list()[1:]):
+                                break
 
 
 	def create_cluster(self):
 
 		cluster_size = int(self.compute_number)+1
                 print '\n...Restoring virtual cluster......'
-                print 'name   -- ', self.name
-                print '#nodes -- ', cluster_size
-                print 'size   -- ', self.size
-                print 'control image  -- ', self.control_image
-		print 'compute image  -- ', self.compute_image
+                print 'virtual cluster name   -- ', self.name
+                print 'number of nodes        -- ', cluster_size
+                print 'instance type          -- ', self.size
+                print 'control image          -- ', self.control_image
+		print 'compute image          -- ', self.compute_image
                 print '\n'
 
-                # create folder for cluster given name
-#               try:
-#                       os.makedirs("futuregrid/cluster/%s" %self.name)
-#                       os.chdir("futuregrid/cluster/%s" %self.name)
-#               except Exception:
-#                       print "Creating directory futuregrid/cluster/%s falied. Cluster name is in use?" %self.name
-#                       sys.exit()
+		self.euca_run_instance(self.userkey, 1, self.control_image, self.size)
+		self.euca_run_instance(self.userkey, int(self.compute_number), self.compute_image, self.size)	
 
-                # size of cluster is user input + 1 control node
-                # run control node given args
-                os.system("euca-run-instances -k %s -n 1 -t %s %s"  %(self.userkey, self.size, self.control_image))
-		# run compute nodes 
-		os.system("euca-run-instances -k %s -n %d -t %s %s"  %(self.userkey, int(self.compute_number), self.size, self.compute_image))
+		ip_lists = self.euca_describe_addresses ()
 
-                print '\n......Associating public IPs......'
-                # save virtual cluster instances id into tmp
-                os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2'}|sort|tail -n%d > instance_id.tmp" %cluster_size)
-                # save virtual cluster instances ip into tmp
-                os.system("euca-describe-addresses |grep -v 'i' |cut -f2 |sort |head -n%d > instance_ip.tmp" %cluster_size)
-                # save virtual cluster image id into tmp
-		os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2,$3'}|sort|tail -n%d|awk {'print $2'} > image_id.tmp" %cluster_size)
-                # sav virtual cluster intranet ip into tmp
-               	os.system("euca-describe-instances|awk {'if ($2 ~ /^i/) print $2,$5'}|sort|tail -n%d|awk {'print $2'} > inner_ip.tmp" %cluster_size)
-                # combine all tmps into one file for managemnt
-                os.system("paste instance_id.tmp instance_ip.tmp image_id.tmp inner_ip.tmp> my_instances_list.txt")
+		# immediatly associate ip after run instance may lead to error, use sleep
+		time.sleep(3)
 
-                f = file('my_instances_list.txt')
-                while True:
-                        line = f.readline()
-                        if len(line) == 0:
-                                break
-                        line = [x for x in line.split()]
-                        os.system("euca-associate-address -i %s %s" %(line[0], line[1]))
+		print '...Associating IPs......'
+		for i in range(cluster_size):
+			instance = self.cloud_instances.get_by_id(i+1)
+			self.euca_associate_address (instance['id'], ip_lists[i])
 
-        def clean(self):
+		self.cloud_instances.save_instances()
+	
+		with open("slurm.conf.in") as srcf:
+    			input_content = srcf.readlines()
+		srcf.close()
+		
+		controlMachine=self.cloud_instances.get_by_id(1)['id']
+		output = "".join(input_content) % vars()
+
+		destf = open("slurm.conf","w")
+		print >> destf, output
+		destf.close()
+
+		with open("slurm.conf", "a") as conf:
+			for instance in self.cloud_instances.list()[1:]:
+				conf.write("NodeName=%s Procs=1 State=UNKNOWN\n" %instance['id'])
+				conf.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" %instance['id'])
+		conf.close()
+
+		self.detect_port()
+
+		print '\n...Configuring SLURM......'
+		for instance in self.cloud_instances.list()[1:]:
+			# copy slurm.conf
+			print '\n...copying slurm.conf to node......'
+			self.scp(self.userkey, "slurm.conf", instance['ip'])
+			self.ssh(self.userkey, instance['ip'], "sudo cp slurm.conf /etc/slurm-llnl")
+
+			# start slurm
+			print '\n...starting slurm......'
+			self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/slurm-llnl start")
+			self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/munge start")
+
+
+
+	def clean(self):
                 print '...Clearing up......'
-                os.remove('instance_id.tmp')
-                os.remove('instance_ip.tmp')
-                os.remove('image_id.tmp')
-                os.remove('inner_ip.tmp')
 		print '...Done......'
 
 		
@@ -104,13 +226,12 @@ def main():
 			compute_image=arg
 
         if size == None:
-                fgc=FgCreate(userkey, number, control_image, compute_image, name)
+                fgc=FgRestore(userkey, number, control_image, compute_image, name)
         else:
-             	fgc=FgCreate(userkey, number, control_image, compute_image, name, size)
+             	fgc=FgRestore(userkey, number, control_image, compute_image, name, size)
 
         # create cluster
         fgc.create_cluster()
-        fgc.clean()
 
 if __name__ == '__main__':
     main()

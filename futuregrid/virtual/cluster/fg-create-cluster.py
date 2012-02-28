@@ -92,8 +92,9 @@ class FgCreate:
         	                        print 'Waitting VMs ready to deploy...'
 					ready = 0
                         	        time.sleep(2)
+
 			# check if all vms are ready			
-			if ready == len(self.cloud_instances.list()):
+			if ready == len(self.cloud_instances.list()[1:]):
 				break
 
 	def get_command_result(self, command):
