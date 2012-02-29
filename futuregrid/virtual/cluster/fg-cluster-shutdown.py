@@ -88,7 +88,7 @@ def main():
                         usage()
                         sys.exit()
 		if opt in ("-a", "--name"):
-                        name=arg
+                        name = arg
 
         fgs=FgShutdown(name)
 	fgs.shut_down()

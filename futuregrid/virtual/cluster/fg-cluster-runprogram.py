@@ -91,13 +91,13 @@ def main():
                         usage()
                         sys.exit()
                 elif opt in ("-u", "--userkey"):
-                        userkey=arg
+                        userkey = arg
                 elif opt in ("-n", "--number"):
-			number=arg
+			number = arg
 		elif opt in ("-f", "--file"):
-			file_name=arg
+			file_name = arg
 		elif opt in ("-a", "--name"):
-			name=arg
+			name = arg
 
 	fgc = FgRunProg(userkey, number, file_name, name)
 	fgc.run_program()

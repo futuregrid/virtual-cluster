@@ -34,6 +34,14 @@ gitgregor:
 	git config --global user.name "Gregor von Laszewski"
 	git config --global user.email laszewski@gmail.com
 
+qc-install:
+	sudo pip install pep8
+	sudo pip install pylint
+
+qc:
+	pep8 ./futuregrid/virtual/cluster/
+	pylint ./futuregrid/virtual/cluster/ | less
+
 # #####################################################################
 # Creating the distribution
 # #####################################################################

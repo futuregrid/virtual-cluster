@@ -232,15 +232,15 @@ def main():
                         usage()
                         sys.exit()
                 elif opt in ("-u", "--userkey"):
-                        userkey=arg
+                        userkey = arg
                 elif opt in ("-n", "--number"):
-                        number=arg
+                        number = arg
                 elif opt in ("-s", "--size"):
-			size=arg
+			size = arg
                 elif opt in ("-i", "--image"):
- 			image=arg
+ 			image = arg
 		elif opt in ("-a", "--name"):
-			name=arg
+			name = arg
 		   						
 	if size == None:
 	        fgc=FgCreate(userkey, number, image, name)

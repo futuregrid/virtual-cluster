@@ -278,7 +278,7 @@ class Cloud:
 
         # If the "count" was passed in then set min_ and max_count to this value.
         if kwargs.has_key("count"):
-            count= kwargs["count"]
+            count = kwargs["count"]
             kwargs["min_count"] = count
             kwargs["max_count"] = count
 
@@ -286,19 +286,19 @@ class Cloud:
         # currently set for boto 1.9 parameters to make it compatable with Eucalyptus.
         return_code = self._ec2_conn.run_instances(
             kwargs["image_id"],
-            min_count=kwargs.get("min_count", 1),
-            max_count=kwargs.get("max_count", 1),
-            key_name=kwargs["key_name"],
-            security_groups=kwargs["security_groups"],
-            user_data=kwargs.get("user_data", None),
-            addressing_type=kwargs.get("addressing_type", None),
-            instance_type=kwargs.get("instance_type", "m1.small"),
-            placement=kwargs.get("availability_zone", kwargs.get("placement", None)),
-            kernel_id=kwargs.get("kernel_id", None),
-            ramdisk_id=kwargs.get("ramdisk_id", None),
-            monitoring_enabled=kwargs.get("monitoring_enabled", False),
-            subnet_id=kwargs.get("subnet_id", None),
-            block_device_map=kwargs.get("block_device_map", None))
+            min_count = kwargs.get("min_count", 1),
+            max_count = kwargs.get("max_count", 1),
+            key_name = kwargs["key_name"],
+            security_groups = kwargs["security_groups"],
+            user_data = kwargs.get("user_data", None),
+            addressing_type = kwargs.get("addressing_type", None),
+            instance_type = kwargs.get("instance_type", "m1.small"),
+            placement = kwargs.get("availability_zone", kwargs.get("placement", None)),
+            kernel_id = kwargs.get("kernel_id", None),
+            ramdisk_id = kwargs.get("ramdisk_id", None),
+            monitoring_enabled = kwargs.get("monitoring_enabled", False),
+            subnet_id = kwargs.get("subnet_id", None),
+            block_device_map = kwargs.get("block_device_map", None))
 
             # boto 2.0 parameters.
             #disable_api_termination=kwargs.get("disable_api_termination", False),

@@ -57,25 +57,28 @@ class FgCheckpoint:
 		self.cloud_instances = CloudInstances(name)
 	
 	def ssh (self, userkey, ip, command):
-		os.system("ssh -i %s.pem ubuntu@%s '%s'" %(userkey, ip, command))
+		os.system("ssh -i %s.pem ubuntu@%s '%s'" % (userkey, ip, command))
 		
-	def scp (self, userkey, fileName, ip):
-		os.system("scp -i %s.pem -r %s ubuntu@%s:~/" %(userkey, fileName, ip))
+	def scp (self, userkey, filename, ip):
+		os.system("scp -i %s.pem -r %s ubuntu@%s:~/" % (userkey, filename, ip))
 
 
 	def save_instance(self, kernel_id, ramdisk_id, ip, instance_name):
 		if kernel_id == None:
-			return os.popen("ssh -i %s.pem ubuntu@%s '. ~/.profile; sudo euca-bundle-vol -c ${EC2_CERT} -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID} --ec2cert ${EUCALYPTUS_CERT} --no-inherit -p %s -s 1024 -d /mnt/'" %(self.userkey, ip, instance_name)).read()
+			return os.popen("ssh -i %s.pem ubuntu@%s '. ~/.profile; sudo euca-bundle-vol -c ${EC2_CERT} -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID} --ec2cert ${EUCALYPTUS_CERT} --no-inherit -p %s -s 1024 -d /mnt/'" 
+					% (self.userkey, ip, instance_name)).read()
 		elif ramdisk_id == None:
 			return os.popen("ssh -i %s.pem ubuntu@%s '. ~/.profile; sudo euca-bundle-vol -c ${EC2_CERT} -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID} --ec2cert ${EUCALYPTUS_CERT} --no-inherit -p %s -s 1024 -d /mnt/ --kernel %s'" %(self.userkey, ip, instance_name, kernel_id)).read()
 		else:
-			return os.popen("ssh -i %s.pem ubuntu@%s '. ~/.profile; sudo euca-bundle-vol -c ${EC2_CERT} -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID} --ec2cert ${EUCALYPTUS_CERT} --no-inherit -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'" %(self.userkey, ip, instance_name, kernel_id, ramdisk_id)).read()
+			return os.popen("ssh -i %s.pem ubuntu@%s '. ~/.profile; sudo euca-bundle-vol -c ${EC2_CERT} -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID} --ec2cert ${EUCALYPTUS_CERT} --no-inherit -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'" 
+					% (self.userkey, ip, instance_name, kernel_id, ramdisk_id)).read()
 
 	def upload_bundle(self, ip, bucket_name, manifest):
-		return os.popen("ssh -i %s.pem ubuntu@%s '. ~/.profile; euca-upload-bundle -b %s -m %s'" %(self.userkey, ip, bucket_name, manifest)).read()
+		return os.popen("ssh -i %s.pem ubuntu@%s '. ~/.profile; euca-upload-bundle -b %s -m %s'" 
+				% (self.userkey, ip, bucket_name, manifest)).read()
 
 	def describe_images(self, image_id):
-		return os.popen("euca-describe-images %s" %image_id).read()
+		return os.popen("euca-describe-images %s" % image_id).read()
 
 	def get_kernel_id(self, image_id):
 		command_result = [x for x in self.describe_images(image_id).split()]
@@ -91,9 +94,12 @@ class FgCheckpoint:
 		kernel_id = self.get_kernel_id(image_id)
 		ramdisk_id = self.get_ramdisk_id(image_id)
 		manifest = [x for x in self.save_instance(kernel_id, ramdisk_id, ip, image_name).split()].pop()
- 		print '\nmanifest generated: %s' %manifest
+
+ 		print '\nmanifest generated: %s' % manifest
 		print '\n...uploading bundle......'
+
 		image = [x for x in self.upload_bundle(ip, bucket_name, manifest).split()].pop()
+
 		print '\n...registering image......'
 		self.euca_register(image)
 
@@ -101,7 +107,7 @@ class FgCheckpoint:
 	def euca_register(self, image):
 		#mark
 #		self.ssh (userkey, ip, command)
-		os.system("euca-register %s" %image)
+		os.system("euca-register %s" % image)
 
 	def checkpoint_cluster(self):
 		
@@ -113,7 +119,7 @@ class FgCheckpoint:
                 print 'compute node name    -- ', self.compute_n
                 print '\n'
 	
-		os.system("unzip -o %s -d keys" %self.nova)
+		os.system("unzip -o %s -d keys" % self.nova)
 
 		for instance in self.cloud_instances.list()[1:3]:
 			self.scp(self.userkey, "keys", instance['ip'])
@@ -122,9 +128,15 @@ class FgCheckpoint:
 			self.ssh(self.userkey, instance['ip'], "source ~/.profile")
 
 		#save control node
-		self.save_node(self.cloud_instances.get_by_id(1)['image'], self.cloud_instances.get_by_id(1)['ip'], self.control_b, self.control_n)
+		self.save_node(self.cloud_instances.get_by_id(1)['image'], 
+			       self.cloud_instances.get_by_id(1)['ip'], 
+			       self.control_b, 
+			       self.control_n)
 		#save compute node
-		self.save_node(self.cloud_instances.get_by_id(2)['image'], self.cloud_instances.get_by_id(2)['ip'], self.compute_b, self.compute_n)
+		self.save_node(self.cloud_instances.get_by_id(2)['image'], 
+			       self.cloud_instances.get_by_id(2)['ip'], 
+			       self.compute_b, 
+			       self.compute_n)
 		
 	def clean(self):
                 print '...Clearing up......'
@@ -142,7 +154,16 @@ def usage():
 def main():
 
         try:
-		opts, args = getopt.getopt(sys.argv[1:], "hu:n:c:t:m:e:a:", ["help", "userkey=", "nova=", "controlb=", "controln=", "computeb=", "computen=", "name="])
+		opts, args = getopt.getopt(sys.argv[1:], 
+					   "hu:n:c:t:m:e:a:", 
+					   ["help", 
+					    "userkey=", 
+					    "nova=", 
+					    "controlb=", 
+					    "controln=", 
+					    "computeb=", 
+					    "computen=", 
+					    "name="])
         except getopt.GetoptError:
                 usage()
                 sys.exit()
@@ -152,19 +173,19 @@ def main():
                         usage()
                         sys.exit()
                 elif opt in ("-u", "--userkey"):
-                        userkey=arg
+                        userkey = arg
                 elif opt in ("-n", "--nova"):
-			nova=arg
+			nova = arg
 		elif opt in ("-c", "--controlb"):
-			control_bucket=arg
+			control_bucket = arg
 		elif opt in ("-t", "--controln"):
-			control_name=arg
+			control_name = arg
 		elif opt in ("-m", "--computeb"):
-			compute_bucket=arg
+			compute_bucket = arg
 		elif opt in ("-e", "--computen"):
-			compute_name=arg
+			compute_name = arg
 		elif opt in ("-a", "--name"):
-			name=arg
+			name = arg
 
 	fgc = FgCheckpoint(userkey, nova, control_bucket, control_name, compute_bucket, compute_name, name)
 	fgc.checkpoint_cluster()

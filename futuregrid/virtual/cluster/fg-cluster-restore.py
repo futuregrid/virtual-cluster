@@ -73,7 +73,7 @@ class FgRestore:
                 self.control_image = control_image
 		self.compute_image = compute_image
                 self.name = name
-                self.size= size
+                self.size = size
 		self.cloud_instances = CloudInstances(name)
 	
 	def get_command_result(self, command):
@@ -83,12 +83,13 @@ class FgRestore:
 		eui_overhead = 3
 		eui_id_pos = 2
 		eui_len = 8
-		instances = [x for x in self.get_command_result("euca-run-instances -k %s -n %d -t %s %s"  %(userkey, cluster_size, instance_type, image)).split()]
+		instances = [x for x in self.get_command_result("euca-run-instances -k %s -n %d -t %s %s"  
+								% (userkey, cluster_size, instance_type, image)).split()]
 		for num in range(cluster_size):
 			self.cloud_instances.set(instances[num * eui_len + eui_id_pos + eui_overhead], image)
 		
 	def euca_associate_address (self, instance_id, ip):
-		os.system("euca-associate-address -i %s %s" %(instance_id, ip))
+		os.system("euca-associate-address -i %s %s" % (instance_id, ip))
 		self.cloud_instances.set_ip_by_id(instance_id, ip)
 
 	def euca_describe_addresses (self):
@@ -100,10 +101,10 @@ class FgRestore:
 		return ip_list
 
 	def ssh (self, userkey, ip, command):
-		os.system("ssh -i %s.pem ubuntu@%s '%s'" %(userkey, ip, command))
+		os.system("ssh -i %s.pem ubuntu@%s '%s'" % (userkey, ip, command))
 		
-	def scp (self, userkey, fileName, ip):
-		os.system("scp -i %s.pem %s ubuntu@%s:~/" %(userkey, fileName, ip))
+	def scp (self, userkey, filename, ip):
+		os.system("scp -i %s.pem %s ubuntu@%s:~/" % (userkey, filename, ip))
 
 	def detect_port(self):
                 ready = 0
@@ -124,14 +125,14 @@ class FgRestore:
                                         time.sleep(2)
 
                         # check if all vms are ready
-			print 'ready -- %d, len -- %d' %(ready, len(self.cloud_instances.list()[1:]))
+			print 'ready -- %d, len -- %d' % (ready, len(self.cloud_instances.list()[1:]))
                         if ready == len(self.cloud_instances.list()[1:]):
                                 break
 
 
 	def create_cluster(self):
 
-		cluster_size = int(self.compute_number)+1
+		cluster_size = int(self.compute_number) + 1
                 print '\n...Restoring virtual cluster......'
                 print 'virtual cluster name   -- ', self.name
                 print 'number of nodes        -- ', cluster_size
@@ -159,7 +160,7 @@ class FgRestore:
     			input_content = srcf.readlines()
 		srcf.close()
 		
-		controlMachine=self.cloud_instances.get_by_id(1)['id']
+		controlMachine = self.cloud_instances.get_by_id(1)['id']
 		output = "".join(input_content) % vars()
 
 		destf = open("slurm.conf","w")
@@ -168,8 +169,9 @@ class FgRestore:
 
 		with open("slurm.conf", "a") as conf:
 			for instance in self.cloud_instances.list()[2:]:
-				conf.write("NodeName=%s Procs=1 State=UNKNOWN\n" %instance['id'])
-				conf.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" %instance['id'])
+				conf.write("NodeName=%s Procs=1 State=UNKNOWN\n" % instance['id'])
+				conf.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" 
+					   % instance['id'])
 		conf.close()
 
 		self.detect_port()
@@ -215,17 +217,17 @@ def main():
                         usage()
                         sys.exit()
                 elif opt in ("-u", "--userkey"):
-                        userkey=arg
+                        userkey = arg
                 elif opt in ("-n", "--number"):
-                        number=arg
+                        number = arg
                 elif opt in ("-s", "--size"):
-                        size=arg
+                        size = arg
                 elif opt in ("-i", "--image"):
-                        control_image=arg
+                        control_image = arg
                 elif opt in ("-a", "--name"):
-                        name=arg
+                        name = arg
 		elif opt in ("-c", "--compute"):
-			compute_image=arg
+			compute_image = arg
 
         if size == None:
                 fgc=FgRestore(userkey, number, control_image, compute_image, name)
