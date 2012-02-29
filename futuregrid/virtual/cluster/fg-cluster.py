@@ -6,6 +6,9 @@ While previously a lot of code redundance was introduced by keeping the logic of
 
 but it has the options
 
+Note: please look how to best implement this, if you use a subparser, it may be best to lose the "-" alltogether for he subparser invocation e.g. it would be fg-cluster status and not fg-cluster -status. Find the simplest way to implement eith but not both
+
+
 fg-cluster -status
 
    prints the status of all running virtual clustres
