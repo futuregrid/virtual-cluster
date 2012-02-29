@@ -5,7 +5,7 @@ HOW TO RUN
 <pre><code>./fg-create-cluster.py -u userkey -n number_of_computation_nodes -s instance_type -i image_id -a cluster_name</code></pre>
 <p>This command will return a virtual cluster with SLURM and OpenMPI installed.</p> 
 <p>Note: Default image type is "m1.small". Cluster name should be different as other virtual clusters that had been created.</p> 
-<p></p>
+<br>
 <P>Save virtual cluster</p>
 <pre><code>./fg-cluster-checkpoint.py -u userkey -n openstack_key_zip -c control_node_bucket -t control_node_name -m compute_bucket -e compute_name -a cluster_name</code></pre>
 <p>This command will save current running virtual cluster into one control image and one compute image, which could be later used for resotring.</p>
