@@ -170,7 +170,7 @@ class FgCreate:
     			input_content = srcf.readlines()
 		srcf.close()
 		
-		controlMachine=self.cloud_instances.get_by_id(1)['id']
+		controlMachine = self.cloud_instances.get_by_id(1)['id']
 		output = "".join(input_content) % vars()
 
 		destf = open("slurm.conf","w")
@@ -180,14 +180,16 @@ class FgCreate:
 		with open("slurm.conf", "a") as conf:
 			for instance in self.cloud_instances.list()[2:]:
 				conf.write("NodeName=%s Procs=1 State=UNKNOWN\n" %instance['id'])
-				conf.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" %instance['id'])
+				conf.write("PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n" 
+					   % instance['id'])
 		conf.close()
 
 		print '\n...generate munge-key......'
 		# generate munge-key on control node
 		self.ssh(self.userkey, self.cloud_instances.get_by_id(1)['ip'], "sudo /usr/sbin/create-munge-key")
 		munge_key = open("munge.key","w")
-		print >>munge_key, self.get_command_result("ssh -i %s.pem ubuntu@%s 'sudo cat /etc/munge/munge.key'" %(self.userkey, self.cloud_instances.get_by_id(1)['ip']))
+		print >>munge_key, self.get_command_result("ssh -i %s.pem ubuntu@%s 'sudo cat /etc/munge/munge.key'" 
+							   % (self.userkey, self.cloud_instances.get_by_id(1)['ip']))
 		munge_key.close()
 
 		for instance in self.cloud_instances.list()[1:]:
@@ -221,8 +223,14 @@ def main():
 	size = None
         
 	try:
-                opts, args = getopt.getopt(sys.argv[1:], "hu:n:s:i:a:rc:", ["help", "userkey=", "number=", \
-			"size=", "image=", "name="])
+                opts, args = getopt.getopt(sys.argv[1:], 
+					   "hu:n:s:i:a:rc:", 
+					   ["help", 
+					    "userkey=", 
+					    "number=", 
+					    "size=", 
+					    "image=", 
+					    "name="])
         except getopt.GetoptError:
                 usage()
                 sys.exit()
@@ -243,9 +251,9 @@ def main():
 			name = arg
 		   						
 	if size == None:
-	        fgc=FgCreate(userkey, number, image, name)
+	        fgc = FgCreate(userkey, number, image, name)
 	else: 	
-		fgc=FgCreate(userkey, number, image, name, size)
+		fgc = FgCreate(userkey, number, image, name, size)
 
 	# create cluster
 	fgc.create_cluster()

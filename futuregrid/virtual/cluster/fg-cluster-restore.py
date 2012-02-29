@@ -65,7 +65,11 @@ class CloudInstances:
 
 class FgRestore:
 
-        userkey=compute_number=control_image=compute_image=name=size=None
+        userkey=compute_number = None
+	control_image = None
+	compute_image = None
+	name = None
+	size = None
 
         def __init__(self, userkey, number, control_image, compute_image, name, size='m1.small'):
                 self.userkey = userkey
@@ -203,11 +207,22 @@ def usage():
         print '-a/--name    provide name of virtual cluster.'
 
 def main():
-	userkey=number=control_image=compute_image=size=name=None
+	userkey = None
+	number = None
+	control_image = None
+	compute_image = None
+	size=name = None
 
         try:
-                opts, args = getopt.getopt(sys.argv[1:], "hu:n:s:i:a:c:", ["help", "userkey=", "number=", \
-                        "size=", "image=", "name=", "compute="])
+                opts, args = getopt.getopt(sys.argv[1:], 
+					   "hu:n:s:i:a:c:", 
+					   ["help", 
+					    "userkey=", 
+					    "number=", 
+					    "size=", 
+					    "image=", 
+					    "name=", 
+					    "compute="])
         except getopt.GetoptError:
                 usage()
                 sys.exit()
@@ -230,9 +245,9 @@ def main():
 			compute_image = arg
 
         if size == None:
-                fgc=FgRestore(userkey, number, control_image, compute_image, name)
+                fgc = FgRestore(userkey, number, control_image, compute_image, name)
         else:
-             	fgc=FgRestore(userkey, number, control_image, compute_image, name, size)
+             	fgc = FgRestore(userkey, number, control_image, compute_image, name, size)
 
         # create cluster
         fgc.create_cluster()
