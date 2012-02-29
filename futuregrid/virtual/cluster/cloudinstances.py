@@ -4,6 +4,14 @@ class CloudInstances:
 
 	# read with configparser from file futuregrid.cfg
         backup_file = "cloud_instances.dat"
+
+
+	def set_configuration_file(filename)
+		self.backupfile = filename
+		config = ConfigParser.ConfigParser()
+		config.readfp(open(filename))
+		# config.read(['site.cfg', os.path.expanduser('~/.myapp.cfg')])
+		return
 	
 	def __init__(self, name):
                 self.clear()
