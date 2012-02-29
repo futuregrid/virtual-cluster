@@ -6,7 +6,21 @@ While previously a lot of code redundance was introduced by keeping the logic of
 
 but it has the options
 
-fg-cluster -terminate ...
+fg-cluster -status
+
+   prints the status of all running virtual clustres
+
+fg-clustre -status name
+
+   prints the status of the virtual cluster with th egiven name
+
+fg-cluster -terminate 
+
+   terminaes all running virtual clusters
+
+fg-cluster -terminate name
+
+   terminates the virtual cluster with the given name
 
 fg-clister -run ...
 
