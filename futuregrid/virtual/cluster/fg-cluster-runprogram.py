@@ -2,46 +2,7 @@
 
 import getopt, sys, os, pickle
 
-class CloudInstances:
-
-	cloud_instances = []
-	
-	def __init__(self, name):
-		self.clear()
-		if self.check_name(name):
-			self.cloud_instances = self.load(name)
-		else:
-			print 'Error in finding virtual cluster. Not created?'
-			sys.exit()
-		return
-
-	def list(self):
-		return self.cloud_instances
-
-	def clear(self):
-		self.cloud_instances = []
-
-	def get_by_id (self, cloud_id):
-		return self.cloud_instances[cloud_id]
-
-	def check_name(self, name):
-		try:
-			f = open("cloud_instances.dat", "r")
-			cloud_list = pickle.load(f)
-			for cloud in cloud_list:	
-				if cloud[0]['name'] == name:
-					return True
-			return False
-		except:
-			return False
-			
-
-	def load(self, name):
-		f = open("cloud_instances.dat", "r")
-		cloud_list = pickle.load(f)
-		for cloud in cloud_list:
-			if cloud[0]['name'] == name:
-				return cloud
+from futuregrid.virtual.cluster.cloudinstances import *
 
 class FgRunProg:
 

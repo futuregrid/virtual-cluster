@@ -6,6 +6,9 @@ import socket, time, getopt, sys, os, pickle
 class CloudInstances:
 
 	cloud_instances = []
+
+	# read with configparser from file futuregrid.cfg
+        backup_file = "cloud_instances.dat"
 	
 	def __init__(self, name):
                 self.clear()
@@ -42,20 +45,20 @@ class CloudInstances:
 
 	def save_instances(self):
 		try:
-			f = open("cloud_instances.dat", "r")
+			f = open(self.backup_file, "r")
 			instance_list = pickle.load(f)
 			instance_list.insert(0, self.cloud_instances)
-			f = open("cloud_instances.dat", "w")
+			f = open(self.backup_file, "w")
 			pickle.dump(instance_list, f)	
 			f.close()		
 		except:
-			f = open("cloud_instances.dat", "w")
+			f = open(self.backup_file, "w")
 			pickle.dump([self.cloud_instances], f)
 			f.close()
 
 	def check_name(self, name):
 		try:
-			f = open("cloud_instances.dat", "r")
+			f = open(self.backup_file "r")
 			cloud_list = pickle.load(f)
 			for cloud in cloud_list:
 				if cloud[0]['name'] == name:

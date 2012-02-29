@@ -2,66 +2,7 @@
 
 import socket, getopt, sys, os, time, pickle
 
-class CloudInstances:
-
-	cloud_instances = []
-	
-	def __init__(self, name):
-                self.clear()
-		if self.check_name(name):
-			instance = {}
-			instance['name'] = name
-			self.cloud_instances.append(instance)
-		else:
-			print 'Error in restoring virtual cluster. name is in use?'
-			sys.exit()
-		return
-
-	def list(self):
-		return self.cloud_instances
-
-	def set(self, instance_id, image_id, ip = ''):
-		instance = {}
-		instance['id'] = instance_id
-		instance['image'] = image_id
-		instance['ip'] = ip
-		self.cloud_instances.append(instance)
-	
-	def set_ip_by_id(self, instance_id, ip):
-		for instance in self.cloud_instances:
-			if len(instance) == 3:
-				if instance['id'] == instance_id:
-					instance['ip'] = ip
-
-	def clear(self):
-		self.cloud_instances = []
-
-	def get_by_id (self, cloud_id):
-		return self.cloud_instances[cloud_id]
-
-	def save_instances(self):
-		try:
-			f = open("cloud_instances.dat", "r")
-			instance_list = pickle.load(f)
-			instance_list.insert(0, self.cloud_instances)
-			f = open("cloud_instances.dat", "w")
-			pickle.dump(instance_list, f)	
-			f.close()		
-		except:
-			f = open("cloud_instances.dat", "w")
-			pickle.dump([self.cloud_instances], f)
-			f.close()
-
-	def check_name(self, name):
-		try:
-			f = open("cloud_instances.dat", "r")
-			cloud_list = pickle.load(f)
-			for cloud in cloud_list:
-				if cloud[0]['name'] == name:
-					return False
-			return True
-		except:
-			return True
+from futuregrid.virtual.cluster.cloudinstances import *
 
 class FgRestore:
 
