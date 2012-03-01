@@ -8,8 +8,9 @@ Create a virtual cluster
 
 This command will return a virtual cluster with SLURM and OpenMPI
 installed.  Note: Cluster nameshould be different as other virtual 
-clusters that had been created. If want to use default configure file  
-file should be created as ~/.ssh/futuregrid.cfg
+clusters that had been created. If want to use default configure file,
+config file should be created as ~/.ssh/futuregrid.cfg, then argument -f
+can be omitted
 
 Save a virtual cluster
 -----------------------
@@ -40,7 +41,7 @@ This command shutdown a running virtual cluster
 Note: Cluster name should be a name of cluster which is currently
 running.
 
-Shutdown a virtual cluster
+Show status of virtual cluster(s)
 ---------------------------
 
 >>>>python fg-cluster.py -f config_file status -a cluster_name
