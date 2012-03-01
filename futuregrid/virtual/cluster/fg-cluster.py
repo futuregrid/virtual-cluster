@@ -22,7 +22,6 @@ class cluster(object):
 
     def __init__(self):
         super(cluster, self).__init__()
-        self.debug = False
         self.cloud_instances = cloudInstances.CloudInstances()
 
 # ---------------------------------------------------------------------
@@ -122,7 +121,7 @@ class cluster(object):
 
         self.execute(instance, 'sudo apt-get update')
 
-    def install(self, packagenames):
+    def install(self, instance, packagenames):
         '''installs the package names that are specified (blank separated on the given instance'''
 
         self.execute(instance, 'sudo apt-get install --yes '
@@ -143,14 +142,12 @@ class cluster(object):
         eui_id_pos = 2
 
         # value changes depending on different version of euca2ools
-
         eui_len = 8
 
         instances = [x for x in
                      self.get_command_result('euca-run-instances -k %s -n %d -t %s %s'
                       % (userkey, cluster_size, instance_type,
                      image)).split()]
-
         # parse command result store instances into cloud_instances list
 
         for num in range(cluster_size):
@@ -244,7 +241,7 @@ class cluster(object):
 
         # generate munge-key on control node
 
-        self.execute(self.cloud_instances.get_by_id(1)['ip'],
+        self.execute(self.cloud_instances.get_by_id(1),
                      'sudo /usr/sbin/create-munge-key')
         munge_key = open('munge.key', 'w')
         print >> munge_key, \
