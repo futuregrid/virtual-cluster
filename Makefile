@@ -37,10 +37,12 @@ gitgregor:
 qc-install:
 	sudo pip install pep8
 	sudo pip install pylint
+	sudo pip install pyflakes
 
 qc:
 	pep8 ./futuregrid/virtual/cluster/
 	pylint ./futuregrid/virtual/cluster/ | less
+	pyflakes ./futuregrid/virtual/cluster/
 
 # #####################################################################
 # Creating the distribution
