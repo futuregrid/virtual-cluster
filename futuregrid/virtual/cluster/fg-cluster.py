@@ -3,13 +3,21 @@
 import argparse, getopt, sys, os, socket, time, ConfigParser
 import futuregrid.virtual.cluster.cloudInstances
 
+import os.path
+
+
 class cluster (object):
     
+    userkey = None
+    debug = False
+    cloudinstances = None
+    backup_file = None
+
     def __init__(self):
         super(cluster, self).__init__()
         self.debug = False
         self.cloud_instances = cloudInstances.CloudInstances()
-
+        
 
 # ---------------------------------------------------------------------
 # METHODS TO PRINT HELP MESSAGES
@@ -18,11 +26,15 @@ class cluster (object):
     def msg(self, message):
         print message
 
+    def debug(self, message):
+        if self.debug:
+            print "\r" + message
+
 
 # ---------------------------------------------------------------------
-# METHOD TO DETECT OPEN PORT
+# METHOD TO PARSE CONFIGURATION FILE
 # ---------------------------------------------------------------------
-    def parse_conf(self, file_name):
+    def parse_conf(self, file_name="no file specified"):
         
 #        [virtual-cluster]
 #        backup = directory/virtual-cluster.dat
@@ -32,14 +44,13 @@ class cluster (object):
 #        eucalyptus_cert = directory/cacert.pem
 #        novarc = directory/novarc
         
-        
-        if file_name == None:
-            file_name = 'dummy'
-            
+
         config = ConfigParser.ConfigParser()
+
+        config.read([os.path.expanduser('~/.ssh/futuregrid.cfg'), file_name])            
         
         # default location ~/.ssh/futuregrid.cfg
-        config.read([os.path.expanduser('~/.ssh/futuregrid.cfg'), file_name])
+
         self.backup_file = config.get('virtual-cluster', 'backup')
         self.userkey = config.get('virtual-cluster', 'userkey')
         self.user = config.get('virtual-cluster', 'user')
@@ -80,11 +91,21 @@ class cluster (object):
     def get_command_result(self, command):
         return os.popen(command).read() 
     
-    def ssh (self, userkey, ip, command):
-        os.system("ssh -i %s ubuntu@%s '%s'" % (userkey, ip, command))
+    def execute (self, instance, command):
+        '''runs a command on the instance'''
+        os.system("ssh -i %s ubuntu@%s '%s'" % (self.userkey, instance['ip'], command))
         
-    def scp (self, userkey, fileName, ip):
-        os.system("scp -i %s %s ubuntu@%s:~/" % (userkey, fileName, ip)) 
+    def copyto (self, instance, filename):
+        '''copyies the named file to the instance'''
+        os.system("scp -i %s %s ubuntu@%s:~/" % (self.userkey, filename, instance['ip'])) 
+
+    def update(self, instance):
+        '''executes a software update on the specified instance'''
+        self.execute(instance, "sudo apt-get update")
+
+    def install(self, packagenames):
+        '''installs the package names that are specified (blank separated on the given instance'''
+        self.execute(instance, "sudo apt-get install --yes " + packagenames)
 
 # ---------------------------------------------------------------------
 # METHODS TO CREATE A VIRTUAL CLUSTER
@@ -104,9 +125,9 @@ class cluster (object):
                 self.msg('\nError in creating instances. Program will exit')
                 sys.exit()
 
-    def euca_associate_address (self, instance_id, ip):
-        os.system("euca-associate-address -i %s %s" % (instance_id, ip))
-        self.cloud_instances.set_ip_by_id(instance_id, ip)
+    def euca_associate_address (self, instance, ip):
+        os.system("euca-associate-address -i %s %s" % (instance['id'], ip))
+        self.cloud_instances.set_ip_by_id(instance['id'], ip)
 
     def euca_describe_addresses (self):
         ip_list = []
@@ -144,7 +165,7 @@ class cluster (object):
         for i in range(cluster_size):
             instance = self.cloud_instances.get_by_id(i + 1)
             time.sleep(1)
-            self.euca_associate_address (instance['id'], ip_lists[i])
+            self.euca_associate_address (instance, ip_lists[i])
             
 
         self.cloud_instances.save_instances()
@@ -155,9 +176,9 @@ class cluster (object):
         self.msg('\n...Deploying SLURM system......')
 
         for instance in self.cloud_instances.get_list()[1:]:
-            self.ssh(self.userkey, instance['ip'], "sudo apt-get update")
-            self.ssh(self.userkey, instance['ip'], "sudo apt-get install --yes slurm-llnl")
-#            self.ssh(self.userkey, instance['ip'], "sudo apt-get install --yes openmpi-bin openmpi-doc libopenmpi-dev")
+            self.update(instance) 
+            self.install(instance, "slurm-llnl")
+#            self.install(instance, "openmpi-bin openmpi-doc libopenmpi-dev")
 
         self.msg('\n...Configuring slurm.conf......')
         with open(os.path.expanduser(self.slurm)) as srcf:
@@ -180,7 +201,7 @@ class cluster (object):
 
         self.msg('\n...generate munge-key......')
         # generate munge-key on control node
-        self.ssh(self.userkey, self.cloud_instances.get_by_id(1)['ip'], "sudo /usr/sbin/create-munge-key")
+        self.execute (self.cloud_instances.get_by_id(1)['ip'], "sudo /usr/sbin/create-munge-key")
         munge_key = open("munge.key", "w")
         print >> munge_key, self.get_command_result("ssh -i %s ubuntu@%s 'sudo cat /etc/munge/munge.key'" 
                                % (self.userkey, self.cloud_instances.get_by_id(1)['ip']))
@@ -189,21 +210,21 @@ class cluster (object):
         for instance in self.cloud_instances.get_list()[1:]:
             # copy slurm.conf
             self.msg('\n...copying slurm.conf to node......')
-            self.scp(self.userkey, "slurm.conf", instance['ip'])
-            self.ssh(self.userkey, instance['ip'], "sudo cp slurm.conf /etc/slurm-llnl")
+            self.copyto (instance, "slurm.conf")
+            self.execute (instance, "sudo cp slurm.conf /etc/slurm-llnl")
 
             # copy munge key
             self.msg('\n...copying munge-key to nodes......')
-            self.scp(self.userkey, "munge.key", instance['ip'])
-            self.ssh(self.userkey, instance['ip'], "sudo cp munge.key /etc/munge/munge.key")
-            self.ssh(self.userkey, instance['ip'], "sudo chown munge /etc/munge/munge.key")
-            self.ssh(self.userkey, instance['ip'], "sudo chgrp munge /etc/munge/munge.key")
-            self.ssh(self.userkey, instance['ip'], "sudo chmod 400 /etc/munge/munge.key")
+            self.copyto (instance, "munge.key")
+            self.execute (instance, "sudo cp munge.key /etc/munge/munge.key")
+            self.execute (instance, "sudo chown munge /etc/munge/munge.key")
+            self.execute (instance, "sudo chgrp munge /etc/munge/munge.key")
+            self.execute (instance, "sudo chmod 400 /etc/munge/munge.key")
             
             # start slurm
             self.msg('\n...starting slurm......')
-            self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/slurm-llnl start")
-            self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/munge start")
+            self.execute (instance, "sudo /etc/init.d/slurm-llnl start")
+            self.execute (instance, "sudo /etc/init.d/munge start")
 
 # ---------------------------------------------------------------------
 # METHODS TO SAVE RUNNING VIRTUAL CLUSTER
@@ -265,12 +286,12 @@ class cluster (object):
         self.cloud_instances.get_cloud_instances_by_name(args.name)
         
         for instance in self.cloud_instances.get_list()[1:3]:
-            self.scp(self.userkey, self.ec2_cert, instance['ip'])
-            self.scp(self.userkey, self.ec2_private_key, instance['ip'])
-            self.scp(self.userkey, self.eucalyptus_cert, instance['ip'])
-            self.scp(self.userkey, self.novarc, instance['ip'])
-            self.ssh(self.userkey, instance['ip'], "cat novarc >> ~/.profile")
-            self.ssh(self.userkey, instance['ip'], "source ~/.profile")
+            self.copyto (instance, self.ec2_cert)
+            self.copyto (instance, self.ec2_private_key)
+            self.copyto (instance, self.eucalyptus_cert)
+            self.copyto (instance, self.novarc)
+            self.execute (instance, "cat novarc >> ~/.profile")
+            self.execute (instance, "source ~/.profile")
 
         #save control node
         self.save_node(self.cloud_instances.get_by_id(1)['image'],
@@ -315,7 +336,7 @@ class cluster (object):
         for i in range(cluster_size):
             time.sleep(1)
             instance = self.cloud_instances.get_by_id(i+1)
-            self.euca_associate_address (instance['id'], ip_lists[i])
+            self.euca_associate_address (instance, ip_lists[i])
 
         self.cloud_instances.save_instances()
     
@@ -343,13 +364,13 @@ class cluster (object):
         for instance in self.cloud_instances.get_list()[1:]:
             # copy slurm.conf
             print '\n...copying slurm.conf to node......'
-            self.scp(self.userkey, "slurm.conf", instance['ip'])
-            self.ssh(self.userkey, instance['ip'], "sudo cp slurm.conf /etc/slurm-llnl")
+            self.copyto (instance, "slurm.conf")
+            self.execute (instance, "sudo cp slurm.conf /etc/slurm-llnl")
 
             # start slurm
             print '\n...starting slurm......'
-            self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/slurm-llnl start")
-            self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/munge start")
+            self.execute (instance, "sudo /etc/init.d/slurm-llnl start")
+            self.execute (instance, "sudo /etc/init.d/munge start")
 
 
 # ---------------------------------------------------------------------
@@ -361,9 +382,9 @@ class cluster (object):
         self.cloud_instances.del_by_name(name)
         self.msg('\r Clearing up the instance: completed')
     
-    def terminate_instance(self, instance_id):
-        self.msg('terminating instance %s' % instance_id)
-        os.system("euca-terminate-instances %s" % instance_id)
+    def terminate_instance(self, instance):
+        self.msg('terminating instance %s' % instance['id'])
+        os.system("euca-terminate-instances %s" % instance['id'])
 
     def shut_down(self, args):
         self.parse_conf(args.file)
@@ -374,7 +395,7 @@ class cluster (object):
         self.cloud_instances.get_cloud_instances_by_name(args.name)
                 
         for instance in self.cloud_instances.get_list()[1:]:
-            self.terminate_instance(instance['id'])
+            self.terminate_instance(instance)
         self.clean(args.name)
 
 # ---------------------------------------------------------------------
