@@ -9,7 +9,6 @@ import socket
 import time
 import ConfigParser
 import futuregrid.virtual.cluster.cloudInstances
-
 import os.path
 
 
@@ -74,7 +73,10 @@ class cluster(object):
 # ---------------------------------------------------------------------
 
     def detect_port(self):
+        
         ready = 0
+        count = 0
+        msg_len = 5
 
         # check if shh port of all VMs are alive
 
@@ -88,7 +90,11 @@ class cluster(object):
                     sk.close()
                     ready = ready + 1
                 except Exception:
-                    self.msg('Waiting VMs ready to deploy...')
+                    count += 1
+                    if count > msg_len:
+                        count = 0
+                    sys.stdout.write('\rWaiting VMs ready to deploy' + '.'*count + ' '*(msg_len-count))
+                    sys.stdout.flush()
                     ready = 0
                     time.sleep(1)
 
