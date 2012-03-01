@@ -4,16 +4,19 @@ import argparse, getopt, sys, os, socket, time, ConfigParser
 import futuregrid.virtual.cluster.cloudInstances
 
 class cluster (object):
-
-#    debug = True
     
     def __init__(self):
         super(cluster, self).__init__()
+        self.debug = False
         self.cloud_instances = cloudInstances.CloudInstances()
 
 
-#    def msg(self, message):
-#        print message
+# ---------------------------------------------------------------------
+# METHODS TO PRINT HELP MESSAGES
+# ---------------------------------------------------------------------        
+
+    def msg(self, message):
+        print message
 
 
 # ---------------------------------------------------------------------
@@ -55,7 +58,7 @@ class cluster (object):
         ready = 0
         
         # check if shh port of all VMs are alive
-        while 1:
+        while 1:   
             for instace in self.cloud_instances.get_list()[1:]:
                 try:
                     sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,10 +67,9 @@ class cluster (object):
                     sk.close()
                     ready = ready + 1                    
                 except Exception:
-                    print 'Waitting VMs ready to deploy...'
+                    self.msg('Waiting VMs ready to deploy...')
                     ready = 0
-                    time.sleep(2)
-
+                    time.sleep(1)     
             # check if all vms are ready            
             if ready == len(self.cloud_instances.get_list()[1:]):
                 break
@@ -99,7 +101,7 @@ class cluster (object):
             try:
                 self.cloud_instances.set_instance(instances[num * eui_len + eui_id_pos + eui_overhead], image)
             except:
-                print 'Error in creating instances. Program will exit'
+                self.msg('\nError in creating instances. Program will exit')
                 sys.exit()
 
     def euca_associate_address (self, instance_id, ip):
@@ -119,15 +121,14 @@ class cluster (object):
         
         self.parse_conf(args.file)
         if self.cloud_instances.if_exist(args.name):
-            print 'Error in creating virtual cluster %s, name is in use' %args.name
+            self.msg('\nError in creating virtual cluster %s, name is in use' %args.name)
             sys.exit() 
         
-        print '\n...Creating virtual cluster......'
-        print 'name   -- ', args.name
-        print '#nodes -- ', args.number
-        print 'size   -- ', args.type
-        print 'image  -- ', args.image
-        print '\n'        
+        self.msg('\n...Creating virtual cluster......')
+        self.msg('cluster name    -- %s' %args.name)
+        self.msg('numbe of nodes  -- %s' %args.number)
+        self.msg('instance type   -- %s' %args.type)
+        self.msg('image id        -- %s' %args.image)       
         
         
         self.cloud_instances.set_cloud_instances_by_name(args.name)
@@ -139,7 +140,7 @@ class cluster (object):
         # immediatly associate ip after run instance may lead to error, use sleep
         time.sleep(3)
 
-        print '...Associating IPs......'
+        self.msg('\n...Associating IPs......')
         for i in range(cluster_size):
             instance = self.cloud_instances.get_by_id(i + 1)
             time.sleep(1)
@@ -151,14 +152,14 @@ class cluster (object):
         self.deploy_services()
 
     def deploy_services(self):
-        print '\n...Deploying SLURM system......'
+        self.msg('\n...Deploying SLURM system......')
 
         for instance in self.cloud_instances.get_list()[1:]:
             self.ssh(self.userkey, instance['ip'], "sudo apt-get update")
             self.ssh(self.userkey, instance['ip'], "sudo apt-get install --yes slurm-llnl")
 #            self.ssh(self.userkey, instance['ip'], "sudo apt-get install --yes openmpi-bin openmpi-doc libopenmpi-dev")
 
-        print '\n...slurm.conf......'
+        self.msg('\n...Configuring slurm.conf......')
         with open(os.path.expanduser(self.slurm)) as srcf:
                 input_content = srcf.readlines()
         srcf.close()
@@ -177,7 +178,7 @@ class cluster (object):
                        % instance['id'])
         conf.close()
 
-        print '\n...generate munge-key......'
+        self.msg('\n...generate munge-key......')
         # generate munge-key on control node
         self.ssh(self.userkey, self.cloud_instances.get_by_id(1)['ip'], "sudo /usr/sbin/create-munge-key")
         munge_key = open("munge.key", "w")
@@ -187,12 +188,12 @@ class cluster (object):
 
         for instance in self.cloud_instances.get_list()[1:]:
             # copy slurm.conf
-            print '\n...copying slurm.conf to node......'
+            self.msg('\n...copying slurm.conf to node......')
             self.scp(self.userkey, "slurm.conf", instance['ip'])
             self.ssh(self.userkey, instance['ip'], "sudo cp slurm.conf /etc/slurm-llnl")
 
             # copy munge key
-            print '\n...copying munge-key to nodes......'
+            self.msg('\n...copying munge-key to nodes......')
             self.scp(self.userkey, "munge.key", instance['ip'])
             self.ssh(self.userkey, instance['ip'], "sudo cp munge.key /etc/munge/munge.key")
             self.ssh(self.userkey, instance['ip'], "sudo chown munge /etc/munge/munge.key")
@@ -200,7 +201,7 @@ class cluster (object):
             self.ssh(self.userkey, instance['ip'], "sudo chmod 400 /etc/munge/munge.key")
             
             # start slurm
-            print '\n...starting slurm......'
+            self.msg('\n...starting slurm......')
             self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/slurm-llnl start")
             self.ssh(self.userkey, instance['ip'], "sudo /etc/init.d/munge start")
 
@@ -236,33 +237,30 @@ class cluster (object):
         ramdisk_id = self.get_ramdisk_id(image_id)
         manifest = [x for x in self.save_instance(kernel_id, ramdisk_id, ip, image_name).split()].pop()
 
-        print '\nmanifest generated: %s' % manifest
-        print '\n...uploading bundle......'
+        self.msg('\nmanifest generated: %s' % manifest)
+        self.msg('\n...uploading bundle......')
 
         image = [x for x in self.upload_bundle(ip, bucket_name, manifest).split()].pop()
 
-        print '\n...registering image......'
+        self.msg('\n...registering image......')
         self.euca_register(image)
 
         
     def euca_register(self, image):
-        #mark
-#        self.ssh (userkey, ip, command)
         os.system("euca-register %s" % image)
 
     def checkpoint_cluster(self, args):
         
-#        print '\n...Saving virtual cluster......'
-#        print 'Virtual cluster name -- ', self.name
-#                print 'control node bucket  -- ', self.control_b
-#                print 'control node name    -- ', self.control_n
-#                print 'compute node bucket  -- ', self.compute_b
-#                print 'compute node name    -- ', self.compute_n
-#                print '\n'
+        self.msg('\n...Saving virtual cluster......')
+        self.msg('Virtual cluster name -- %s' %args.name)
+        self.msg('control node bucket  -- %s' %args.controlb)
+        self.msg('control node name    -- %s' %args.controln)
+        self.msg('compute node bucket  -- %s' %args.computeb)
+        self.msg('compute node name    -- %s' %args.computen)
 
         self.parse_conf(args.file)
         if not self.cloud_instances.if_exist(args.name):
-            print 'Error in locating virtual cluster %s, not created' %args.name
+            self.msg('Error in locating virtual cluster %s, not created' %args.name)
             sys.exit()
         self.cloud_instances.get_cloud_instances_by_name(args.name)
         
@@ -279,6 +277,7 @@ class cluster (object):
                    self.cloud_instances.get_by_id(1)['ip'],
                    args.controlb,
                    args.controln)
+        
         #save compute node
         self.save_node(self.cloud_instances.get_by_id(2)['image'],
                    self.cloud_instances.get_by_id(2)['ip'],
@@ -292,18 +291,17 @@ class cluster (object):
 
         self.parse_conf(args.file)
         if self.cloud_instances.if_exist(args.name):
-            print 'Error in creating virtual cluster %s, name is in use' %args.name
+            self.msg('Error in creating virtual cluster %s, name is in use' %args.name)
             sys.exit() 
 
         self.cloud_instances.set_cloud_instances_by_name(args.name)
         cluster_size = int(args.number) + 1
-#                print '\n...Restoring virtual cluster......'
-#                print 'virtual cluster name   -- ', self.name
-#                print 'number of nodes        -- ', cluster_size
-#                print 'instance type          -- ', self.size
-#                print 'control image          -- ', self.control_image
-#        print 'compute image          -- ', self.compute_image
-#                print '\n'
+        self.msg('\n...Restoring virtual cluster......')
+        self.msg('cluster name      -- %s' %args.name)
+        self.msg('number of nodes   -- %s' %cluster_size)
+        self.msg('instance type     -- %s' %args.type)
+        self.msg('control image     -- %s' %args.controli)
+        self.msg('compute image     -- %s' %args.computei)
 
         self.euca_run_instance(self.user, 1, args.controli, args.type)
         self.euca_run_instance(self.user, int(args.number), args.computei, args.type)    
@@ -313,7 +311,7 @@ class cluster (object):
         # immediatly associate ip after run instance may lead to error, use sleep
         time.sleep(3)
 
-        print '...Associating IPs......'
+        self.msg('...Associating IPs......')
         for i in range(cluster_size):
             time.sleep(1)
             instance = self.cloud_instances.get_by_id(i+1)
@@ -341,7 +339,7 @@ class cluster (object):
 
         self.detect_port()
 
-        print '\n...Configuring SLURM......'
+        self.msg('\n...Configuring SLURM......')
         for instance in self.cloud_instances.get_list()[1:]:
             # copy slurm.conf
             print '\n...copying slurm.conf to node......'
@@ -359,18 +357,18 @@ class cluster (object):
 # ---------------------------------------------------------------------        
 
     def clean(self, name):
-        print '\r Clearing up the instance: progress'
+        self.msg('\r Clearing up the instance: progress')
         self.cloud_instances.del_by_name(name)
-        print '\r Clearing up the instance: completed'
+        self.msg('\r Clearing up the instance: completed')
     
     def terminate_instance(self, instance_id):
-        print 'terminating instance %s' % instance_id
+        self.msg('terminating instance %s' % instance_id)
         os.system("euca-terminate-instances %s" % instance_id)
 
     def shut_down(self, args):
         self.parse_conf(args.file)
         if not self.cloud_instances.if_exist(args.name):
-            print 'Error in finding virtual cluster %s, not created.' %args.name
+            self.msg('\nError in finding virtual cluster %s, not created.' %args.name)
             sys.exit() 
             
         self.cloud_instances.get_cloud_instances_by_name(args.name)
@@ -380,7 +378,7 @@ class cluster (object):
         self.clean(args.name)
 
 # ---------------------------------------------------------------------
-# METHODS TO TERMINATE NAD CLEANUP
+# METHODS TO SHOW VIRTUAL CLUSTER(S) STATUS
 # ---------------------------------------------------------------------   
     def show_status(self, args):
         
@@ -388,33 +386,22 @@ class cluster (object):
         
         if not args.name:
             for cloud in self.cloud_instances.get_all_cloud_instances():
-                print '\n============================='
-                print 'Virtual Cluster %s' %cloud[0]['name']
-                print '============================='
+                self.msg('\n=============================')
+                self.msg('Virtual Cluster %s' %cloud[0]['name'])
+                self.msg('=============================')
                 for instance in cloud[1:]:
-                    print "instance %s: IP -- %s, image -- %s" %(instance['id'], instance['ip'], instance['image']) 
+                    self.msg("instance %s: IP -- %s, image -- %s" %(instance['id'], instance['ip'], instance['image'])) 
         else:  
             if not self.cloud_instances.if_exist(args.name):
-                print 'Error in finding virtual cluster %s, not created.' %args.name
+                self.msg('Error in finding virtual cluster %s, not created.' %args.name)
                 sys.exit() 
             self.cloud_instances.get_cloud_instances_by_name(args.name)
-            print '============================='
-            print 'Virtual Cluster %s' %args.name
-            print '============================='
+            self.msg('=============================')
+            self.msg('Virtual Cluster %s' %args.name)
+            self.msg('=============================')
             for instance in self.cloud_instances.get_list()[1:]:
-                print "instance %s: IP -- %s, image -- %s" %(instance['id'], instance['ip'], instance['image']) 
+                self.msg("instance %s: IP -- %s, image -- %s" %(instance['id'], instance['ip'], instance['image'])) 
             
-
-
-# ---------------------------------------------------------------------
-# METHODS TO PRINT HELP MESSAGES
-# ---------------------------------------------------------------------        
-
-#    def debug(self, msg, status):
-#        print ''
-#        if debug: 
-#            print '\r Clearing up the instance: completed'
-
 
 ######################################################################
 # MAIN
@@ -426,6 +413,7 @@ def commandline_parser():
     
     parser = argparse.ArgumentParser(description='Virtual cluster management operations')
     parser.add_argument('-f', '--file', action='store', help ='Specify futuregrid configure file')
+    parser.add_argument('--debug', action='store_true')
     subparsers = parser.add_subparsers(help='commands')
 
     # status command
@@ -466,10 +454,6 @@ def commandline_parser():
     
     # list command
     list_parser = subparsers.add_parser('list', help='Return intances list?')
-    
-    # test purpose
-#    test_parser = subparsers.add_parser('test')
-#    test_parser.set_defaults(func=test)
     
     args = parser.parse_args()
     args.func(args)
