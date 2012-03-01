@@ -7,7 +7,7 @@ Create a virtual cluster
 >>>>python fg-cluster.py -f config_file run -n number_of_computation_nodes -s instance_type -i image_id -a cluster_name
 
 This command will return a virtual cluster with SLURM and OpenMPI
-installed.  Note: Cluster nameshould be different as other virtual 
+installed.  Note: Cluster name should be different as other virtual 
 clusters that had been created. If want to use default configure file,
 config file should be created as ~/.ssh/futuregrid.cfg, then argument -f
 can be omitted
