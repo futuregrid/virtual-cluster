@@ -14,10 +14,11 @@ from fabric.api import *
 from fabric.tasks import execute
 from fabric.operations import put
 
+
 class FgCreate:
 
     def __init__(self, args):
-        self.args = args            
+        self.args = args
         self.cloud = Cloud()
 
     def _assign_public_ips(self, instance_ids):
@@ -25,18 +26,20 @@ class FgCreate:
         ip_dict = {}
         for instance_id in instance_ids:
             successful = self.cloud.assign_public_ip(instance_id)
-            # Issues with Nova and assigning IPs too quickly, so we're going to sleep.
+            # Issues with Nova and assigning IPs too quickly,
+            # so we're going to sleep.
             sleep(2)
 
     def _get_public_ips(self, instance_ids):
         public_ips = []
         for instance_id in instance_ids:
             reservation = self.cloud.describe_instance(instance_id)
-            instance = reservation.instances[0] if (reservation is not None) else None
+            instance = reservation.instances[0]
+            if (reservation is not None) else None
             if instance:
                 public_ips.append(instance.public_dns_name)
         return public_ips
-                
+
     def _wait_for_running_instances(self, instance_ids):
         print("Waiting for running instances...")
         running_status = "running"
@@ -48,13 +51,16 @@ class FgCreate:
 
             for instance_id in instance_ids:
                 reservation = self.cloud.describe_instance(instance_id)
-                instance = reservation.instances[0] if (reservation is not None) else None
-                status = instance.state if (instance is not None) else deleted_status
+                instance = reservation.instances[0]
+                if (reservation is not None) else None
+                status = instance.state
+                if (instance is not None) else deleted_status
 
                 if status == running_status:
                     running_ids.append(instance_id)
                 elif status == deleted_status:
-                    print("{0} has status of {1}".format(instance_id, deleted_status))
+                    print("{0} has status of {1}"
+                          .format(instance_id, deleted_status))
                 else:
                     pending_ids.append(instance_id)
 
@@ -62,7 +68,7 @@ class FgCreate:
             instance_ids = pending_ids
             if len(instance_ids) > 0:
                 sleep(5)
-                
+
         return running_ids
 
     def test_fabric(self, hosts):
@@ -74,7 +80,7 @@ class FgCreate:
         #TODO:
         # gvl: maybe we want to be able to give the connection time out
         #     as an argv to this prg
-        #     Same with poolsize. 
+        #     Same with poolsize.
         #     However we make them optional and have these as default values
         env.timeout = 10
 
@@ -91,11 +97,11 @@ name            -- {0}
 number of nodes -- {1}
 instance type   -- {2}
 image id        -- {3}
-""".format(self.args.name, 
-           self.args.number, 
-           self.args.instance_type, 
-           self.args.image_id))   
-        
+""".format(self.args.name,
+           self.args.number,
+           self.args.instance_type,
+           self.args.image_id))
+
         count = self.args.number + 1
 
         kwargs = {}
@@ -105,7 +111,7 @@ image id        -- {3}
         # TODO: A security group should be used other than the default.
         kwargs["security_groups"] = ["default"]
         kwargs["instance_type"] = self.args.instance_type
-        
+
         reservation = self.cloud.run_instances(**kwargs)
         instance_ids = [instance.id for instance in reservation.instances]
         running_ids = self._wait_for_running_instances(instance_ids)
@@ -114,18 +120,23 @@ image id        -- {3}
         public_ips = self._get_public_ips(running_ids)
         self.test_fabric(public_ips)
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Create a virtual cluster in FutureGrid.')
+
+    parser = argparse.ArgumentParser(
+                                     description='Create a virtual cluster'
+                                ' in FutureGrid.')
     parser.add_argument('-k', '--keypair', dest='keypair')
     parser.add_argument('-f', '--key-file', dest='key_file')
     parser.add_argument('-n', '--number', dest='number', type=int)
-    parser.add_argument('-t', '--instance-type', dest='instance_type', default='m1.small')
+    parser.add_argument('-t', '--instance-type', dest='instance_type',
+                        default='m1.small')
     parser.add_argument('-i', '--image-id', dest='image_id')
     parser.add_argument('-a', '--name', dest='name')
     parser.add_argument('-u', '--ssh-user', dest='ssh_user', default='root')
 
     args = parser.parse_args()
-    
+
     fgc = FgCreate(args)
     fgc.create_cluster()
     #
@@ -144,8 +155,8 @@ def main():
     # for service in a futuregrid.cluster.services
     #    register service with this command:
     #       adds a new argument to the commandline
-    #       puts in a list the service so when its passed as 
-    #       argument we can call it. 
+    #       puts in a list the service so when its passed as
+    #       argument we can call it.
     #
 
     # I realize that not everyone knows chef, so we may want to
@@ -199,24 +210,24 @@ def main():
     #       --chef config="[0]=(slurm_master, chef_server) [1:]=(slurm_worker)"
     #
     #      in addition a chef repository can be specified while adding
-    #      somewhere in the chef parameter the string 
+    #      somewhere in the chef parameter the string
     #
     #          repo=<link to the chef repo>
     #
-    # --ttl 15d 
+    # --ttl 15d
     #
     #      A time to live parameter is optionally passed along
     #      specifying the duration for how long this service is up and
     #      running. the format is specified in the usual time
-    #      parameters, specifying a duration: 
-    # 
-    #         <years>y <days>d <seconds>s 
-    # 
+    #      parameters, specifying a duration:
+    #
+    #         <years>y <days>d <seconds>s
+    #
     #      the total time will be simply calculated by adding up these
     #      values. Once the time is reached the cluster will simple be
     #      terminated.
 
     #fgc.deploy_slurm()
-    
+
 if __name__ == '__main__':
     main()

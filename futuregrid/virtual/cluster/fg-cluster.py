@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+"""
+Operations for managing
+virtual clusters
+"""
+
 import argparse
 import getopt
 import sys
@@ -13,10 +18,13 @@ import os.path
 
 
 class cluster(object):
+    """class of methods for run, checkpoint,
+    restore, terminate, show status of cluster
+    """
 
     userkey = None
     debug = False
-    cloudinstances = None
+    cloud_instances = None
     backup_file = None
 
     def __init__(self):
@@ -28,9 +36,13 @@ class cluster(object):
 # ---------------------------------------------------------------------
 
     def msg(self, message):
+        '''method for printing messages'''
+
         print message
 
     def debug(self, message):
+        '''method for printing debug message'''
+
         if self.debug:
             print '\r' + message
 
@@ -39,14 +51,18 @@ class cluster(object):
 # ---------------------------------------------------------------------
 
     def parse_conf(self, file_name='no file specified'):
-
-#        [virtual-cluster]
-#        backup = directory/virtual-cluster.dat
-#        userkey = directory/userkey.pem
-#        ec2_cert = directory/cert.pem
-#        ec2_private_key = directory/pk.pem
-#        eucalyptus_cert = directory/cacert.pem
-#        novarc = directory/novarc
+        """
+        Parse conf file if given, default location
+        '~/.ssh/futuregrid.cfg'
+        conf format:
+        [virtual-cluster]
+        backup = directory/virtual-cluster.dat
+        userkey = directory/userkey.pem
+        ec2_cert = directory/cert.pem
+        ec2_private_key = directory/pk.pem
+        eucalyptus_cert = directory/cacert.pem
+        novarc = directory/novarc
+        """
 
         config = ConfigParser.ConfigParser()
 
@@ -73,7 +89,8 @@ class cluster(object):
 # ---------------------------------------------------------------------
 
     def detect_port(self):
-        
+        '''detect if ssh port 22 is alive for listening'''
+
         ready = 0
         count = 0
         msg_len = 5
@@ -93,7 +110,8 @@ class cluster(object):
                     count += 1
                     if count > msg_len:
                         count = 0
-                    sys.stdout.write('\rWaiting VMs ready to deploy' + '.'*count + ' '*(msg_len-count))
+                    sys.stdout.write('\rWaiting VMs ready to deploy'
+                                     + '.' * count + ' ' * (msg_len - count))
                     sys.stdout.flush()
                     ready = 0
                     time.sleep(1)
@@ -108,6 +126,7 @@ class cluster(object):
 # ---------------------------------------------------------------------
 
     def get_command_result(self, command):
+        '''gets command output'''
         return os.popen(command).read()
 
     def execute(self, instance, command):
@@ -128,7 +147,8 @@ class cluster(object):
         self.execute(instance, 'sudo apt-get update')
 
     def install(self, instance, packagenames):
-        '''installs the package names that are specified (blank separated on the given instance'''
+        '''installs the package names
+        that are specified (blank separated on the given instance'''
 
         self.execute(instance, 'sudo apt-get install --yes '
                      + packagenames)
@@ -144,6 +164,8 @@ class cluster(object):
         image,
         instance_type,
         ):
+        '''runs instances given parameters'''
+
         eui_overhead = 3
         eui_id_pos = 2
 
@@ -151,7 +173,9 @@ class cluster(object):
         eui_len = 8
 
         instances = [x for x in
-                     self.get_command_result('euca-run-instances -k %s -n %d -t %s %s'
+                     self.get_command_result(
+                                             'euca-run-instances -k %s'
+                                             ' -n %d -t %s %s'
                       % (userkey, cluster_size, instance_type,
                      image)).split()]
         # parse command result store instances into cloud_instances list
@@ -166,11 +190,15 @@ class cluster(object):
                 sys.exit()
 
     def euca_associate_address(self, instance, ip):
+        '''associates instance with ip'''
+
         os.system('euca-associate-address -i %s %s' % (instance['id'],
                   ip))
         self.cloud_instances.set_ip_by_id(instance['id'], ip)
 
     def euca_describe_addresses(self):
+        '''return list of free ips'''
+
         ip_list = []
         ips = [x for x in os.popen('euca-describe-addresses'
                ).read().split('\n')]
@@ -180,6 +208,7 @@ class cluster(object):
         return ip_list
 
     def create_cluster(self, args):
+        '''method for creating cluster'''
 
         self.parse_conf(args.file)
         if self.cloud_instances.if_exist(args.name):
@@ -200,7 +229,8 @@ class cluster(object):
                                args.type)
         ip_lists = self.euca_describe_addresses()
 
-        # immediatly associate ip after run instance may lead to error, use sleep
+        # immediatly associate ip after run instance
+        # may lead to error, use sleep
 
         time.sleep(3)
 
@@ -215,13 +245,14 @@ class cluster(object):
         self.deploy_services()
 
     def deploy_services(self):
+        '''deploy SLURM and OpenMPI services'''
+
         self.msg('\n...Deploying SLURM system......')
 
         for instance in self.cloud_instances.get_list()[1:]:
             self.update(instance)
             self.install(instance, 'slurm-llnl')
-
-#            self.install(instance, "openmpi-bin openmpi-doc libopenmpi-dev")
+            self.install(instance, "openmpi-bin openmpi-doc libopenmpi-dev")
 
         self.msg('\n...Configuring slurm.conf......')
         with open(os.path.expanduser(self.slurm)) as srcf:
@@ -239,7 +270,8 @@ class cluster(object):
             for instance in self.cloud_instances.get_list()[2:]:
                 conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
                            % instance['id'])
-                conf.write('PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n'
+                conf.write('PartitionName=debug Nodes=%s Default=YES'
+                ' MaxTime=INFINITE State=UP\n'
                             % instance['id'])
         conf.close()
 
@@ -251,7 +283,8 @@ class cluster(object):
                      'sudo /usr/sbin/create-munge-key')
         munge_key = open('munge.key', 'w')
         print >> munge_key, \
-            self.get_command_result("ssh -i %s ubuntu@%s 'sudo cat /etc/munge/munge.key'"
+            self.get_command_result("ssh -i %s ubuntu@%s"
+                                    " 'sudo cat /etc/munge/munge.key'"
                                      % (self.userkey,
                                     self.cloud_instances.get_by_id(1)['ip'
                                     ]))
@@ -295,15 +328,29 @@ class cluster(object):
         ip,
         instance_name,
         ):
+        '''save instance given paramenters'''
+
         if kernel_id == None:
-            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile; sudo euca-bundle-vol -c ${EC2_CERT} -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID} --ec2cert ${EUCALYPTUS_CERT} --no-inherit -p %s -s 1024 -d /mnt/'"
+            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
+                            " sudo euca-bundle-vol -c ${EC2_CERT}"
+                            " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
+                            " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
+                            " -p %s -s 1024 -d /mnt/'"
                              % (self.userkey, ip, instance_name)).read()
         elif ramdisk_id == None:
-            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile; sudo euca-bundle-vol -c ${EC2_CERT} -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID} --ec2cert ${EUCALYPTUS_CERT} --no-inherit -p %s -s 1024 -d /mnt/ --kernel %s'"
+            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
+                            " sudo euca-bundle-vol -c ${EC2_CERT}"
+                            " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
+                            " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
+                            " -p %s -s 1024 -d /mnt/ --kernel %s'"
                              % (self.userkey, ip, instance_name,
                             kernel_id)).read()
         else:
-            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile; sudo euca-bundle-vol -c ${EC2_CERT} -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID} --ec2cert ${EUCALYPTUS_CERT} --no-inherit -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
+            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
+                            " sudo euca-bundle-vol -c ${EC2_CERT}"
+                            " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
+                            " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
+                            " -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
                              % (self.userkey, ip, instance_name,
                             kernel_id, ramdisk_id)).read()
 
@@ -313,20 +360,29 @@ class cluster(object):
         bucket_name,
         manifest,
         ):
-        return os.popen("ssh -i %s ubuntu@%s '. ~/.profile; euca-upload-bundle -b %s -m %s'"
+        '''upload bundle given manifest'''
+
+        return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
+                        " euca-upload-bundle -b %s -m %s'"
                          % (self.userkey, ip, bucket_name,
                         manifest)).read()
 
     def describe_images(self, image_id):
+        '''get images infos'''
+
         return os.popen('euca-describe-images %s' % image_id).read()
 
     def get_kernel_id(self, image_id):
+        '''get kernel id'''
+
         command_result = [x for x in
                           self.describe_images(image_id).split()]
         if len(command_result) >= 8:
             return command_result[7]
 
     def get_ramdisk_id(self, image_id):
+        '''get ramdisk id'''
+
         command_result = [x for x in
                           self.describe_images(image_id).split()]
         if len(command_result) == 9:
@@ -339,6 +395,8 @@ class cluster(object):
         bucket_name,
         image_name,
         ):
+        '''save node given parameters'''
+
         kernel_id = self.get_kernel_id(image_id)
         ramdisk_id = self.get_ramdisk_id(image_id)
         manifest = [x for x in self.save_instance(kernel_id,
@@ -354,9 +412,12 @@ class cluster(object):
         self.euca_register(image)
 
     def euca_register(self, image):
+        '''register image'''
+
         os.system('euca-register %s' % image)
 
     def checkpoint_cluster(self, args):
+        '''method for saving currently running instance into image'''
 
         self.msg('\n...Saving virtual cluster......')
         self.msg('Virtual cluster name -- %s' % args.name)
@@ -397,6 +458,7 @@ class cluster(object):
 # ---------------------------------------------------------------------
 
     def restore_cluster(self, args):
+        '''method for restoring cluster'''
 
         self.parse_conf(args.file)
         if self.cloud_instances.if_exist(args.name):
@@ -418,8 +480,6 @@ class cluster(object):
                                args.computei, args.type)
 
         ip_lists = self.euca_describe_addresses()
-
-        # immediatly associate ip after run instance may lead to error, use sleep
 
         time.sleep(3)
 
@@ -446,7 +506,8 @@ class cluster(object):
             for instance in self.cloud_instances.get_list()[2:]:
                 conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
                            % instance['id'])
-                conf.write('PartitionName=debug Nodes=%s Default=YES MaxTime=INFINITE State=UP\n'
+                conf.write('PartitionName=debug Nodes=%s'
+                           ' Default=YES MaxTime=INFINITE State=UP\n'
                             % instance['id'])
         conf.close()
 
@@ -472,15 +533,21 @@ class cluster(object):
 # ---------------------------------------------------------------------
 
     def clean(self, name):
+        '''clean cluster record in backup file'''
+
         self.msg('\r Clearing up the instance: progress')
         self.cloud_instances.del_by_name(name)
         self.msg('\r Clearing up the instance: completed')
 
     def terminate_instance(self, instance):
+        '''terminate instance given instance id'''
+
         self.msg('terminating instance %s' % instance['id'])
         os.system('euca-terminate-instances %s' % instance['id'])
 
     def shut_down(self, args):
+        '''method for shutting down a cluster'''
+
         self.parse_conf(args.file)
         if not self.cloud_instances.if_exist(args.name):
             self.msg('\nError in finding virtual cluster %s, not created.'
@@ -498,6 +565,7 @@ class cluster(object):
 # ---------------------------------------------------------------------
 
     def show_status(self, args):
+        '''show status of cluster(s)'''
 
         self.parse_conf(args.file)
 
@@ -531,12 +599,13 @@ class cluster(object):
 
 
 def commandline_parser():
+    '''parse commandline'''
 
     virtual_cluster = cluster()
 
     parser = \
-        argparse.ArgumentParser(description='Virtual cluster management operations'
-                                )
+        argparse.ArgumentParser(description='Virtual'
+                                ' cluster management operations')
     parser.add_argument('-f', '--file', action='store',
                         help='Specify futuregrid configure file')
     parser.add_argument('--debug', action='store_true')
@@ -547,8 +616,8 @@ def commandline_parser():
     status_parser = subparsers.add_parser('status',
             help='Show virtual cluster status')
     status_parser.add_argument('-a', '--name', action='store',
-                               help='Show status of virtual cluster of given name'
-                               )
+                               help='Show status of '
+                               'virtual cluster of given name')
     status_parser.set_defaults(func=virtual_cluster.show_status)
 
     # run command

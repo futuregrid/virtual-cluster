@@ -1,15 +1,18 @@
 #! /usr/bin/env python
 
-import getopt, sys, os, pickle
+import getopt
+import sys
+import os
+import pickle
 
 from futuregrid.virtual.cluster.cloudinstances import *
 
 
 class FgCheckpoint:
-
-        def __init__(self, userkey, nova, control_b, control_n, compute_b, compute_n, name):
-                self.userkey = userkey
-                self.nova = nova
+    
+    def __init__(self, userkey, nova, control_b, control_n, compute_b, compute_n, name):
+        self.userkey = userkey
+        self.nova = nova
 		self.control_b = control_b
 		self.control_n = control_n
 		self.compute_b = compute_b
