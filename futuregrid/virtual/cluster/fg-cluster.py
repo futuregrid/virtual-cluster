@@ -7,13 +7,12 @@ virtual clusters
 """
 
 import argparse
-import getopt
 import sys
 import os
 import socket
 import time
 import ConfigParser
-import futuregrid.virtual.cluster.cloudInstances
+import futuregrid.virtual.cluster.CloudInstances
 import os.path
 
 
@@ -23,13 +22,20 @@ class cluster(object):
     """
 
     userkey = None
-    debug = False
+    if_debug = False
     cloud_instances = None
     backup_file = None
+    user = None
+    ec2_cert = None
+    ec2_private_key = None
+    eucalyptus_cert = None
+    novarc = None
+    slurm = None
+    controlMachine = None
 
     def __init__(self):
         super(cluster, self).__init__()
-        self.cloud_instances = cloudInstances.CloudInstances()
+        self.cloud_instances = CloudInstances.CloudInstances()
 
 # ---------------------------------------------------------------------
 # METHODS TO PRINT HELP MESSAGES
@@ -43,7 +49,7 @@ class cluster(object):
     def debug(self, message):
         '''method for printing debug message'''
 
-        if self.debug:
+        if self.if_debug:
             print '\r' + message
 
 # ---------------------------------------------------------------------
@@ -100,13 +106,13 @@ class cluster(object):
         while 1:
             for instace in self.cloud_instances.get_list()[1:]:
                 try:
-                    sk = socket.socket(socket.AF_INET,
+                    socket_s = socket.socket(socket.AF_INET,
                             socket.SOCK_STREAM)
-                    sk.settimeout(1)
-                    sk.connect((instace['ip'], 22))
-                    sk.close()
+                    socket_s.settimeout(1)
+                    socket_s.connect((instace['ip'], 22))
+                    socket_s.close()
                     ready = ready + 1
-                except Exception:
+                except IOError:
                     count += 1
                     if count > msg_len:
                         count = 0
@@ -189,12 +195,12 @@ class cluster(object):
                          )
                 sys.exit()
 
-    def euca_associate_address(self, instance, ip):
+    def euca_associate_address(self, instance, free_ip):
         '''associates instance with ip'''
 
         os.system('euca-associate-address -i %s %s' % (instance['id'],
-                  ip))
-        self.cloud_instances.set_ip_by_id(instance['id'], ip)
+                  free_ip))
+        self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
 
     def euca_describe_addresses(self):
         '''return list of free ips'''
@@ -202,9 +208,9 @@ class cluster(object):
         ip_list = []
         ips = [x for x in os.popen('euca-describe-addresses'
                ).read().split('\n')]
-        for ip in ips:
-            if ip.find('i-') < 0 and len(ip) > 0:
-                ip_list.append(ip.split('\t')[1])
+        for free_ip in ips:
+            if free_ip.find('i-') < 0 and len(free_ip) > 0:
+                ip_list.append(free_ip.split('\t')[1])
         return ip_list
 
     def create_cluster(self, args):
@@ -259,7 +265,7 @@ class cluster(object):
             input_content = srcf.readlines()
         srcf.close()
 
-        controlMachine = self.cloud_instances.get_by_id(1)['id']
+        self.controlMachine = self.cloud_instances.get_by_id(1)['id']
         output = ''.join(input_content) % vars()
 
         destf = open('slurm.conf', 'w')
@@ -325,7 +331,7 @@ class cluster(object):
         self,
         kernel_id,
         ramdisk_id,
-        ip,
+        instance_ip,
         instance_name,
         ):
         '''save instance given paramenters'''
@@ -336,14 +342,15 @@ class cluster(object):
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/'"
-                             % (self.userkey, ip, instance_name)).read()
+                             % (self.userkey, instance_ip,
+                                instance_name)).read()
         elif ramdisk_id == None:
             return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/ --kernel %s'"
-                             % (self.userkey, ip, instance_name,
+                             % (self.userkey, instance_ip, instance_name,
                             kernel_id)).read()
         else:
             return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
@@ -351,12 +358,12 @@ class cluster(object):
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
-                             % (self.userkey, ip, instance_name,
+                             % (self.userkey, instance_ip, instance_name,
                             kernel_id, ramdisk_id)).read()
 
     def upload_bundle(
         self,
-        ip,
+        instance_ip,
         bucket_name,
         manifest,
         ):
@@ -364,7 +371,7 @@ class cluster(object):
 
         return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
                         " euca-upload-bundle -b %s -m %s'"
-                         % (self.userkey, ip, bucket_name,
+                         % (self.userkey, instance_ip, bucket_name,
                         manifest)).read()
 
     def describe_images(self, image_id):
@@ -391,7 +398,7 @@ class cluster(object):
     def save_node(
         self,
         image_id,
-        ip,
+        instance_ip,
         bucket_name,
         image_name,
         ):
@@ -400,12 +407,12 @@ class cluster(object):
         kernel_id = self.get_kernel_id(image_id)
         ramdisk_id = self.get_ramdisk_id(image_id)
         manifest = [x for x in self.save_instance(kernel_id,
-                    ramdisk_id, ip, image_name).split()].pop()
+                    ramdisk_id, instance_ip, image_name).split()].pop()
 
         self.msg('\nmanifest generated: %s' % manifest)
         self.msg('\n...uploading bundle......')
 
-        image = [x for x in self.upload_bundle(ip, bucket_name,
+        image = [x for x in self.upload_bundle(instance_ip, bucket_name,
                  manifest).split()].pop()
 
         self.msg('\n...registering image......')
@@ -684,11 +691,6 @@ def commandline_parser():
                                 required=True,
                                 help='Number of compute nodes')
     restore_parser.set_defaults(func=virtual_cluster.restore_cluster)
-
-    # list command
-
-    list_parser = subparsers.add_parser('list',
-            help='Return intances list?')
 
     args = parser.parse_args()
     args.func(args)
