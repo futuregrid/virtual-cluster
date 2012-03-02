@@ -1,5 +1,8 @@
 #! /usr/bin/env python
-import pickle, os
+# -*- coding: utf-8 -*-
+
+import pickle
+import os
 
 class CloudInstances:
 
