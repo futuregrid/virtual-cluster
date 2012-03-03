@@ -38,7 +38,7 @@ The package allows the creation of a virtual cluster via SLURM and OpenStack
     
     entry_points={
         'console_scripts': [
-                'fg-cluster = futuregrid.virtual.cluster.cluster:main',
+                'fg-cluster = futuregrid.virtual.cluster.FGCluster:commandline_parser',
              ]},
 
              #    install_requires = [

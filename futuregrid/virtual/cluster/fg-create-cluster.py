@@ -199,7 +199,7 @@ class FgCreate:
                 self.cloud_instances.get_by_id(1)['ip'],
                 "sudo /usr/sbin/create-munge-key")
         munge_key = open("munge.key", "w")
-        print >>munge_key,
+        print >>munge_key,\
         self.get_command_result(
                             "ssh -i %s.pem ubuntu@%s "
                             "'sudo cat /etc/munge/munge.key'"

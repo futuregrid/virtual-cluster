@@ -12,8 +12,8 @@ import os
 import socket
 import time
 import ConfigParser
-import futuregrid.virtual.cluster.CloudInstances
-import os.path
+
+from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 
 
 class cluster(object):
@@ -35,7 +35,7 @@ class cluster(object):
 
     def __init__(self):
         super(cluster, self).__init__()
-        self.cloud_instances = CloudInstances.CloudInstances()
+        self.cloud_instances = CloudInstances()
 
 # ---------------------------------------------------------------------
 # METHODS TO PRINT HELP MESSAGES
