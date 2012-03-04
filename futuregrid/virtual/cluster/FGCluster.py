@@ -466,7 +466,7 @@ class cluster(object):
 
         # save compute node
         self.msg('\nSaving compute node %s'
-                 % self.cloud_instances.get_by_id(2)['ip'])
+                 % self.cloud_instances.get_by_id(2)['id'])
         self.save_node(self.cloud_instances.get_by_id(2)['image'],
                        self.cloud_instances.get_by_id(2)['ip'],
                        args.computeb, args.computen)
