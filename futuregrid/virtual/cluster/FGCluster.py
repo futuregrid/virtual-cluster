@@ -175,7 +175,7 @@ class cluster(object):
         eui_id_pos = 2
 
         # value changes depending on different version of euca2ools
-        eui_len = 10
+        eui_len = 8
 
         instances = [x for x in
                      self.get_command_result(
