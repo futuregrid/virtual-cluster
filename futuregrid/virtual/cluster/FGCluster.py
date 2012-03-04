@@ -516,42 +516,6 @@ class cluster(object):
         self.cloud_instances.save_instances()
         self.detect_port()
         self.config_slurm(False)
-#        with open(os.path.expanduser(self.slurm)) as srcf:
-#            input_content = srcf.readlines()
-#        srcf.close()
-#
-#        controlMachine = self.cloud_instances.get_by_id(1)['id']
-#        output = ''.join(input_content) % vars()
-#
-#        destf = open('slurm.conf', 'w')
-#        print >> destf, output
-#        destf.close()
-#
-#        with open('slurm.conf', 'a') as conf:
-#            for instance in self.cloud_instances.get_list()[2:]:
-#                conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
-#                           % instance['id'])
-#                conf.write('PartitionName=debug Nodes=%s'
-#                           ' Default=YES MaxTime=INFINITE State=UP\n'
-#                            % instance['id'])
-#        conf.close()
-#
-#        self.detect_port()
-#
-#        self.msg('\nConfiguring SLURM')
-#        for instance in self.cloud_instances.get_list()[1:]:
-#
-#            # copy slurm.conf
-#
-#            self.msg('\nCopying slurm.conf to node %s' % instance['id'])
-#            self.copyto(instance, 'slurm.conf')
-#            self.execute(instance, 'sudo cp slurm.conf /etc/slurm-llnl')
-#
-#            # start slurm
-#
-#            self.msg('\nStarting slurm on node %s' % instance['id'])
-#            self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
-#            self.execute(instance, 'sudo /etc/init.d/munge start')
 
 # ---------------------------------------------------------------------
 # METHODS TO TERMINATE NAD CLEANUP

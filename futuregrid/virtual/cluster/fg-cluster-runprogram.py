@@ -1,79 +1,111 @@
 #! /usr/bin/env python
 
-import getopt
+'''
+Run MPI prigram on virtual cluster
+'''
+
 import sys
 import os
+import ConfigParser
+import argparse
 
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 
 
 class FgRunProg:
+    '''run MPI program on a virtual cluster'''
 
-    def __init__(self, userkey, number, file_name, name):
-        self.userkey = userkey
-        self.number = number
-        self.file_name = file_name
-        self.name = name
-        self.cloud_instances = CloudInstances(name)
+    userkey = None
+    cloud_instances = None
+    backup_file = None
 
-    def ssh(self, userkey, ip, command):
-        os.system("ssh -i %s.pem ubuntu@%s '%s'"
-                  % (userkey, ip, command))
+    def __init__(self):
+        self.cloud_instances = CloudInstances()
 
-    def scp(self, userkey, fileName, ip):
-        os.system("scp -i %s.pem %s ubuntu@%s:~/"
-                  % (userkey, fileName, ip))
+    def execute(self, instance, command):
+        '''runs a command on the instance'''
 
-    def run_program(self):
+        os.system("ssh -i %s ubuntu@%s '%s'" % (self.userkey,
+                  instance['ip'], command))
 
-        print '\n...Running program %s '
-        'on virtual cluster %s......' % (self.file_name, self.name)
-        for instance in self.cloud_instances.list()[1:]:
-            self.scp(self.userkey, self.file_name, instance['ip'])
-            self.ssh(self.userkey, instance['ip'],
-                     "mpicc %s -o %s" % (self.file_name,
-                                        self.file_name.split('.')[0]))
+    def copyto(self, instance, filename):
+        '''copyies the named file to the instance'''
 
-        print '\n...Running program %s......' % self.file_name.split('.')[0]
+        os.system('scp -i %s %s ubuntu@%s:~/' % (self.userkey,
+                  filename, instance['ip']))
+
+    def msg(self, message):
+        '''method for printing messages'''
+
+        print message
+
+    def parse_conf(self, file_name='no file specified'):
+        """
+        Parse conf file if given, default location
+        '~/.ssh/futuregrid.cfg'
+        conf format:
+        [virtual-cluster]
+        backup = directory/virtual-cluster.dat
+        userkey = directory/userkey.pem
+        ec2_cert = directory/cert.pem
+        ec2_private_key = directory/pk.pem
+        eucalyptus_cert = directory/cacert.pem
+        novarc = directory/novarc
+        """
+
+        config = ConfigParser.ConfigParser()
+
+        config.read([os.path.expanduser('~/.ssh/futuregrid.cfg'),
+                    file_name])
+
+        # default location ~/.ssh/futuregrid.cfg
+
+        self.backup_file = config.get('virtual-cluster', 'backup')
+        self.userkey = config.get('virtual-cluster', 'userkey')
+
+        self.cloud_instances.set_backup_file(self.backup_file)
+
+    def run_program(self, args):
+        '''copy program to each node, compile it and run'''
+
+        self.parse_conf(args.file)
+        if not self.cloud_instances.if_exist(args.name):
+            self.msg('Error in locating virtual cluster %s, not created'
+                      % args.name)
+            sys.exit()
+        self.cloud_instances.get_cloud_instances_by_name(args.name)
+
+        for instance in self.cloud_instances.get_list()[1:]:
+            self.copyto(instance, args.prog)
+            self.execute(instance,
+                     "mpicc %s -o %s" % (args.prog,
+                                        args.prog.split('.')[0]))
+
+        self.msg('\n...Running program %s......' % args.prog.split('.')[0])
         # run program on control node
-        self.ssh(self.userkey,
-                 self.cloud_instances.get_by_id(1)['ip'],
+        self.execute(self.cloud_instances.get_by_id(1),
                  "salloc -N %d mpirun %s"
-                 % (int(self.number), self.file_name.split('.')[0]))
-
-
-def usage():
-    print '-h/--help        Display this help.'
-    print '-u/--userkey     provide userkey'
-    print '-n/--node        compute node number'
-    print '-f/--file        program source file'
-    print '-a/--name        virtual cluster name'
+                 % (int(args.number), args.prog.split('.')[0]))
 
 
 def main():
-    try:
-        opts, args = getopt.getopt
-        (sys.argv[1:],
-         "hu:n:f:a:",
-         ["help", "userkey=", "number=", "file=", "name="])
-    except getopt.GetoptError:
-        usage()
-        sys.exit()
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            usage()
-            sys.exit()
-        elif opt in ("-u", "--userkey"):
-            userkey = arg
-        elif opt in ("-n", "--number"):
-            number = arg
-        elif opt in ("-f", "--file"):
-            file_name = arg
-        elif opt in ("-a", "--name"):
-            name = arg
 
-    fgc = FgRunProg(userkey, number, file_name, name)
-    fgc.run_program()
+    fg_run_prog = FgRunProg()
+
+    parser = \
+        argparse.ArgumentParser()
+    parser.add_argument('-f', '--file', action='store',
+                        help='Specify futuregrid configure file')
+    parser.add_argument('-p', '--prog', action='store',
+                        help='Specify program name')
+    parser.add_argument('-n', '--number', action='store',
+                        help='Numbe of computation node')
+    parser.add_argument('-a', '--name', action='store',
+                        help='Name of virtual cluster')
+    parser.set_defaults(func=fg_run_prog.run_program)
+
+    args = parser.parse_args()
+    args.func(args)
 
 if __name__ == '__main__':
     main()
