@@ -156,7 +156,7 @@ a cluster that is currently running
 
 
 Run a simple MPI program on virtual cluster
---------------------------------------------
+===========================================
 
 Given MPI vesion of helloworld.c
 
