@@ -4,6 +4,7 @@ HOW TO INSTALL
 System requirement
 ------------------
 euca2ools: verison 1.2
+
 python: version 2.7
 
 Installation
