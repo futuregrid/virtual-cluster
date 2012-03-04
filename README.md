@@ -173,6 +173,25 @@ step 3: Go to control node, run:
 where -N is the number of computation nodes you want to run with. And 
 should not be larger than the actual number of computation nodes
 
+Execution result:
 
+    salloc: Granted job allocation 2
+    Hello world from process 0 of 3
+    Hello world from process 1 of 3
+    Hello world from process 2 of 3
+    salloc: Relinquishing job allocation 2
+    
+Using fg-cluster-runprogram
+---------------------------
+
+>>>>fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a hello
+
+-f: Futuregrid configuration file
+-p: Program source code file
+-n: Number of computaion nodes you want to run with
+-a: Number of virtual cluster
+
+
+Note: Virtual cluster name should be a name of cluster which is currently running
 
 
