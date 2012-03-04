@@ -3,9 +3,8 @@
 import getopt
 import sys
 import os
-import pickle
 
-from futuregrid.virtual.cluster.cloudinstances import *
+from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 
 
 class FgCheckpoint:

@@ -31,7 +31,6 @@ class cluster(object):
     eucalyptus_cert = None
     novarc = None
     slurm = None
-    controlMachine = None
 
     def __init__(self):
         super(cluster, self).__init__()
@@ -176,7 +175,7 @@ class cluster(object):
         eui_id_pos = 2
 
         # value changes depending on different version of euca2ools
-        eui_len = 8
+        eui_len = 10
 
         instances = [x for x in
                      self.get_command_result(
@@ -240,7 +239,7 @@ class cluster(object):
 
         time.sleep(3)
 
-        self.msg('\n...Associating IPs......')
+        self.msg('\nAssociating IPs')
         for i in range(cluster_size):
             instance = self.cloud_instances.get_by_id(i + 1)
             time.sleep(1)
@@ -250,29 +249,26 @@ class cluster(object):
         self.detect_port()
         self.deploy_services()
 
-    def deploy_services(self):
-        '''deploy SLURM and OpenMPI services'''
+    def config_slurm(self, create_key=True):
+        '''config slurm'''
+        slurm_conf_file = 'slurm.conf'
+        munge_key_file = 'munge.key'
 
-        self.msg('\n...Deploying SLURM system......')
-
-        for instance in self.cloud_instances.get_list()[1:]:
-            self.update(instance)
-            self.install(instance, 'slurm-llnl')
-            self.install(instance, "openmpi-bin openmpi-doc libopenmpi-dev")
-
-        self.msg('\n...Configuring slurm.conf......')
+        self.msg('\nConfiguring slurm.conf')
         with open(os.path.expanduser(self.slurm)) as srcf:
             input_content = srcf.readlines()
         srcf.close()
 
-        self.controlMachine = self.cloud_instances.get_by_id(1)['id']
+        controlMachine = self.cloud_instances.get_by_id(1)['id']
         output = ''.join(input_content) % vars()
 
-        destf = open('slurm.conf', 'w')
+        self.msg('\nControl node %s' % controlMachine)
+
+        destf = open(slurm_conf_file, 'w')
         print >> destf, output
         destf.close()
 
-        with open('slurm.conf', 'a') as conf:
+        with open(slurm_conf_file, 'a') as conf:
             for instance in self.cloud_instances.get_list()[2:]:
                 conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
                            % instance['id'])
@@ -281,47 +277,60 @@ class cluster(object):
                             % instance['id'])
         conf.close()
 
-        self.msg('\n...generate munge-key......')
+        if create_key:
+            self.msg('\nGenerating munge-key')
 
-        # generate munge-key on control node
+            # generate munge-key on control node
 
-        self.execute(self.cloud_instances.get_by_id(1),
-                     'sudo /usr/sbin/create-munge-key')
-        munge_key = open('munge.key', 'w')
-        print >> munge_key, \
-            self.get_command_result("ssh -i %s ubuntu@%s"
-                                    " 'sudo cat /etc/munge/munge.key'"
-                                     % (self.userkey,
-                                    self.cloud_instances.get_by_id(1)['ip'
-                                    ]))
-        munge_key.close()
+            self.execute(self.cloud_instances.get_by_id(1),
+                         'sudo /usr/sbin/create-munge-key')
+            munge_key = open(munge_key_file, 'w')
+            print >> munge_key, \
+                self.get_command_result("ssh -i %s ubuntu@%s"
+                                        " 'sudo cat /etc/munge/munge.key'"
+                                         % (self.userkey,
+                                        self.cloud_instances.get_by_id(1)['ip'
+                                        ]))
+            munge_key.close()
 
         for instance in self.cloud_instances.get_list()[1:]:
 
             # copy slurm.conf
 
-            self.msg('\n...copying slurm.conf to node......')
+            self.msg('\nCopying slurm.conf to node %s' % instance['id'])
             self.copyto(instance, 'slurm.conf')
             self.execute(instance, 'sudo cp slurm.conf /etc/slurm-llnl')
 
             # copy munge key
-
-            self.msg('\n...copying munge-key to nodes......')
-            self.copyto(instance, 'munge.key')
-            self.execute(instance,
-                         'sudo cp munge.key /etc/munge/munge.key')
-            self.execute(instance,
-                         'sudo chown munge /etc/munge/munge.key')
-            self.execute(instance,
-                         'sudo chgrp munge /etc/munge/munge.key')
-            self.execute(instance, 'sudo chmod 400 /etc/munge/munge.key'
-                         )
+            if create_key:
+                self.msg('\nCopying munge-key to node %s' % instance['id'])
+                self.copyto(instance, 'munge.key')
+                self.execute(instance,
+                             'sudo cp munge.key /etc/munge/munge.key')
+                self.execute(instance,
+                             'sudo chown munge /etc/munge/munge.key')
+                self.execute(instance,
+                             'sudo chgrp munge /etc/munge/munge.key')
+                self.execute(instance, 'sudo chmod 400 /etc/munge/munge.key'
+                             )
 
             # start slurm
 
-            self.msg('\n...starting slurm......')
+            self.msg('\nStarting slurm on node %s' % instance['id'])
             self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
             self.execute(instance, 'sudo /etc/init.d/munge start')
+
+    def deploy_services(self):
+        '''deploy SLURM and OpenMPI services'''
+
+        self.msg('\nDeploying SLURM system')
+
+        for instance in self.cloud_instances.get_list()[1:]:
+            self.update(instance)
+            self.install(instance, 'slurm-llnl')
+            self.install(instance, "openmpi-bin openmpi-doc libopenmpi-dev")
+
+        self.config_slurm()
 
 # ---------------------------------------------------------------------
 # METHODS TO SAVE RUNNING VIRTUAL CLUSTER
@@ -409,13 +418,13 @@ class cluster(object):
         manifest = [x for x in self.save_instance(kernel_id,
                     ramdisk_id, instance_ip, image_name).split()].pop()
 
-        self.msg('\nmanifest generated: %s' % manifest)
-        self.msg('\n...uploading bundle......')
+        self.msg('\nManifest generated: %s' % manifest)
+        self.msg('\nUploading bundle')
 
         image = [x for x in self.upload_bundle(instance_ip, bucket_name,
                  manifest).split()].pop()
 
-        self.msg('\n...registering image......')
+        self.msg('\nRegistering image')
         self.euca_register(image)
 
     def euca_register(self, image):
@@ -449,13 +458,15 @@ class cluster(object):
             self.execute(instance, 'source ~/.profile')
 
         # save control node
-
+        self.msg('\nSaving control node %s'
+                 % self.cloud_instances.get_by_id(1)['id'])
         self.save_node(self.cloud_instances.get_by_id(1)['image'],
                        self.cloud_instances.get_by_id(1)['ip'],
                        args.controlb, args.controln)
 
         # save compute node
-
+        self.msg('\nSaving compute node %s'
+                 % self.cloud_instances.get_by_id(2)['ip'])
         self.save_node(self.cloud_instances.get_by_id(2)['image'],
                        self.cloud_instances.get_by_id(2)['ip'],
                        args.computeb, args.computen)
@@ -490,50 +501,51 @@ class cluster(object):
 
         time.sleep(3)
 
-        self.msg('...Associating IPs......')
+        self.msg('\nAssociating IPs')
         for i in range(cluster_size):
             time.sleep(1)
             instance = self.cloud_instances.get_by_id(i + 1)
             self.euca_associate_address(instance, ip_lists[i])
 
         self.cloud_instances.save_instances()
-
-        with open(os.path.expanduser(self.slurm)) as srcf:
-            input_content = srcf.readlines()
-        srcf.close()
-
-        controlMachine = self.cloud_instances.get_by_id(1)['id']
-        output = ''.join(input_content) % vars()
-
-        destf = open('slurm.conf', 'w')
-        print >> destf, output
-        destf.close()
-
-        with open('slurm.conf', 'a') as conf:
-            for instance in self.cloud_instances.get_list()[2:]:
-                conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
-                           % instance['id'])
-                conf.write('PartitionName=debug Nodes=%s'
-                           ' Default=YES MaxTime=INFINITE State=UP\n'
-                            % instance['id'])
-        conf.close()
-
         self.detect_port()
-
-        self.msg('\n...Configuring SLURM......')
-        for instance in self.cloud_instances.get_list()[1:]:
-
-            # copy slurm.conf
-
-            print '\n...copying slurm.conf to node......'
-            self.copyto(instance, 'slurm.conf')
-            self.execute(instance, 'sudo cp slurm.conf /etc/slurm-llnl')
-
-            # start slurm
-
-            print '\n...starting slurm......'
-            self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
-            self.execute(instance, 'sudo /etc/init.d/munge start')
+        self.config_slurm(False)
+#        with open(os.path.expanduser(self.slurm)) as srcf:
+#            input_content = srcf.readlines()
+#        srcf.close()
+#
+#        controlMachine = self.cloud_instances.get_by_id(1)['id']
+#        output = ''.join(input_content) % vars()
+#
+#        destf = open('slurm.conf', 'w')
+#        print >> destf, output
+#        destf.close()
+#
+#        with open('slurm.conf', 'a') as conf:
+#            for instance in self.cloud_instances.get_list()[2:]:
+#                conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
+#                           % instance['id'])
+#                conf.write('PartitionName=debug Nodes=%s'
+#                           ' Default=YES MaxTime=INFINITE State=UP\n'
+#                            % instance['id'])
+#        conf.close()
+#
+#        self.detect_port()
+#
+#        self.msg('\nConfiguring SLURM')
+#        for instance in self.cloud_instances.get_list()[1:]:
+#
+#            # copy slurm.conf
+#
+#            self.msg('\nCopying slurm.conf to node %s' % instance['id'])
+#            self.copyto(instance, 'slurm.conf')
+#            self.execute(instance, 'sudo cp slurm.conf /etc/slurm-llnl')
+#
+#            # start slurm
+#
+#            self.msg('\nStarting slurm on node %s' % instance['id'])
+#            self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
+#            self.execute(instance, 'sudo /etc/init.d/munge start')
 
 # ---------------------------------------------------------------------
 # METHODS TO TERMINATE NAD CLEANUP
@@ -542,9 +554,9 @@ class cluster(object):
     def clean(self, name):
         '''clean cluster record in backup file'''
 
-        self.msg('\r Clearing up the instance: progress')
+        self.msg('\rClearing up the instance: progress')
         self.cloud_instances.del_by_name(name)
-        self.msg('\r Clearing up the instance: completed')
+        self.msg('\rClearing up the instance: completed')
 
     def terminate_instance(self, instance):
         '''terminate instance given instance id'''
