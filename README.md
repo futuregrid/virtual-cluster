@@ -184,7 +184,7 @@ Execution result:
 Using fg-cluster-runprogram
 ---------------------------
 
->>>>fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a hello
+>>>>fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a mycluster1
 
 -f: Futuregrid configuration file
 -p: Program source code file
