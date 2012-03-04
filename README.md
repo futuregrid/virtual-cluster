@@ -160,13 +160,13 @@ Run a simple MPI program on virtual cluster
 
 Given MPI vesion of helloworld.c
 
-1. Copy helloworld.c to each node in virtual cluster
+Step 1: Copy helloworld.c to each node in virtual cluster
 
-2. Complie on each node, run:
+step 2: Complie on each node, run:
 
 >>>>mpicc hellowrld.c -o helloworld 
 
-3. Go to control node, run:
+step 3: Go to control node, run:
 
 >>>>salloc -N 2 mpirun helloworld
 
