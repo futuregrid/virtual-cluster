@@ -160,7 +160,7 @@ Run a simple MPI program on virtual cluster
 
 Given MPI vesion of helloworld.c
 
-Step 1: Copy helloworld.c to each node in virtual cluster
+step 1: Copy helloworld.c to each node in virtual cluster
 
 step 2: Complie on each node, run:
 
