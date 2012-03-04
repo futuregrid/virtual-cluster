@@ -251,6 +251,7 @@ class cluster(object):
 
     def config_slurm(self, create_key=True):
         '''config slurm'''
+
         slurm_conf_file = 'slurm.conf'
         munge_key_file = 'munge.key'
 
@@ -298,13 +299,13 @@ class cluster(object):
             # copy slurm.conf
 
             self.msg('\nCopying slurm.conf to node %s' % instance['id'])
-            self.copyto(instance, 'slurm.conf')
+            self.copyto(instance, slurm_conf_file)
             self.execute(instance, 'sudo cp slurm.conf /etc/slurm-llnl')
 
             # copy munge key
             if create_key:
                 self.msg('\nCopying munge-key to node %s' % instance['id'])
-                self.copyto(instance, 'munge.key')
+                self.copyto(instance, munge_key_file)
                 self.execute(instance,
                              'sudo cp munge.key /etc/munge/munge.key')
                 self.execute(instance,
@@ -319,6 +320,11 @@ class cluster(object):
             self.msg('\nStarting slurm on node %s' % instance['id'])
             self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
             self.execute(instance, 'sudo /etc/init.d/munge start')
+
+        # clean
+        if create_key:
+            os.remove(munge_key_file)
+        os.remove(slurm_conf_file)
 
     def deploy_services(self):
         '''deploy SLURM and OpenMPI services'''
