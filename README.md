@@ -74,8 +74,11 @@ Parameters:
     novarc = ~/.ssh/novarc                    # nova environment file
 
 -n: Number of computation nodes (control node not included)
+
 -s: Instance type
+
 -i: Image id
+
 -a: Virtual cluster name
 
 For example:
@@ -100,10 +103,15 @@ control image and compute image for later resotre
 Parameters:
 
 -f: Futuregrid configuration file
+
 -c: Control node bucket name
+
 -t: Control node image name
+
 -m: Compute node bucket name
+
 -e: compute node image name
+
 -a: Virtual cluster name
 
 For example:
@@ -126,10 +134,15 @@ Run following command will restore a virtual cluster which was saved before
 Parameters;
 
 -f: Futuregrid configuration file
+
 -n: Number of computaion node (control node not included)
+
 -c: Control node image id
+
 -m: Compute node image id
+
 -s: Instance type (for all nodes)
+
 -a: Virtual cluster name
 
 For example:
@@ -151,6 +164,7 @@ Run following command will terminate a virtual cluster
 Parameters:
 
 -f: Futuregrid configuration file
+
 -a: Virtual cluster name
 
 For example:
@@ -173,6 +187,7 @@ virtual cluster(s) including cluster size, image id, instance id, ip
 Parameters:
 
 -f: Futuregrid configuration file
+
 -a: Virtual cluster name
 
 
@@ -222,8 +237,11 @@ Using fg-cluster-runprogram
     fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a mycluster1
 
 -f: Futuregrid configuration file
+
 -p: Program source code file
+
 -n: Number of computaion nodes you want to run with
+
 -a: Number of virtual cluster
 
 
