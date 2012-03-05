@@ -35,6 +35,8 @@ setp 5: Install
     easy_install dist/*.egg
     
     
+
+
 Install with admin rights
 
 step 1: Make egg
