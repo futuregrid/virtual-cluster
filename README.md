@@ -12,7 +12,7 @@ virtualenv (no admin rights)
 Installation
 ------------
 
-Install without admin rights on india
+Install without admin rights on india futuregrid
 
 step 1: Download virtualenv.py from following link:
 
@@ -26,18 +26,16 @@ setp 3: Activate virtualenv by
 
     source ENV/bin/activate
     
-setp 4: Make egg
+setp 4: Make egg by
 
     ENV/bin/python setup.py bdist_egg
     
-setp 5: Install
+setp 5: Install egg by
 
     easy_install dist/*.egg
-    
-    
-
-
-Install with admin rights
+ 
+<br>
+Install with admin rights, just simply,
 
 step 1: Make egg
 
