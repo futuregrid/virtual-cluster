@@ -57,7 +57,7 @@ Create a virtual cluster
 
 Run following command will create a virtual cluster of given name.
 
->>>>fg-cluster -f config_file run -n number_of_computation_nodes -s instance_type -i image_id -a cluster_name
+    fg-cluster -f config_file run -n number_of_computation_nodes -s instance_type -i image_id -a cluster_name
 
 Parameters:
 
@@ -80,7 +80,7 @@ Parameters:
 
 For example:
 
->>>>fg-cluster -f futuregrid.cfg -n 2 -s m1.small -i ami-0000001d -a mycluster1
+    fg-cluster -f futuregrid.cfg -n 2 -s m1.small -i ami-0000001d -a mycluster1
 
 Virtual cluster info will be saved in backup file specified in 
 futuregrid configuration file. Note: Cluster name should be different 
@@ -95,7 +95,7 @@ Save a virtual cluster
 Run following command will save a currently running virtual cluster into one
 control image and compute image for later resotre
 
->>>>fg-cluster -f config_file checkpoint -c control_node_bucket -t control_node_name -m compute_bucket -e compute_name -a cluster_name
+    fg-cluster -f config_file checkpoint -c control_node_bucket -t control_node_name -m compute_bucket -e compute_name -a cluster_name
 
 Parameters:
 
@@ -108,7 +108,7 @@ Parameters:
 
 For example:
 
->>>>fg-cluster -f futuregrid.cfg -c c1 -t c1.img -m c2 -e c2.img -a mycluster1
+    fg-cluster -f futuregrid.cfg -c c1 -t c1.img -m c2 -e c2.img -a mycluster1
 
 Note: Cluster name should be a name of cluster which is
 currently running. Generated image ids (including one control 
@@ -121,7 +121,7 @@ Restore a virtual cluster
 
 Run following command will restore a virtual cluster which was saved before
 
->>>>fg-cluster -f config_file restore -n number_of_computation_nodes -c control_node_image_id -m compute_node_image_id -s instance_type -a cluster_name
+    fg-cluster -f config_file restore -n number_of_computation_nodes -c control_node_image_id -m compute_node_image_id -s instance_type -a cluster_name
 
 Parameters;
 
@@ -134,7 +134,7 @@ Parameters;
 
 For example:
 
->>>>fg-cluster -f futuregrid.cfg -n 2 -c ami-0000001d -m ami-0000001d -s m1.small -a mycluster2
+    fg-cluster -f futuregrid.cfg -n 2 -c ami-0000001d -m ami-0000001d -s m1.small -a mycluster2
 
 Note: Cluster name should be different as the names of currently running 
 virtual clusters. Control node image id and compute image id should be ids which are generated 
@@ -146,7 +146,7 @@ Shutdown a virtual cluster
 
 Run following command will terminate a virtual cluster
 
->>>>fg-cluster -f config_file terminate -a cluster_name
+    fg-cluster -f config_file terminate -a cluster_name
 
 Parameters:
 
@@ -155,7 +155,7 @@ Parameters:
 
 For example:
 
->>>>fg-cluster -f futuregrid.cfg terminate -a mycluster2
+    fg-cluster -f futuregrid.cfg terminate -a mycluster2
 
 Note: Cluster name should be a name of cluster which is currently
 running. After executing this command, cluster info will be removed
@@ -168,7 +168,7 @@ Show status of virtual cluster(s)
 Run following command will show status of currently running 
 virtual cluster(s) including cluster size, image id, instance id, ip
 
->>>>fg-cluster -f config_file status -a cluster_name
+    fg-cluster -f config_file status -a cluster_name
 
 Parameters:
 
@@ -180,11 +180,11 @@ For example:
 
 Show status of one specific cluster
 
->>>>fg-cluster -f futuregrid.cfg status -a mycluster1
+    fg-cluster -f futuregrid.cfg status -a mycluster1
 
 Show status of all currently running clusters
 
->>>>fg-cluster -f futuregrid.cfg status
+    fg-cluster -f futuregrid.cfg status
 
 Note: If argument -a is specified, then name of cluster should be 
 a cluster that is currently running
@@ -199,11 +199,11 @@ step 1: Copy helloworld.c to each node in virtual cluster
 
 step 2: Complie on each node, run:
 
->>>>mpicc hellowrld.c -o helloworld 
+    mpicc hellowrld.c -o helloworld 
 
 step 3: Go to control node, run:
 
->>>>salloc -N 2 mpirun helloworld
+    salloc -N 2 mpirun helloworld
 
 where -N is the number of computation nodes you want to run with. And 
 should not be larger than the actual number of computation nodes
@@ -219,7 +219,7 @@ Execution result:
 Using fg-cluster-runprogram
 ---------------------------
 
->>>>fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a mycluster1
+    fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a mycluster1
 
 -f: Futuregrid configuration file
 -p: Program source code file
