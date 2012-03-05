@@ -15,27 +15,34 @@ Installation
 Install without admin rights on india
 
 step 1: Download virtualenv.py from following link:
+
     https://raw.github.com/pypa/virtualenv/master/virtualenv.py
     
 step 2: Install virtualenv by
+
     python virtualenv.py --system-site-packages ENV
     
 setp 3: Activate virtualenv by
+
     source ENV/bin/activate
     
 setp 4: Make egg
+
     ENV/bin/python setup.py bdist_egg
     
 setp 5: Install
+
     easy_install dist/*.egg
     
     
 Install with admin rights
 
 step 1: Make egg
+
     make egg
 
 step 2: Install
+
     make install
 
 
