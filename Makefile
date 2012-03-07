@@ -50,7 +50,8 @@ qc:
 egg:
 	python setup.py bdist_egg
 
-tar:
+pip:
+	make -f Makefile clean
 	python setup.py sdist
 
 rpm:
@@ -61,3 +62,7 @@ clean:
 	find . -name "*~" -exec rm {} \;  
 	find . -name "*.pyc" -exec rm {} \;  
 	rm -rf build dist *.egg-info *~ #*
+
+upload:
+	python setup.py register
+	python setup.py sdist upload

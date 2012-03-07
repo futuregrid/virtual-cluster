@@ -1,22 +1,32 @@
 HOW TO INSTALL
 ==============
 
-System requirement
+System requirements
 ------------------
-euca2ools: verison 1.2
+* euca2ools: verison 1.2
+* python: version 2.7
+* virtualenv (no admin rights)
 
-python: version 2.7
+Introduction
+------------
 
-virtualenv (no admin rights)
+TODO: section that explains what this project is about
+
+TODO: openstack eucalyptus AWS?
+TODO: FutureGrid, where can I run this
 
 Installation
 ------------
 
-Install without admin rights on india futuregrid
+We assume that yo do not have super user priviledges on the computer
+where you like to install our tool.
+
+only for india
+module load python
 
 step 1: Download virtualenv.py from following link:
 
-    https://raw.github.com/pypa/virtualenv/master/virtualenv.py
+    wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
     
 step 2: Install virtualenv by
 
@@ -28,25 +38,36 @@ setp 3: Activate virtualenv by
     
 setp 4: Make egg by
 
-    ENV/bin/python setup.py bdist_egg
+    ENV/bin/pip install futuregrid.virtual.cluster
+#    ENV/bin/python setup.py bdist_egg
     
-setp 5: Install egg by
-
-    easy_install dist/*.egg
- 
 <br>
-Install with admin rights, just simply,
 
-step 1: Make egg
+FutureGrid Specific Instalation
+-------------------------------
 
-    make egg
-
-step 2: Install
-
-    make install
+Install without admin rights on india futuregrid
 
 
+Go to the portal https://portal.futuregrid.org/ 
 
+If you do not have an account, please apply for one
+https://portal.futuregrid.org/user/register
+
+In order for you to get access, you need to apply for a portal account
+and create a FG project. This is in detail explained at
+https://portal.futuregrid.org/gettingstarted Do not forget to upload
+your public key. (se also https://portal.futuregrid.org/generating-ssh-keys-futuregrid-access)
+
+Once you have a vaild portal account and a valid project, you can go
+ahead and use FutureGrid
+
+Our virtual cluster is best executed on our machine called
+india.futuregrid.org
+
+Please log into this machine and follw the steps that we have outined
+in the previous sectionto installthe software and than run it while
+following the instaructions from the next section
 
 
 HOW TO RUN
@@ -61,14 +82,14 @@ Run following command will create a virtual cluster of given name.
 
 Parameters:
 
--f: Futuregrid configuration file which has the format of following:
+-f: Futuregrid configuration file named futuregrid.cfg which has the format of following:
 
     [virtual-cluster]                           
     backup = ~/.futuregrid/virtual-cluster    # Backup file for saving and loading virtual cluster(s)
     slurm = ~/.futuregrid/slurm.conf.in       # Slurm configuration input file
     userkey = ~/.ssh/username.pem             # userkey pem file
     user = username                           # userkey name
-    ec2_cert = ~/ssh/cert.pem                 # euca2ools certificate file
+    ec2_cert = ~/.ssh/cert.pem                 # euca2ools certificate file
     ec2_private_key = ~/.ssh/pk.pem           # euca2ools private file
     eucalyptus_cert = ~/.ssh/cacert.pem       # nova certificate file
     novarc = ~/.ssh/novarc                    # nova environment file
@@ -83,7 +104,7 @@ Parameters:
 
 For example:
 
-    fg-cluster -f futuregrid.cfg -n 2 -s m1.small -i ami-0000001d -a mycluster1
+    fg-cluster -f futuregrid.cfg run -n 2 -t m1.small -i ami-0000001d -a mycluster1
 
 Virtual cluster info will be saved in backup file specified in 
 futuregrid configuration file. Note: Cluster name should be different 
@@ -248,3 +269,19 @@ Using fg-cluster-runprogram
 Note: Virtual cluster name should be a name of cluster which is currently running
 
 
+FOR DEVELOPERS ONLY
+===================
+
+Generating the Distribution
+---------------------------
+
+pull code from github
+
+TODO:
+
+make pip
+this creates the tar file that you can install via pip in ./dist
+
+sudo pip install --upgrade dist/*.tar.gz
+
+this wil install the files by default into /usr/local/bin/fg-cluster  

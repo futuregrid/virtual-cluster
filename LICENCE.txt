@@ -1,0 +1,14 @@
+Code is distributed under Apache License
+
+Please do not remove this file
+
+Institution:
+Indiana University
+
+Authors:
+Gregor von Laszewski
+Xiuwen Yang
+
+e-mail:
+laszewski@gmail.com
+xiuwyang@umail.iu.edu
