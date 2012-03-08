@@ -47,7 +47,6 @@ FutureGrid Specific Instalation
 
 Install without admin rights on india futuregrid
 
-
 Go to the portal https://portal.futuregrid.org/ 
 
 If you do not have an account, please apply for one
@@ -171,6 +170,8 @@ could be used for later restore
 Restore a virtual cluster
 --------------------------
 
+TODO: its unclear what resore actully does 
+
 Run following command will restore a virtual cluster which was saved before
 
     fg-cluster -f config_file restore -n number_of_computation_nodes -c control_node_image_id -m compute_node_image_id -s instance_type -a cluster_name
@@ -197,6 +198,10 @@ Note: Cluster name should be different as the names of currently running
 virtual clusters. Control node image id and compute image id should be ids which are generated 
 by runing checkpoint
 
+List the virtual clusters
+----------------------------
+
+TODO: develop a command that lists the virtual clustes and tells me in which state they are
 
 Shutdown a virtual cluster
 ---------------------------
