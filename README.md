@@ -105,7 +105,7 @@ It has the following format:
     # nova environment file
     novarc = ~/novarc
 
-You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurence within the file with the name that you use to associate your key.
+You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurence within the file with the name that you use to associate your key. The file is to be placed at ~/.futuregrid/futuregrid.cfg or concatenated to an already existing futuregrid.cfg file.
 
 -n: Number of computation nodes (control node not included)
 
