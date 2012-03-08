@@ -84,34 +84,24 @@ Parameters:
 
 * https://github.com/futuregrid/virtual-cluster/blob/master/etc/futuregrid.cfg
 
-It has the format of following:
-
+It has the following format:
 
     [virtual-cluster]                         
-
     username = PUT-YOUR-USER-NAME-HERE
-
     # Backup file for saving and loading virtual cluster(s)  
     backup = ~/.futuregrid/virtual-cluster
-
     # Slurm configuration input file
     slurm = ~/.futuregrid/slurm.conf.in
-
     # userkey pem file
     userkey = ~/%(username).pem
-
     # userkey name
     user = %(username)
-
     # euca2ools certificate file                
     ec2_cert = ~/cert.pem
-
     # euca2ools private file         
     ec2_private_key = ~/pk.pem
-
     # nova certificate file
     eucalyptus_cert = ~/cacert.pem
-
     # nova environment file
     novarc = ~/novarc
     
