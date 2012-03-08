@@ -116,16 +116,13 @@ HOW TO RUN
 Prerequisites
 -------------
 
-In order to use our tool, you need to obatin nova credentials and configuration files. And unzip 
-them under your home directory. Add nova environment variables to your .bashrc. 
-Then skip following to <create configuration file> section.
-
-If you are using india.futuregrid.org machines, you can obtain your nova credentials and configuration 
-files for the FutureGrid systems. These should have been placed in your home directory on the INDIA system. 
-Log in with your FutureGrid username (and SSH public key) and look for a file called 'username'-nova.zip. 
-If you do not have a portal and HPC account please create one. The credential zip file (username-nova.zip)
-contains the user keys and rc file .Unzip this file in your home directory. The novarc file contains th
-e necessary environment variables. Add nova environment variables to your .bashrc:
+In order to use our tool, you need to obatin nova credentials and configuration files for FutureGrid system, 
+you can obtain your nova credentials and configuration files for the FutureGrid systems. These should have 
+been placed in your home directory on the INDIA system. Log in with your FutureGrid username (and SSH public key) 
+and look for a file called 'username'-nova.zip. If you do not have a portal and HPC account please create one. 
+The credential zip file (username-nova.zip)contains the user keys and rc file .Unzip this file in your hom
+e directory. The novarc file contains the necessary environment variables. Add nova environment variables
+to your .bashrc:
 
     $ cat novarc >> .bashrc
     $ source .bashrc
@@ -384,13 +381,20 @@ FOR DEVELOPERS ONLY
 Generating the Distribution
 ---------------------------
 
-pull code from github
+Assume that you have git correctly installed and configured on your computer.
 
-TODO:
+### Step 1: You can pull source code from github by:
 
-make pip
-this creates the tar file that you can install via pip in ./dist
+    git clone git@github.com:futuregrid/virtual-cluster.git
 
-sudo pip install --upgrade dist/*.tar.gz
+### Step 2: Create tar file for installation
 
-this wil install the files by default into /usr/local/bin/fg-cluster  
+    make pip
+    
+This creates the tar file that you can install via pip in ./dist
+
+### Step 3: Install
+
+    sudo pip install --upgrade dist/*.tar.gz
+
+This wil install the files by default into /usr/local/bin/fg-cluster  
