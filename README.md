@@ -104,7 +104,8 @@ It has the following format:
     eucalyptus_cert = ~/cacert.pem
     # nova environment file
     novarc = ~/novarc
-    
+
+You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurence within the file with the name that you use to associate your key.
 
 -n: Number of computation nodes (control node not included)
 
