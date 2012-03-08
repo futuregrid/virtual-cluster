@@ -82,7 +82,13 @@ Run following command will create a virtual cluster of given name.
 
 Parameters:
 
--f: Futuregrid configuration file named futuregrid.cfg which has the format of following:
+-f: Futuregrid configuration file named futuregrid.cfg. An example configuration file can be found at 
+
+* https://github.com/futuregrid/virtual-cluster/blob/master/etc/futuregrid.cfg
+
+It has the format of following:
+
+
 [virtual-cluster]                         
 
 username = PUT-YOUR-USER-NAME-HERE
