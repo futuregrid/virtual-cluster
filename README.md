@@ -347,21 +347,22 @@ should not be larger than the actual number of computation nodes
 
 Execution result:
 
+    Running program helloworld
     salloc: Granted job allocation 2
-    Hello world from process 0 of 3
-    Hello world from process 1 of 3
-    Hello world from process 2 of 3
+    Hello world from processor i-000023c8, rank 0 out of 2 processors
+    Hello world from processor i-000023c9, rank 1 out of 2 processors
     salloc: Relinquishing job allocation 2
+
     
-Using fg-cluster-runprogram
+Using FGClusterRunprogram
 ---------------------------
 
 A program which could help you to run a simple MPI program can be found at 
-https://github.com/futuregrid/virtual-cluster/blob/master/futuregrid/virtual/cluster/fg-cluster-runprogram.py
+https://github.com/futuregrid/virtual-cluster/blob/master/etc/FGClusterRunprogram.py
 
 So you can simply run command:
 
-    # python fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a mycluster1
+    # python FGClusterRunprogram.py -f futuregrid.cfg -p helloworld.c -n 2 -a mycluster1
 
 Parameters:
 
