@@ -16,7 +16,7 @@ import ConfigParser
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 
 
-class cluster(object):
+class Cluster(object):
     """class of methods for run, checkpoint,
     restore, terminate, show status of cluster
     """
@@ -33,7 +33,7 @@ class cluster(object):
     slurm = None
 
     def __init__(self):
-        super(cluster, self).__init__()
+        super(Cluster, self).__init__()
         self.cloud_instances = CloudInstances()
 
 # ---------------------------------------------------------------------
@@ -171,11 +171,7 @@ class cluster(object):
         ):
         '''runs instances given parameters'''
 
-        eui_overhead = 3
-        eui_id_pos = 2
-
-        # value changes depending on different version of euca2ools
-        eui_len = 8
+        instance_id_list = []
 
         instances = [x for x in
                      self.get_command_result(
@@ -183,12 +179,21 @@ class cluster(object):
                                              ' -n %d -t %s %s'
                       % (userkey, cluster_size, instance_type,
                      image)).split()]
-        # parse command result store instances into cloud_instances list
+
+        for instance in instances:
+            if instance.find('i-') == 0:
+                instance_id_list.append(instance)
+
+        # check if all instances are created correctly
+        if not len(instance_id_list) == cluster_size:
+            self.msg('\nError in creating cluster, please check your input')
+            for created_instance_id in instance_id_list:
+                self.terminate_instance(created_instance_id)
+            sys.exit()
 
         for num in range(cluster_size):
             try:
-                self.cloud_instances.set_instance(instances[num
-                        * eui_len + eui_id_pos + eui_overhead], image)
+                self.cloud_instances.set_instance(instance_id_list[num], image)
             except:
                 self.msg('\nError in creating instances. Program will exit'
                          )
@@ -221,15 +226,15 @@ class cluster(object):
                       % args.name)
             sys.exit()
 
+        cluster_size = int(args.number) + 1
         self.msg('\n...Creating virtual cluster......')
         self.msg('cluster name    -- %s' % args.name)
-        self.msg('numbe of nodes  -- %s' % args.number)
+        self.msg('numbe of nodes  -- %s' % cluster_size)
         self.msg('instance type   -- %s' % args.type)
         self.msg('image id        -- %s' % args.image)
 
         self.cloud_instances.set_cloud_instances_by_name(args.name)
 
-        cluster_size = int(args.number) + 1
         self.euca_run_instance(self.user, cluster_size, args.image,
                                args.type)
         ip_lists = self.euca_describe_addresses()
@@ -245,9 +250,9 @@ class cluster(object):
             time.sleep(1)
             self.euca_associate_address(instance, ip_lists[i])
 
-        self.cloud_instances.save_instances()
-        self.detect_port()
-        self.deploy_services()
+#        self.cloud_instances.save_instances()
+##        self.detect_port()
+##        self.deploy_services()
 
     def config_slurm(self, create_key=True):
         '''config slurm'''
@@ -528,11 +533,11 @@ class cluster(object):
         self.cloud_instances.del_by_name(name)
         self.msg('\rClearing up the instance: completed')
 
-    def terminate_instance(self, instance):
+    def terminate_instance(self, instance_id):
         '''terminate instance given instance id'''
 
-        self.msg('terminating instance %s' % instance['id'])
-        os.system('euca-terminate-instances %s' % instance['id'])
+        self.msg('terminating instance %s' % instance_id)
+        os.system('euca-terminate-instances %s' % instance_id)
 
     def shut_down(self, args):
         '''method for shutting down a cluster'''
@@ -546,7 +551,7 @@ class cluster(object):
         self.cloud_instances.get_cloud_instances_by_name(args.name)
 
         for instance in self.cloud_instances.get_list()[1:]:
-            self.terminate_instance(instance)
+            self.terminate_instance(instance['id'])
         self.clean(args.name)
 
 # ---------------------------------------------------------------------
@@ -590,7 +595,7 @@ class cluster(object):
 def commandline_parser():
     '''parse commandline'''
 
-    virtual_cluster = cluster()
+    virtual_cluster = Cluster()
 
     parser = \
         argparse.ArgumentParser(description='Virtual'
