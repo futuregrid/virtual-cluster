@@ -84,15 +84,30 @@ Parameters:
 
 -f: Futuregrid configuration file named futuregrid.cfg which has the format of following:
 
-    [virtual-cluster]                           
-    backup = ~/.futuregrid/virtual-cluster    # Backup file for saving and loading virtual cluster(s)
-    slurm = ~/.futuregrid/slurm.conf.in       # Slurm configuration input file
-    userkey = ~/.ssh/username.pem             # userkey pem file
-    user = username                           # userkey name
-    ec2_cert = ~/.ssh/cert.pem                 # euca2ools certificate file
-    ec2_private_key = ~/.ssh/pk.pem           # euca2ools private file
-    eucalyptus_cert = ~/.ssh/cacert.pem       # nova certificate file
-    novarc = ~/.ssh/novarc                    # nova environment file
+    [virtual-cluster]                         
+    # Backup file for saving and loading virtual cluster(s)  
+    backup = ~/.futuregrid/virtual-cluster    
+
+    # Slurm configuration input file
+    slurm = ~/.futuregrid/slurm.conf.in       
+
+    # userkey pem file
+    userkey = ~/.ssh/username.pem             
+
+    # userkey name
+    user = username           
+
+    # euca2ools certificate file                
+    ec2_cert = ~/.ssh/cert.pem        
+
+    # euca2ools private file         
+    ec2_private_key = ~/.ssh/pk.pem           
+
+    # nova certificate file
+    eucalyptus_cert = ~/.ssh/cacert.pem       
+
+    # nova environment file
+    novarc = ~/.ssh/novarc                    
 
 -n: Number of computation nodes (control node not included)
 
