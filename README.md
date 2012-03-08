@@ -3,6 +3,7 @@ HOW TO INSTALL
 
 System requirements
 ------------------
+
 * euca2ools: verison 1.2
 * python: version 2.7
 * virtualenv (no admin rights)
@@ -10,10 +11,9 @@ System requirements
 Introduction
 ------------
 
-TODO: section that explains what this project is about
-
-TODO: openstack eucalyptus AWS?
-TODO: FutureGrid, where can I run this
+* TODO: section that explains what this project is about
+* TODO: openstack eucalyptus AWS?
+* TODO: FutureGrid, where can I run this
 
 Installation
 ------------
@@ -21,25 +21,24 @@ Installation
 We assume that yo do not have super user priviledges on the computer
 where you like to install our tool.
 
-only for india
-module load python
+TODO: only for india
+TODO: module load python
 
-step 1: Download virtualenv.py from following link:
+##Step 1: Download virtualenv.py from following link:
 
     wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
     
-step 2: Install virtualenv by
+##Step 2: Install virtualenv by
 
     python virtualenv.py --system-site-packages ENV
     
-setp 3: Activate virtualenv by
+##Step 3: Activate virtualenv by
 
     source ENV/bin/activate
     
-setp 4: Make egg by
+##Step 4: install the virtual cluster with pip
 
     ENV/bin/pip install futuregrid.virtual.cluster
-#    ENV/bin/python setup.py bdist_egg
     
 <br>
 
