@@ -24,19 +24,19 @@ where you like to install our tool.
 TODO: only for india
 TODO: module load python
 
-##Step 1: Download virtualenv.py from following link:
+### Step 1: Download virtualenv.py from following link:
 
     wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
     
-##Step 2: Install virtualenv by
+### Step 2: Install virtualenv by
 
     python virtualenv.py --system-site-packages ENV
     
-##Step 3: Activate virtualenv by
+### Step 3: Activate virtualenv by
 
     source ENV/bin/activate
     
-##Step 4: install the virtual cluster with pip
+### Step 4: install the virtual cluster with pip
 
     ENV/bin/pip install futuregrid.virtual.cluster
     
