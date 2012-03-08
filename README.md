@@ -83,31 +83,34 @@ Run following command will create a virtual cluster of given name.
 Parameters:
 
 -f: Futuregrid configuration file named futuregrid.cfg which has the format of following:
+[virtual-cluster]                         
 
-    [virtual-cluster]                         
-    # Backup file for saving and loading virtual cluster(s)  
-    backup = ~/.futuregrid/virtual-cluster    
+username = PUT-YOUR-USER-NAME-HERE
 
-    # Slurm configuration input file
-    slurm = ~/.futuregrid/slurm.conf.in       
+# Backup file for saving and loading virtual cluster(s)  
+backup = ~/.futuregrid/virtual-cluster
 
-    # userkey pem file
-    userkey = ~/.ssh/username.pem             
+# Slurm configuration input file
+slurm = ~/.futuregrid/slurm.conf.in
 
-    # userkey name
-    user = username           
+# userkey pem file
+userkey = ~/%(username).pem
 
-    # euca2ools certificate file                
-    ec2_cert = ~/.ssh/cert.pem        
+# userkey name
+user = %(username)
 
-    # euca2ools private file         
-    ec2_private_key = ~/.ssh/pk.pem           
+# euca2ools certificate file                
+ec2_cert = ~/cert.pem
 
-    # nova certificate file
-    eucalyptus_cert = ~/.ssh/cacert.pem       
+# euca2ools private file         
+ec2_private_key = ~/pk.pem
 
-    # nova environment file
-    novarc = ~/.ssh/novarc                    
+# nova certificate file
+eucalyptus_cert = ~/cacert.pem
+
+# nova environment file
+novarc = ~/novarc
+    
 
 -n: Number of computation nodes (control node not included)
 
