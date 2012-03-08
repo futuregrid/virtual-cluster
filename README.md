@@ -1,157 +1,272 @@
+INTRODUCTION
+============
+
+System requirements
+------------------
+
+* euca2ools: verison 1.2
+* python: version 2.7
+* virtualenv (no admin rights)
+
+Introduction
+------------
+
+Project futuregrid.virtual.cluster is a virtual cluster management software utilizing openstack
+resources on FutureGrid. The software contains several parts that could help users easily manage
+their operations to virtual clusters on FutureGrid. 
+
+Managment operations include: 
+
+* Create virtual cluster(s)
+* Save currently running virtual cluster(s)
+* Restore saved virtual cluster(s) 
+* Show status of virtual cluster(s) 
+* Terminate virtual cluster(s)
+
+
 HOW TO INSTALL
 ==============
-
-System requirement
-------------------
-euca2ools: verison 1.2
-
-python: version 2.7
-
-virtualenv (no admin rights)
 
 Installation
 ------------
 
-Install without admin rights on india futuregrid
+We assume that yo do not have super user priviledges on the computer
+where you like to install our tool.
 
-step 1: Download virtualenv.py from following link:
-
-    https://raw.github.com/pypa/virtualenv/master/virtualenv.py
+### Step 0: Prerequisites for installation (not using india.futuregrid.org machines):
     
-step 2: Install virtualenv by
+In order to make the installation process work smoothly, please make 
+sure that the computer you like to install our tool has already
+installed euca2ools (version 1.2) and Python (version 2.7). If you do
+not have those tools or correct version installed. you may install 
+euca2ools (version 1.2) from http://eucalyptussoftware.com/downloads/releases/
+and install python (version 2.7) from http://python.org . After you check all 
+the tools with version are correctly installed, you may proceed with following
+steps to start installation.
 
-    python virtualenv.py --system-site-packages ENV
+
+### Step 0: Prerequisites for installation (using india.futuregrid.org machines):
+
+india.futuregrid.org has installed every tools you may need to finish this
+installation, so to activate euca2ools (version 1.2) after you login into
+india futuregrid machines, just simply do:
     
-setp 3: Activate virtualenv by
-
-    source ENV/bin/activate
+    $ module load euca2ools
     
-setp 4: Make egg by
+To activate python 2.7, simply do:
 
-    ENV/bin/python setup.py bdist_egg
+    $ module load python
+
+Those commands will help you load tools with correct version you need to finish 
+installation. So now you may proceed with following installation steps. 
+
+### Step 1: Download virtualenv
+Since you do not have super user priviledges, you need virtualenv in order to 
+finish the installtion. You may download virtualenv.py by following command:
+
+    $ wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
     
-setp 5: Install egg by
+### Step 2: Install virtualenv
+After you downloaded virtualenv, you can install it by following command:
 
-    easy_install dist/*.egg
- 
-<br>
-Install with admin rights, just simply,
+    $ python virtualenv.py --system-site-packages ENV
+    
+### Step 3: Activate virtualenv
+After installation of virtualenv, you can activate virtualenv by following command:
 
-step 1: Make egg
+    $ source ENV/bin/activate
+    
+### Step 4: install the virtual cluster with pip
+Once virtualenv is activated, you can use pip to install our tool by following command:
 
-    make egg
+    $ ENV/bin/pip install futuregrid.virtual.cluster
+    
+NOTE: For more information about virtualenv, you may see documentation of 
+virtualenv on http://www.virtualenv.org/en/latest/index.html
 
-step 2: Install
+FutureGrid Specific Instalation
+-------------------------------
 
-    make install
+### Install without admin rights on india futuregrid
 
+Go to the futuregrid portal https://portal.futuregrid.org/ 
 
+If you do not have a futuregrid account, please apply for one at link:
+https://portal.futuregrid.org/user/register
 
+In order for you to get access to FutureGrid resources, you need to apply for 
+a portal account and create a Futuregrid project. This is in detail explained at
+https://portal.futuregrid.org/gettingstarted Do not forget to upload
+your public key. (see also https://portal.futuregrid.org/generating-ssh-keys-futuregrid-access)
+
+Once you have a vaild portal account and a valid project, you can go
+ahead and use FutureGrid
+
+Our virtual cluster is best executed on our machine called
+india.futuregrid.org
+
+Please log into this machine and follow the steps that we have outlined
+in the previous section to install the software and then run it while
+following the instaructions from the next section
 
 
 HOW TO RUN
 ==========
 
+Prerequisites
+-------------
+
+In order to use our tool, you need to obatin nova credentials and configuration files for FutureGrid system, 
+you can obtain your nova credentials and configuration files for the FutureGrid systems. These should have 
+been placed in your home directory on the INDIA system. Log in with your FutureGrid username (and SSH public key) 
+and look for a file called 'username'-nova.zip. If you do not have a portal and HPC account please create one. 
+The credential zip file (username-nova.zip)contains the user keys and rc file .Unzip this file in your hom
+e directory. The novarc file contains the necessary environment variables. Add nova environment variables
+to your .bashrc:
+
+    $ cat novarc >> .bashrc
+    $ source .bashrc
+    
+NOTE: For more information, you can refer to tutorial at: https://portal.futuregrid.org/tutorials/openstack
+
+
+Create configuration file
+-------------------------
+
+You need to create a configuration file which needs to be passed to this tool for locating necessary files
+in order to run. You can create configuration file using text editor, or using an example we provide to you
+
+* https://github.com/futuregrid/virtual-cluster/blob/master/etc/futuregrid.cfg
+
+It has the following format:
+
+    [virtual-cluster]                         
+    username = PUT-YOUR-USER-NAME-HERE
+    # Backup file for saving and loading virtual cluster(s)  
+    backup = ~/.futuregrid/virtual-cluster
+    # Slurm configuration input file
+    slurm = ~/.futuregrid/slurm.conf.in
+    # userkey pem file
+    userkey = ~/%(username).pem
+    # userkey name
+    user = %(username)
+    # euca2ools certificate file                
+    ec2_cert = ~/cert.pem
+    # euca2ools private file         
+    ec2_private_key = ~/pk.pem
+    # nova certificate file
+    eucalyptus_cert = ~/cacert.pem
+    # nova environment file
+    novarc = ~/novarc
+
+You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurrence within the file with the 
+name that you use to associate your key. The file is to be placed at ~/.futuregrid/futuregrid.cfg 
+or concatenated to an already existing futuregrid.cfg file.
+
+NOTE: you can also find an example of slurm.conf.in file which is used by configuring SLURM system from 
+https://github.com/futuregrid/virtual-cluster/blob/master/futuregrid/virtual/cluster/slurm.conf.in You can
+modify SLURM configuration parameters for your customized SLURM. But please leave controlMachine and COMPUTE
+NODES untouched.
+
+After you finished all steps above, you can use our tool to manage your virtual clusters
+
 Create a virtual cluster
 -------------------------
 
-Run following command will create a virtual cluster of given name.
+Run following command will create a virtual cluster of given parameters (command example is given below):
 
-    fg-cluster -f config_file run -n number_of_computation_nodes -s instance_type -i image_id -a cluster_name
+    $ fg-cluster -f <config-file> run -n <number-of-computation-nodes> -t <instance-type> -i <image-id> -a <cluster-name>
 
 Parameters:
 
--f: Futuregrid configuration file which has the format of following:
+* -f: Futuregrid configuration file named futuregrid.cfg.
+* -n: Number of computation nodes. This number of computation nodes does not include control node, so the
+actual number for virtual cluster nodes is the number of computations node plus one control node.
+* -s: Instance type. Instance type includes: m1.tiny, m1.small and m1.large.
+* -i: Image id. You can obtain image id by following command:
 
-    [virtual-cluster]                           
-    backup = ~/.futuregrid/virtual-cluster    # Backup file for saving and loading virtual cluster(s)
-    slurm = ~/.futuregrid/slurm.conf.in       # Slurm configuration input file
-    userkey = ~/.ssh/username.pem             # userkey pem file
-    user = username                           # userkey name
-    ec2_cert = ~/ssh/cert.pem                 # euca2ools certificate file
-    ec2_private_key = ~/.ssh/pk.pem           # euca2ools private file
-    eucalyptus_cert = ~/.ssh/cacert.pem       # nova certificate file
-    novarc = ~/.ssh/novarc                    # nova environment file
-
--n: Number of computation nodes (control node not included)
-
--s: Instance type
-
--i: Image id
-
--a: Virtual cluster name
+        $ euca-describe-images
+        
+* -a: cluster name. The virtual cluster name which uniquely identifies your cluster.
 
 For example:
 
-    fg-cluster -f futuregrid.cfg -n 2 -s m1.small -i ami-0000001d -a mycluster1
+    $ fg-cluster -f futuregrid.cfg run -n 2 -t m1.small -i ami-0000001d -a mycluster1
 
 Virtual cluster info will be saved in backup file specified in 
 futuregrid configuration file. Note: Cluster name should be different 
-as other virtual clusters which had been created. If want to use 
-default configure file, config file should be created as 
-~/.ssh/futuregrid.cfg, then argument -f can be omitted
+as other virtual clusters which had been created if you want to run multiple 
+virtual clusters. If you want to use default configure file, you should put this 
+file at ~/.futuregrid/futuregrid.cfg, then argument -f can be omitted
 
 
 Save a virtual cluster
 -----------------------
 
 Run following command will save a currently running virtual cluster into one
-control image and compute image for later resotre
+control image and compute image for later resotre. (Installed softwares and 
+unfinished jobs will also be saved)
 
-    fg-cluster -f config_file checkpoint -c control_node_bucket -t control_node_name -m compute_bucket -e compute_name -a cluster_name
+    $ fg-cluster -f <config-file> checkpoint -c <control-node-bucket> -t <control-node-name> -m <compute-bucket> -e  <compute-name> -a <cluster-name>
 
 Parameters:
 
--f: Futuregrid configuration file
-
--c: Control node bucket name
-
--t: Control node image name
-
--m: Compute node bucket name
-
--e: compute node image name
-
--a: Virtual cluster name
+* -f: Futuregrid configuration file
+* -c: Control node bucket name. Bucket name which you can identify control image
+* -t: Control node image name. Image name which you can use to identify your control image
+* -m: Compute node bucket name. Bucket name which you can identify your compute image
+* -e: compute node image name. Image name which you can use to identify your compute image
+* -a: Virtual cluster name
 
 For example:
 
-    fg-cluster -f futuregrid.cfg -c c1 -t c1.img -m c2 -e c2.img -a mycluster1
+    $ fg-cluster -f futuregrid.cfg -c myname -t c1.img -m myname -e c2.img -a mycluster1
+    
+If you successfully upload your control image and compute image, you can find them in openstack
+image repository according to the bucker name and image name you give to them by command:
+
+    $ euca-describe-images
+
 
 Note: Cluster name should be a name of cluster which is
 currently running. Generated image ids (including one control 
 node image id and one compute image id) will be registered which
-could be used for later restore
+are used for later restore.
 
 
 Restore a virtual cluster
 --------------------------
 
-Run following command will restore a virtual cluster which was saved before
+Run following command will restore a virtual cluster state including installed softwares, 
+unfinished jobs which was saved before, so that you can continue your work from that saved point.
 
-    fg-cluster -f config_file restore -n number_of_computation_nodes -c control_node_image_id -m compute_node_image_id -s instance_type -a cluster_name
+    $ fg-cluster -f <config-file> restore -n <number-of-computation-nodes> -c <control-node-image-id> -m <compute-node-image-id> -s <instance-type> -a <cluster-name>
 
 Parameters;
 
--f: Futuregrid configuration file
+* -f: Futuregrid configuration file
+* -n: Number of computaion node. This number of computation nodes does not include control node, so the
+actual number for virtual cluster nodes is the number of computations node plus one control node.
+* -c: Control node image id
+* -m: Compute node image id, you can look up your control node image id and computr image id by:
 
--n: Number of computaion node (control node not included)
-
--c: Control node image id
-
--m: Compute node image id
-
--s: Instance type (for all nodes)
-
--a: Virtual cluster name
+        $ euca-describe-images
+        
+* -s: Instance type. Instance type for compute nodes and control node
+* -a: Cluster name. The virtual cluster name which uniquely identifies your cluster.
 
 For example:
 
-    fg-cluster -f futuregrid.cfg -n 2 -c ami-0000001d -m ami-0000001d -s m1.small -a mycluster2
+    $ fg-cluster -f futuregrid.cfg -n 2 -c ami-0000001d -m ami-0000001d -s m1.small -a mycluster2
 
 Note: Cluster name should be different as the names of currently running 
 virtual clusters. Control node image id and compute image id should be ids which are generated 
-by runing checkpoint
+by running checkpoint command above.
+
+List the virtual clusters
+----------------------------
+
+TODO: develop a command that lists the virtual clustes and tells me in which state they are
 
 
 Shutdown a virtual cluster
@@ -159,21 +274,20 @@ Shutdown a virtual cluster
 
 Run following command will terminate a virtual cluster
 
-    fg-cluster -f config_file terminate -a cluster_name
+    $ fg-cluster -f <config-file> terminate -a <cluster-name>
 
 Parameters:
 
--f: Futuregrid configuration file
-
--a: Virtual cluster name
+* -f: Futuregrid configuration file
+* -a: Virtual cluster name
 
 For example:
 
-    fg-cluster -f futuregrid.cfg terminate -a mycluster2
+    $ fg-cluster -f futuregrid.cfg terminate -a mycluster2
 
 Note: Cluster name should be a name of cluster which is currently
 running. After executing this command, cluster info will be removed
-from backup file which specified by configuration file
+from backup file which is specified by configuration file
 
 
 Show status of virtual cluster(s)
@@ -182,20 +296,19 @@ Show status of virtual cluster(s)
 Run following command will show status of currently running 
 virtual cluster(s) including cluster size, image id, instance id, ip
 
-    fg-cluster -f config_file status -a cluster_name
+    $ fg-cluster -f <config-file> status -a <cluster-name>
 
 Parameters:
 
--f: Futuregrid configuration file
-
--a: Virtual cluster name
+* -f: Futuregrid configuration file
+* -a: Virtual cluster name
 
 
 For example: 
 
-Show status of one specific cluster
+Show status of one specific cluster given cluster name
 
-    fg-cluster -f futuregrid.cfg status -a mycluster1
+    * fg-cluster -f futuregrid.cfg status -a mycluster1
 
 Show status of all currently running clusters
 
@@ -208,17 +321,26 @@ a cluster that is currently running
 Run a simple MPI program on virtual cluster
 ===========================================
 
-Given MPI vesion of helloworld.c
+A simple MPI version of helloworld can be found at: 
+https://github.com/futuregrid/virtual-cluster/blob/master/futuregrid/virtual/cluster/helloworld.c
+You may use this for test purpose.
 
-step 1: Copy helloworld.c to each node in virtual cluster
+We assume that you are using helloworld.c from above link. So in order to run this MPI program 
+on the cluster you created using SLURM system, you can
 
-step 2: Complie on each node, run:
+### Step 1: Copy helloworld.c to HOME directory on each node in virtual cluster
 
-    mpicc hellowrld.c -o helloworld 
+    $ scp -i <your-userkey-pem-file> helloworld.c ubuntu@<instance-ip>:~/
 
-step 3: Go to control node, run:
+### Step 2: Login to instances, complie helloworld.c on each node, run:
 
-    salloc -N 2 mpirun helloworld
+    $ ssh -i <your-userkey-pem-file> ubuntu@<instance-ip>
+    $ mpicc hellowrld.c -o helloworld 
+
+### Step 3: Login to control node, run:
+
+    $ ssh -i <yout-userkey-pem-file> ubuntu@<control-node-ip>
+    $ salloc -N 3 mpirun helloworld
 
 where -N is the number of computation nodes you want to run with. And 
 should not be larger than the actual number of computation nodes
@@ -234,17 +356,45 @@ Execution result:
 Using fg-cluster-runprogram
 ---------------------------
 
-    fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a mycluster1
+A program which could help you to run a simple MPI program can be found at 
+https://github.com/futuregrid/virtual-cluster/blob/master/futuregrid/virtual/cluster/fg-cluster-runprogram.py
 
--f: Futuregrid configuration file
+So you can simply run command:
 
--p: Program source code file
+    # python fg-cluster-runprogram.py -f futuregrid.cfg -p helloworld.c -n 3 -a mycluster1
 
--n: Number of computaion nodes you want to run with
+Parameters:
 
--a: Number of virtual cluster
+* -f: Futuregrid configuration file
+* -p: Program source code file
+* -n: Number of computaion nodes you want to run with. Make sure that the number you input is no larger 
+than the acutal number of computaion node you created.
+* -a: Number of virtual cluster
 
 
 Note: Virtual cluster name should be a name of cluster which is currently running
 
 
+FOR DEVELOPERS ONLY
+===================
+
+Generating the Distribution
+---------------------------
+
+Assume that you have git correctly installed and configured on your computer.
+
+### Step 1: You can pull source code from github by:
+
+    git clone git@github.com:futuregrid/virtual-cluster.git
+
+### Step 2: Create tar file for installation
+
+    make pip
+    
+This creates the tar file that you can install via pip in ./dist
+
+### Step 3: Install
+
+    sudo pip install --upgrade dist/*.tar.gz
+
+This wil install the files by default into /usr/local/bin/fg-cluster  
