@@ -163,10 +163,10 @@ You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurrence within the file
 name that you use to associate your key. The file is to be placed at ~/.futuregrid/futuregrid.cfg 
 or concatenated to an already existing futuregrid.cfg file.
 
-NOTE: you can also find an example of slurm.conf.in file which is used by configuring SLURM system from 
-https://github.com/futuregrid/virtual-cluster/blob/master/futuregrid/virtual/cluster/slurm.conf.in You can
-modify SLURM configuration parameters for your customized SLURM. But please leave controlMachine and COMPUTE
-NODES untouched.
+NOTE: you can also find an example of slurm.conf.in file which is used by configuring SLURM 
+system from https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in You 
+can modify SLURM configuration parameters for your customized SLURM. But please leave 
+"controlMachine" and "COMPUTE NODES" untouched.
 
 After you finished all steps above, you can use our tool to manage your virtual clusters
 
@@ -322,7 +322,7 @@ Run a simple MPI program on virtual cluster
 ===========================================
 
 A simple MPI version of helloworld can be found at: 
-https://github.com/futuregrid/virtual-cluster/blob/master/futuregrid/virtual/cluster/helloworld.c
+https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c
 You may use this for test purpose.
 
 We assume that you are using helloworld.c from above link. So in order to run this MPI program 
