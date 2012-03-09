@@ -14,6 +14,7 @@ import time
 import ConfigParser
 
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+from ConfigParser import NoOptionError
 
 
 class Cluster(object):
@@ -40,7 +41,8 @@ class Cluster(object):
 # METHODS TO PRINT HELP MESSAGES
 # ---------------------------------------------------------------------
 
-    def msg(self, message):
+    @classmethod
+    def msg(cls, message):
         '''method for printing messages'''
 
         print message
@@ -51,18 +53,24 @@ class Cluster(object):
         if self.if_debug:
             print '\r' + message
 
+    def set_debug(self, if_debug=False):
+        '''set debug flag'''
+
+        self.if_debug = if_debug
+
 # ---------------------------------------------------------------------
 # METHOD TO PARSE CONFIGURATION FILE
 # ---------------------------------------------------------------------
 
-    def parse_conf(self, file_name='no file specified'):
+    def parse_conf(self, file_name='unspecified'):
         """
         Parse conf file if given, default location
-        '~/.ssh/futuregrid.cfg'
+        '~/.futuregrid/futuregrid.cfg'
         conf format:
         [virtual-cluster]
         backup = directory/virtual-cluster.dat
         userkey = directory/userkey.pem
+        username = userkey
         ec2_cert = directory/cert.pem
         ec2_private_key = directory/pk.pem
         eucalyptus_cert = directory/cacert.pem
@@ -71,23 +79,28 @@ class Cluster(object):
 
         config = ConfigParser.ConfigParser()
 
-        config.read([os.path.expanduser('~/.ssh/futuregrid.cfg'),
-                    file_name])
+        try:
+            config.read([file_name,
+                         os.path.expanduser('~/.futuregrid/futuregrid.cfg')])
 
-        # default location ~/.ssh/futuregrid.cfg
+            # default location ~/.futuregrid/futuregrid.cfg
 
-        self.backup_file = config.get('virtual-cluster', 'backup')
-        self.userkey = config.get('virtual-cluster', 'userkey')
-        self.user = config.get('virtual-cluster', 'user')
-        self.ec2_cert = config.get('virtual-cluster', 'ec2_cert')
-        self.ec2_private_key = config.get('virtual-cluster',
-                'ec2_private_key')
-        self.eucalyptus_cert = config.get('virtual-cluster',
-                'eucalyptus_cert')
-        self.novarc = config.get('virtual-cluster', 'novarc')
-        self.slurm = config.get('virtual-cluster', 'slurm')
+            self.backup_file = config.get('virtual-cluster', 'backup')
+            self.userkey = config.get('virtual-cluster', 'userkey')
+            self.user = config.get('virtual-cluster', 'user')
+            self.ec2_cert = config.get('virtual-cluster', 'ec2_cert')
+            self.ec2_private_key = config.get('virtual-cluster',
+                    'ec2_private_key')
+            self.eucalyptus_cert = config.get('virtual-cluster',
+                    'eucalyptus_cert')
+            self.novarc = config.get('virtual-cluster', 'novarc')
+            self.slurm = config.get('virtual-cluster', 'slurm')
 
-        self.cloud_instances.set_backup_file(self.backup_file)
+            self.cloud_instances.set_backup_file(self.backup_file)
+
+        except NoOptionError:
+            self.msg('Error in reading configuration file!')
+            sys.exit()
 
 # ---------------------------------------------------------------------
 # METHOD TO DETECT OPEN PORT
@@ -130,7 +143,8 @@ class Cluster(object):
 # METHODS TO DO RPCs
 # ---------------------------------------------------------------------
 
-    def get_command_result(self, command):
+    @classmethod
+    def get_command_result(cls, command):
         '''gets command output'''
         return os.popen(command).read()
 
@@ -206,7 +220,8 @@ class Cluster(object):
                   free_ip))
         self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
 
-    def euca_describe_addresses(self):
+    @classmethod
+    def euca_describe_addresses(cls):
         '''return list of free ips'''
 
         ip_list = []
@@ -220,7 +235,6 @@ class Cluster(object):
     def create_cluster(self, args):
         '''method for creating cluster'''
 
-        self.parse_conf(args.file)
         if self.cloud_instances.if_exist(args.name):
             self.msg('\nError in creating virtual cluster %s, name is in use'
                       % args.name)
@@ -250,9 +264,12 @@ class Cluster(object):
             time.sleep(1)
             self.euca_associate_address(instance, ip_lists[i])
 
-#        self.cloud_instances.save_instances()
-##        self.detect_port()
-##        self.deploy_services()
+        self.cloud_instances.save_instances()
+        self.detect_port()
+
+        time.sleep(3)
+
+        self.deploy_services()
 
     def config_slurm(self, create_key=True):
         '''config slurm'''
@@ -394,7 +411,8 @@ class Cluster(object):
                          % (self.userkey, instance_ip, bucket_name,
                         manifest)).read()
 
-    def describe_images(self, image_id):
+    @classmethod
+    def describe_images(cls, image_id):
         '''get images infos'''
 
         return os.popen('euca-describe-images %s' % image_id).read()
@@ -438,7 +456,8 @@ class Cluster(object):
         self.msg('\nRegistering image')
         self.euca_register(image)
 
-    def euca_register(self, image):
+    @classmethod
+    def euca_register(cls, image):
         '''register image'''
 
         os.system('euca-register %s' % image)
@@ -453,7 +472,6 @@ class Cluster(object):
         self.msg('compute node bucket  -- %s' % args.computeb)
         self.msg('compute node name    -- %s' % args.computen)
 
-        self.parse_conf(args.file)
         if not self.cloud_instances.if_exist(args.name):
             self.msg('Error in locating virtual cluster %s, not created'
                       % args.name)
@@ -489,7 +507,6 @@ class Cluster(object):
     def restore_cluster(self, args):
         '''method for restoring cluster'''
 
-        self.parse_conf(args.file)
         if self.cloud_instances.if_exist(args.name):
             self.msg('Error in creating virtual cluster %s, name is in use'
                       % args.name)
@@ -542,7 +559,6 @@ class Cluster(object):
     def shut_down(self, args):
         '''method for shutting down a cluster'''
 
-        self.parse_conf(args.file)
         if not self.cloud_instances.if_exist(args.name):
             self.msg('\nError in finding virtual cluster %s, not created.'
                       % args.name)
@@ -560,8 +576,6 @@ class Cluster(object):
 
     def show_status(self, args):
         '''show status of cluster(s)'''
-
-        self.parse_conf(args.file)
 
         if not args.name:
             for cloud in self.cloud_instances.get_all_cloud_instances():
@@ -680,8 +694,17 @@ def commandline_parser():
     restore_parser.set_defaults(func=virtual_cluster.restore_cluster)
 
     args = parser.parse_args()
-    args.func(args)
 
+    # parse config file
+    if args.file:
+        virtual_cluster.parse_conf(args.file)
+    else:
+        virtual_cluster.parse_conf()
+
+    # set debug flag
+    virtual_cluster.set_debug(args.debug)
+
+    args.func(args)
 
 if __name__ == '__main__':
     commandline_parser()
