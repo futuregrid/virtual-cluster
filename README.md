@@ -39,10 +39,16 @@ In order to make the installation process work smoothly, please make
 sure that the computer you like to install our tool has already
 installed euca2ools (version 1.2) and Python (version 2.7). If you do
 not have those tools or correct version installed. you may install 
-euca2ools (version 1.2) from http://eucalyptussoftware.com/downloads/releases/
-and install python (version 2.7) from http://python.org . After you check all 
-the tools with version are correctly installed, you may proceed with following
-steps to start installation.
+euca2ools (version 1.2) from 
+
+* http://eucalyptussoftware.com/downloads/releases/
+
+and install python (version 2.7) from 
+
+* http://python.org
+
+After you check all the tools with version are correctly installed, you may 
+proceed with following steps to start installation.
 
 
 ### Step 0: Prerequisites for installation (using india.futuregrid.org machines):
@@ -82,22 +88,30 @@ Once virtualenv is activated, you can use pip to install our tool by following c
     $ ENV/bin/pip install futuregrid.virtual.cluster
     
 NOTE: For more information about virtualenv, you may see documentation of 
-virtualenv on http://www.virtualenv.org/en/latest/index.html
+virtualenv on 
+
+* http://www.virtualenv.org/en/latest/index.html
 
 FutureGrid Specific Instalation
 -------------------------------
 
 ### Install without admin rights on india futuregrid
 
-Go to the futuregrid portal https://portal.futuregrid.org/ 
+Go to the futuregrid portal 
+
+* https://portal.futuregrid.org/ 
 
 If you do not have a futuregrid account, please apply for one at link:
-https://portal.futuregrid.org/user/register
+
+* https://portal.futuregrid.org/user/register
 
 In order for you to get access to FutureGrid resources, you need to apply for 
 a portal account and create a Futuregrid project. This is in detail explained at
-https://portal.futuregrid.org/gettingstarted Do not forget to upload
-your public key. (see also https://portal.futuregrid.org/generating-ssh-keys-futuregrid-access)
+
+* https://portal.futuregrid.org/gettingstarted 
+
+Do not forget to upload your public key. 
+(see also https://portal.futuregrid.org/generating-ssh-keys-futuregrid-access)
 
 Once you have a vaild portal account and a valid project, you can go
 ahead and use FutureGrid
@@ -127,7 +141,9 @@ to your .bashrc:
     $ cat novarc >> .bashrc
     $ source .bashrc
     
-NOTE: For more information, you can refer to tutorial at: https://portal.futuregrid.org/tutorials/openstack
+NOTE: For more information, you can refer to tutorial at: 
+
+* https://portal.futuregrid.org/tutorials/openstack
 
 
 Create configuration file
@@ -164,8 +180,11 @@ name that you use to associate your key. The file is to be placed at ~/.futuregr
 or concatenated to an already existing futuregrid.cfg file.
 
 NOTE: you can also find an example of slurm.conf.in file which is used by configuring SLURM 
-system from https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in You 
-can modify SLURM configuration parameters for your customized SLURM. But please leave 
+system from 
+
+* https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in 
+
+You can modify SLURM configuration parameters for your customized SLURM. But please leave 
 "controlMachine" and "COMPUTE NODES" untouched.
 
 After you finished all steps above, you can use our tool to manage your virtual clusters
@@ -322,7 +341,9 @@ Run a simple MPI program on virtual cluster
 ===========================================
 
 A simple MPI version of helloworld can be found at: 
-https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c
+
+* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c
+
 You may use this for test purpose.
 
 We assume that you are using helloworld.c from above link. So in order to run this MPI program 
@@ -358,7 +379,8 @@ Using FGClusterRunprogram
 ---------------------------
 
 A program which could help you to run a simple MPI program can be found at 
-https://github.com/futuregrid/virtual-cluster/blob/master/etc/FGClusterRunprogram.py
+
+* https://github.com/futuregrid/virtual-cluster/blob/master/etc/FGClusterRunprogram.py
 
 So you can simply run command:
 
