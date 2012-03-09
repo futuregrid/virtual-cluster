@@ -141,6 +141,11 @@ to your .bashrc:
     $ cat novarc >> .bashrc
     $ source .bashrc
     
+Create your private key by (Recommended: Use your user name as your private key name):
+
+    $ euca-add-keypair youruserkey > youruserkey.pem
+    $ chmod 0600 youruserkey.pem
+    
 NOTE: For more information, you can refer to tutorial at: 
 
 * https://portal.futuregrid.org/tutorials/openstack
@@ -179,7 +184,8 @@ You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurrence within the file
 name that you use to associate your key. The file is to be placed at ~/.futuregrid/futuregrid.cfg 
 or concatenated to an already existing futuregrid.cfg file.
 
-NOTE: you can also find an example of slurm.conf.in file which is used by configuring SLURM 
+NOTE: Please make sure all the files are placed under the location as you specified in configuration 
+file. You can also find an example of slurm.conf.in file which is used by configuring SLURM 
 system from 
 
 * https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in 
