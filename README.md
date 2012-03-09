@@ -392,7 +392,7 @@ Parameters:
 * -p: Program source code file
 * -n: Number of computaion nodes you want to run with. Make sure that the number you input is no larger 
 than the acutal number of computaion node you created.
-* -a: Number of virtual cluster
+* -a: Name of virtual cluster you want to run program on
 
 
 Note: Virtual cluster name should be a name of cluster which is currently running
