@@ -220,7 +220,7 @@ For example:
 
 Virtual cluster info will be saved in backup file specified in 
 futuregrid configuration file. Note: Cluster name should be different 
-as other virtual clusters which had been created if you want to run multiple 
+as other virtual clusters which is running if you want to run multiple 
 virtual clusters. If you want to use default configure file, you should put this 
 file at ~/.futuregrid/futuregrid.cfg, then argument -f can be omitted
 
@@ -284,14 +284,20 @@ For example:
 
     $ fg-cluster -f futuregrid.cfg -n 2 -c ami-0000001d -m ami-0000001d -s m1.small -a mycluster2
 
-Note: Cluster name should be different as the names of currently running 
-virtual clusters. Control node image id and compute image id should be ids which are generated 
+Note: Cluster name should be the name of cluster which had been saved before. 
+Control node image id and compute image id should be ids which are generated 
 by running checkpoint command above.
 
 List the virtual clusters
 ----------------------------
 
-TODO: develop a command that lists the virtual clustes and tells me in which state they are
+Run following command will give you a list of virtual clusters and their status
+
+    $ fg-cluster -f <config-file> list
+    
+For example:
+
+    $ fg-cluster -f futuregrid.cfg list
 
 
 Shutdown a virtual cluster
