@@ -288,17 +288,6 @@ Note: Cluster name should be the name of cluster which had been saved before.
 Control node image id and compute image id should be ids which are generated 
 by running checkpoint command above.
 
-List the virtual clusters
-----------------------------
-
-Run following command will give you a list of virtual clusters and their status
-
-    $ fg-cluster -f <config-file> list
-    
-For example:
-
-    $ fg-cluster -f futuregrid.cfg list
-
 
 Shutdown a virtual cluster
 ---------------------------
@@ -347,6 +336,18 @@ Show status of all currently running clusters
 
 Note: If argument -a is specified, then name of cluster should be 
 a cluster that is currently running
+
+
+List the virtual clusters
+----------------------------
+
+Run following command will give you a list of virtual clusters and their status
+
+    $ fg-cluster -f <config-file> list
+    
+For example:
+
+    $ fg-cluster -f futuregrid.cfg list
 
 
 Run a simple MPI program on virtual cluster
