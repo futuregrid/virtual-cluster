@@ -374,7 +374,7 @@ on the cluster you created using SLURM system, you can
 ### Step 3: Login to control node, run:
 
     $ ssh -i <yout-userkey-pem-file> ubuntu@<control-node-ip>
-    $ salloc -N 3 mpirun helloworld
+    $ salloc -N 2 mpirun helloworld
 
 where -N is the number of computation nodes you want to run with. And 
 should not be larger than the actual number of computation nodes
