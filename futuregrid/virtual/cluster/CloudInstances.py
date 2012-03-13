@@ -8,15 +8,15 @@ virtual cluster(s)
 
 import pickle
 import os
-import sys
 
 
 class CloudInstances:
     '''
-    ops for managing cloud instances
+    Methods for managing cloud instances
     '''
 
     cloud_instances = []
+    backup_file = None
     RUN = 'run'
     SAVED = 'saved'
     DOWN = 'terminated'
@@ -54,7 +54,7 @@ class CloudInstances:
             cloud_list = pickle.load(src_file)
             return cloud_list
         except IOError:
-            sys.exit()
+            return []
 
     def get_list(self):
         '''get cloud intances list'''
@@ -135,35 +135,15 @@ class CloudInstances:
                 src_file.close()
                 return
 
-    def set_running(self):
-        ''' set cluster status to run'''
+    def set_status(self, status):
+        ''' get status of virtual cluster'''
 
-        self.cloud_instances[0]['status'] = self.RUN
+        self.cloud_instances[0]['status'] = status
 
-    def if_running(self):
-        '''check if cluster is running'''
+    def if_status(self, status):
+        ''' check status of virtual cluster'''
 
-        return self.cloud_instances[0]['status'] == self.RUN
-
-    def set_saved(self):
-        ''' set cluster status to saved'''
-
-        self.cloud_instances[0]['status'] = self.SAVED
-
-    def if_saved(self):
-        '''check if cluster is saved'''
-
-        return self.cloud_instances[0]['status'] == self.SAVED
-
-    def set_terminated(self):
-        ''' set cluster status to terminated'''
-
-        self.cloud_instances[0]['status'] = self.DOWN
-
-    def if_terminated(self):
-        '''check if cluster is terminated'''
-
-        return self.cloud_instances[0]['status'] == self.DOWN
+        return self.cloud_instances[0]['status'] == status
 
     def get_status(self):
         ''' get cluster staus'''

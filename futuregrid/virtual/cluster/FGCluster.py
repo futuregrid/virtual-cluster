@@ -137,10 +137,11 @@ class Cluster(object):
                     socket_s.settimeout(1)
                     socket_s.connect((instance['ip'], 22))
                     socket_s.close()
+
                     # install on instance which is ready
-                    time.sleep(1)
                     if install:
                         if ready_instances[instance['ip']]:
+                            time.sleep(2)
                             self.deploy_services(instance)
                             ready_instances[instance['ip']] = False
                     ready = ready + 1
@@ -153,10 +154,11 @@ class Cluster(object):
                                      + '.' * count + ' ' * (msg_len - count))
                     sys.stdout.flush()
                     ready = 0
-                    time.sleep(1)
 
             # check if all vms are ready
             if ready == len(self.cloud_instances.get_list()[1:]):
+                # ssh may fail due to heavy load of startup in instance
+                time.sleep(3)
                 break
 
 # ---------------------------------------------------------------------
@@ -263,7 +265,7 @@ class Cluster(object):
             # if exists, get cloud info by name
             self.cloud_instances.get_cloud_instances_by_name(args.name)
             # if cluster is terminated, delete old info, start over
-            if self.cloud_instances.if_terminated():
+            if self.cloud_instances.if_status(self.cloud_instances.DOWN):
                 self.cloud_instances.del_by_name(args.name)
                 self.cloud_instances.clear()
             else:
@@ -375,7 +377,7 @@ class Cluster(object):
                 self.execute(instance, 'sudo chmod 400 /etc/munge/munge.key'
                              )
 
-            # start slurm
+            # start slurm and munge daemon
             self.msg('\nStarting slurm on node %s' % instance['id'])
             self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
             self.execute(instance, 'sudo /etc/init.d/munge start')
@@ -388,10 +390,12 @@ class Cluster(object):
     def deploy_services(self, instance):
         '''deploy SLURM and OpenMPI services'''
 
-        self.msg('\nInstalling SLURM system and OpenMPI on %s'
+        self.msg('\nInstalling SLURM system and OpenMPI on %s\n'
                  % instance['ip'])
         self.update(instance)
+        # install SLURM
         self.install(instance, 'slurm-llnl')
+        # install OpenMPI
         self.install(instance, "openmpi-bin openmpi-doc libopenmpi-dev")
 
 # ---------------------------------------------------------------------
@@ -486,7 +490,7 @@ class Cluster(object):
 
         image = [x for x in self.upload_bundle(instance_ip, bucket_name,
                  manifest).split()].pop()
-
+        self.msg('\nUploading done')
         self.msg('\nRegistering image')
         self.euca_register(image)
 
@@ -501,7 +505,7 @@ class Cluster(object):
 
         if self.cloud_instances.if_exist(args.name):
             self.cloud_instances.get_cloud_instances_by_name(args.name)
-            if self.cloud_instances.if_terminated():
+            if self.cloud_instances.if_status(self.cloud_instances.DOWN):
                 self.msg('Error in locating virtual cluster %s, not running?'
                           % args.name)
                 sys.exit()
@@ -539,9 +543,14 @@ class Cluster(object):
                        self.cloud_instances.get_by_id(2)['ip'],
                        args.computeb, args.computen)
 
-        self.cloud_instances.set_saved()
+        # change status to saved and save
+        self.cloud_instances.set_status(self.cloud_instances.SAVED)
         self.cloud_instances.del_by_name(args.name)
         self.cloud_instances.save_instances()
+
+        # terminate instances
+        for instance in self.cloud_instances.get_list()[1:]:
+            self.terminate_instance(instance['id'])
 # ---------------------------------------------------------------------
 # METHODS TO RESTORE VIRTUAL CLUSTER
 # ---------------------------------------------------------------------
@@ -551,9 +560,10 @@ class Cluster(object):
 
         control_node_num = 1
 
+        # only restore cluster which is saved
         if self.cloud_instances.if_exist(args.name):
-            self.cloud_instances.set_cloud_instances_by_name(args.name)
-            if self.cloud_instances.if_saved():
+            self.cloud_instances.get_cloud_instances_by_name(args.name)
+            if self.cloud_instances.if_status(self.cloud_instances.SAVED):
                 self.cloud_instances.del_by_name(args.name)
                 self.cloud_instances.clear()
                 self.cloud_instances.set_cloud_instances_by_name(args.name)
@@ -579,6 +589,7 @@ class Cluster(object):
         self.euca_run_instance(self.user, int(args.number),
                                args.computei, args.type)
 
+        # get free ip list
         ip_lists = self.euca_describe_addresses()
 
         time.sleep(3)
@@ -589,10 +600,12 @@ class Cluster(object):
             instance = self.cloud_instances.get_by_id(i + 1)
             self.euca_associate_address(instance, ip_lists[i])
 
+        # check ssh port but not install
         self.detect_port(False)
+        # cnfig SLURM but not generating munge-key
         self.config_slurm(False)
-
-        self.cloud_instances.set_running()
+        # set status to run and save
+        self.cloud_instances.set_status(self.cloud_instances.RUN)
         self.cloud_instances.save_instances()
 
 # ---------------------------------------------------------------------
@@ -602,15 +615,16 @@ class Cluster(object):
     def terminate_instance(self, instance_id):
         '''terminate instance given instance id'''
 
-        self.msg('terminating instance %s' % instance_id)
+        self.msg('Terminating instance %s' % instance_id)
         os.system('euca-terminate-instances %s' % instance_id)
 
     def shut_down(self, args):
         '''method for shutting down a cluster'''
 
+        # only terminate cluster which is not terminated
         if self.cloud_instances.if_exist(args.name):
             self.cloud_instances.get_cloud_instances_by_name(args.name)
-            if self.cloud_instances.if_terminated():
+            if self.cloud_instances.if_status(self.cloud_instances.DOWN):
                 self.msg('\nError in terminating cluster %s, already down?'
                           % args.name)
                 sys.exit()
@@ -622,8 +636,9 @@ class Cluster(object):
         for instance in self.cloud_instances.get_list()[1:]:
             self.terminate_instance(instance['id'])
 
-        if self.cloud_instances.if_running():
-            self.cloud_instances.set_terminated()
+        # change status to terminated, and save
+        if self.cloud_instances.if_status(self.cloud_instances.RUN):
+            self.cloud_instances.set_status(self.cloud_instances.DOWN)
             self.cloud_instances.del_by_name(args.name)
             self.cloud_instances.save_instances()
 # ---------------------------------------------------------------------
@@ -635,10 +650,10 @@ class Cluster(object):
 
         if not args.name:
             for cloud in self.cloud_instances.get_all_cloud_instances():
-                self.msg('\n=============================')
+                self.msg('\n====================================')
                 self.msg('Virtual Cluster %s (status: %s)'
                          % (cloud[0]['name'], cloud[0]['status']))
-                self.msg('=============================')
+                self.msg('====================================')
                 for instance in cloud[1:]:
                     self.msg('instance %s: IP -- %s, image -- %s'
                              % (instance['id'], instance['ip'],
@@ -649,10 +664,10 @@ class Cluster(object):
                           % args.name)
                 sys.exit()
             self.cloud_instances.get_cloud_instances_by_name(args.name)
-            self.msg('\n=============================')
+            self.msg('\n====================================')
             self.msg('Virtual Cluster %s (status: %s)'
                      % (args.name, self.cloud_instances.get_status()))
-            self.msg('=============================')
+            self.msg('====================================')
             for instance in self.cloud_instances.get_list()[1:]:
                 self.msg('instance %s: IP -- %s, image -- %s'
                          % (instance['id'], instance['ip'],
