@@ -168,6 +168,7 @@ class Cluster(object):
     @classmethod
     def get_command_result(cls, command):
         '''gets command output'''
+
         return os.popen(command).read()
 
     def execute(self, instance, command):
@@ -244,13 +245,12 @@ class Cluster(object):
                   free_ip))
         self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
 
-    @classmethod
-    def euca_describe_addresses(cls):
+    def euca_describe_addresses(self):
         '''return list of free ips'''
 
         ip_list = []
-        ips = [x for x in os.popen('euca-describe-addresses'
-               ).read().split('\n')]
+        ips = [x for x in self.get_command_result('euca-describe-addresses'
+               ).split('\n')]
 
         # store free ip into ip list for return
         for free_ip in ips:
@@ -412,29 +412,29 @@ class Cluster(object):
         '''save instance given paramenters'''
 
         if kernel_id == None:
-            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
+            return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/'"
                              % (self.userkey, instance_ip,
-                                instance_name)).read()
+                                instance_name))
         elif ramdisk_id == None:
-            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
+            return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/ --kernel %s'"
                              % (self.userkey, instance_ip, instance_name,
-                            kernel_id)).read()
+                            kernel_id))
         else:
-            return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
+            return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
                              % (self.userkey, instance_ip, instance_name,
-                            kernel_id, ramdisk_id)).read()
+                            kernel_id, ramdisk_id))
 
     def upload_bundle(
         self,
@@ -444,16 +444,15 @@ class Cluster(object):
         ):
         '''upload bundle given manifest'''
 
-        return os.popen("ssh -i %s ubuntu@%s '. ~/.profile;"
+        return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
                         " euca-upload-bundle -b %s -m %s'"
                          % (self.userkey, instance_ip, bucket_name,
-                        manifest)).read()
+                        manifest))
 
-    @classmethod
-    def describe_images(cls, image_id):
+    def describe_images(self, image_id):
         '''get images infos'''
 
-        return os.popen('euca-describe-images %s' % image_id).read()
+        return self.get_command_result('euca-describe-images %s' % image_id)
 
     def get_kernel_id(self, image_id):
         '''get kernel id'''
