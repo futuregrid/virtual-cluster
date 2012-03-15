@@ -33,7 +33,7 @@ Installation
 We assume that yo do not have super user priviledges on the computer
 where you like to install our tool.
 
-### Step 0: Prerequisites for installation (not using india.futuregrid.org machines):
+### Step 0: Prerequisites (not using india.futuregrid.org machines):
     
 In order to make the installation process work smoothly, please make 
 sure that the computer you like to install our tool has already
@@ -51,7 +51,7 @@ After you check all the tools with version are correctly installed, you may
 proceed with following steps to start installation.
 
 
-### Step 0: Prerequisites for installation (using india.futuregrid.org machines):
+### Step 0: Prerequisites (using india.futuregrid.org machines):
 
 india.futuregrid.org has installed every tools you may need to finish this
 installation, so to activate euca2ools (version 1.2) after you login into
@@ -86,7 +86,12 @@ After installation of virtualenv, you can activate virtualenv by following comma
 Once virtualenv is activated, you can use pip to install our tool by following command:
 
     $ ENV/bin/pip install futuregrid.virtual.cluster
-    
+
+If you already had our tool installed, and you want to upgrade to newest version, you can 
+do it by following command:
+
+	$ ENV/bin/pip install --upgrade futuregrid.virtual.cluster
+
 NOTE: For more information about virtualenv, you may see documentation of 
 virtualenv on 
 
