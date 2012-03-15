@@ -2,8 +2,58 @@
 # -*- coding: utf-8 -*-
 
 """
-Operations for managing
-virtual clusters
+Operations for managing virtual clusters
+
+Name fg-cluster
+
+Description
+
+usage:
+
+    fg-cluster <parameters>
+
+    -f -- futuregrid configuration file
+          which specifies the location of
+          necessary files to run program
+    --debug -- show debug message
+
+    subcommands:
+
+    run: run a virtual cluster of given parameters
+
+    -a -- virtual cluster name
+    -n -- compute node number
+    -i -- image type
+    -t -- instance type
+
+    checkpoint: save the state of currently running cluster
+
+    -a -- virtual cluster name
+    -c -- control node bucket name
+    -t -- control node image name
+    -m -- compute node bucket name
+    -e -- compute node image name
+
+    restore: restore state of saved virtual cluster
+
+    -a -- virtual cluster name
+    -n -- number of computation nodes
+    -c -- control node image id
+    -m -- compute node image id
+    -s -- instance type
+
+    terminate: terminate a virtual cluster of given name
+
+    -a -- virtual cluster name
+
+    status: show status of virtual cluster(s)
+
+    -a -- virtual cluster name
+
+    If no virtual cluster name is specified, the command will return
+    status of all virtual clusters recorded
+
+    list: list virtual clusters
 """
 
 import argparse
@@ -118,19 +168,28 @@ class Cluster(object):
 # ---------------------------------------------------------------------
 
     def detect_port(self, install=True):
-        '''detect if ssh port 22 is alive for listening'''
+        '''
+        detect if ssh port 22 is alive for listening
+        if install is set to true, installation of
+        SLURM and OpenMPI will start on VM which is ready
+        '''
 
+        # ready count for VM
         ready = 0
         count = 0
         msg_len = 5
+        # ready list for instances who are ready to install
         ready_instances = {}
 
         # check if ssh port of all VMs are alive for listening
         while 1:
             for instance in self.cloud_instances.get_list()[1:]:
                 # create ready dict using ip as key
+                # if True: ready to install
+                # if False: already installed
                 if not instance['ip'] in ready_instances:
                     ready_instances[instance['ip']] = True
+                # try to connect ssh port
                 try:
                     socket_s = socket.socket(socket.AF_INET,
                             socket.SOCK_STREAM)
@@ -141,8 +200,11 @@ class Cluster(object):
                     # install on instance which is ready
                     if install:
                         if ready_instances[instance['ip']]:
+                            # ssh may fail due to heavy load of
+                            # startup in instance, use sleep
                             time.sleep(2)
                             self.deploy_services(instance)
+                            # set false, installation done
                             ready_instances[instance['ip']] = False
                     ready = ready + 1
 
@@ -206,10 +268,18 @@ class Cluster(object):
         image,
         instance_type,
         ):
-        '''runs instances given parameters'''
+        '''
+        runs instances given parameters
+        check if all instances are created
+        correctly. program will exit if
+        not all instances required are
+        created, and terminate those which
+        are running already
+        '''
 
         instance_id_list = []
 
+        # get run instances store int instances list
         instances = [x for x in
                      self.get_command_result(
                                              'euca-run-instances -k %s'
@@ -243,6 +313,7 @@ class Cluster(object):
 
         os.system('euca-associate-address -i %s %s' % (instance['id'],
                   free_ip))
+        # set ip using instance id
         self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
 
     def euca_describe_addresses(self):
@@ -259,7 +330,12 @@ class Cluster(object):
         return ip_list
 
     def create_cluster(self, args):
-        '''method for creating cluster'''
+        '''
+        method for creating cluster, associate ip with
+        instances created, detect if they are ready to
+        deploy, and then install SLURM and OpenMPI on
+        them, do configure accordingly
+        '''
 
         if self.cloud_instances.if_exist(args.name):
             # if exists, get cloud info by name
@@ -325,6 +401,7 @@ class Cluster(object):
 
         self.msg('\nControl node %s' % controlMachine)
 
+        # write control machine into slurm.conf file
         destf = open(slurm_conf_file, 'w')
         print >> destf, output
         destf.close()
@@ -477,20 +554,26 @@ class Cluster(object):
         bucket_name,
         image_name,
         ):
-        '''save node given parameters'''
+        '''
+        save node given parameters
+        upload and register
+        '''
 
         kernel_id = self.get_kernel_id(image_id)
         ramdisk_id = self.get_ramdisk_id(image_id)
+        # get manifest from the last unit
         manifest = [x for x in self.save_instance(kernel_id,
                     ramdisk_id, instance_ip, image_name).split()].pop()
 
         self.msg('\nManifest generated: %s' % manifest)
         self.msg('\nUploading bundle')
 
+        # upload image
         image = [x for x in self.upload_bundle(instance_ip, bucket_name,
                  manifest).split()].pop()
         self.msg('\nUploading done')
         self.msg('\nRegistering image')
+        # register image
         self.euca_register(image)
 
     @classmethod
@@ -500,10 +583,16 @@ class Cluster(object):
         os.system('euca-register %s' % image)
 
     def checkpoint_cluster(self, args):
-        '''method for saving currently running instance into image'''
+        '''
+        method for saving currently running instance into image
+        and terminate the old one
+        '''
 
+        # check if cluter is existed
         if self.cloud_instances.if_exist(args.name):
+            # get cluter by name
             self.cloud_instances.get_cloud_instances_by_name(args.name)
+            # if cluster is down, terminate the program
             if self.cloud_instances.if_status(self.cloud_instances.DOWN):
                 self.msg('Error in locating virtual cluster %s, not running?'
                           % args.name)
@@ -520,6 +609,7 @@ class Cluster(object):
         self.msg('compute node bucket  -- %s' % args.computeb)
         self.msg('compute node name    -- %s' % args.computen)
 
+        # copy necessary files to instances, and source profile
         for instance in self.cloud_instances.get_list()[1:3]:
             self.copyto(instance, self.ec2_cert)
             self.copyto(instance, self.ec2_private_key)
@@ -563,6 +653,8 @@ class Cluster(object):
         if self.cloud_instances.if_exist(args.name):
             self.cloud_instances.get_cloud_instances_by_name(args.name)
             if self.cloud_instances.if_status(self.cloud_instances.SAVED):
+                # if cluster is saved, delete old cluster, and create a
+                # new cloud instance for deploying
                 self.cloud_instances.del_by_name(args.name)
                 self.cloud_instances.clear()
                 self.cloud_instances.set_cloud_instances_by_name(args.name)
@@ -583,8 +675,10 @@ class Cluster(object):
         self.msg('control image     -- %s' % args.controli)
         self.msg('compute image     -- %s' % args.computei)
 
+        # run control node
         self.euca_run_instance(self.user, control_node_num,
                                args.controli, args.type)
+        # run compute nodes given number
         self.euca_run_instance(self.user, int(args.number),
                                args.computei, args.type)
 
