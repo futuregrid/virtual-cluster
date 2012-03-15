@@ -109,7 +109,7 @@ class Cluster(object):
 
             self.cloud_instances.set_backup_file(self.backup_file)
 
-        except (NoOptionError, IOError):
+        except (NoOptionError, ValueError, IOError):
             self.msg('Error in reading configuration file!')
             sys.exit()
 
