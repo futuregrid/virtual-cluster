@@ -62,6 +62,7 @@ import sys
 import os
 import socket
 import time
+import threading
 import ConfigParser
 
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
@@ -217,12 +218,14 @@ class Cluster(object):
                     # install on instance which is ready
                     if install:
                         if ready_instances[instance['ip']]:
+                            # set false, block other threads
+                            ready_instances[instance['ip']] = False
                             # ssh may fail due to heavy load of
                             # startup in instance, use sleep
                             time.sleep(2)
-                            self.deploy_services(instance)
-                            # set false, installation done
-                            ready_instances[instance['ip']] = False
+                            processThread = threading.Thread(target = self.deploy_services,args=[instance])
+                            processThread.start()
+                            
                     ready = ready + 1
 
                 except IOError:
@@ -233,12 +236,13 @@ class Cluster(object):
                                      + '.' * count + ' ' * (msg_len - count))
                     sys.stdout.flush()
                     ready = 0
-#                    time.sleep(0.5)
+                    time.sleep(0.5)
 
             # check if all vms are ready
             if ready == len(self.cloud_instances.get_list()[1:]):
-                # ssh may fail due to heavy load of startup in instance
-                time.sleep(3)
+                # wait all threads are done
+                while threading.activeCount() > 1:
+                    time.sleep(1)
                 break
 
 # ---------------------------------------------------------------------
@@ -331,11 +335,13 @@ class Cluster(object):
     def euca_associate_address(self, instance, free_ip):
         '''associates instance with ip'''
 
-        # TODO: check if ip is correctly associated
-        os.system('euca-associate-address -i %s %s' % (instance['id'],
-                  free_ip))
+        if self.get_command_result('euca-associate-address -i %s %s'
+                                   % (instance['id'], free_ip)).find('ADDRESS') < 0:
+            return 0
         # set ip using instance id
+        self.msg('ADDRESS %s instance %s' % (free_ip, instance['id']))
         self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
+        return 1
 
     def euca_describe_addresses(self):
         '''return list of free ips'''
@@ -394,7 +400,11 @@ class Cluster(object):
         for i in range(cluster_size):
             instance = self.cloud_instances.get_by_id(i + 1)
             time.sleep(1)
-            self.euca_associate_address(instance, ip_lists[i])
+            while not self.euca_associate_address(instance, ip_lists[i]):
+                self.msg('Error in associating IP %s with instance %s, '
+                     'trying again'
+                     % (ip_lists[i], instance['id']))
+                time.sleep(1)
 
         # save cloud instance
         self.cloud_instances.save_instances()
@@ -736,7 +746,11 @@ class Cluster(object):
         for i in range(cluster_size):
             time.sleep(1)
             instance = self.cloud_instances.get_by_id(i + 1)
-            self.euca_associate_address(instance, ip_lists[i])
+            while not self.euca_associate_address(instance, ip_lists[i]):
+                self.msg('Error in associating IP %s with instance %s, '
+                     'trying again'
+                     % (ip_lists[i], instance['id']))
+                time.sleep(1)
 
         # check ssh port but not install
         self.detect_port(False)
@@ -925,7 +939,6 @@ def commandline_parser():
     restore_parser.add_argument('-a', '--name', action='store',
                                 required=True,
                                 help='Virtual cluster name')
-    # TODO: Customized resotre cluster
 #    restore_parser.add_argument('-c', '--controli', action='store',
 #                                required=True,
 #                                help='Control node image id')
