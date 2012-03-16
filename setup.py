@@ -64,6 +64,7 @@ setup(
     entry_points={
         'console_scripts': [
                 'fg-cluster = futuregrid.virtual.cluster.FGCluster:commandline_parser',
+                'fg-csh == futuregrid.virtual.cluster.Shell:main',
              ]},
 
     install_requires = [
