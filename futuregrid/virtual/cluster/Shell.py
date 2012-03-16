@@ -12,7 +12,7 @@ from cmd2 import Cmd2TestCase
 
 import unittest, sys
 
-class CmdLineAnalyzeEucaData(Cmd):
+class Shell(Cmd):
     #multilineCommands = ['None']
     #Cmd.shortcuts.update({'&': 'speak'})
     #maxrepeats = 3
@@ -23,47 +23,58 @@ class CmdLineAnalyzeEucaData(Cmd):
     echo = True
     timing = True
 
+    prompt = "fg> "
+
+    logo = """
+  _____       _                   ____      _     _ 
+ |  ___|_   _| |_ _   _ _ __ ___ / ___|_ __(_) __| |
+ | |_  | | | | __| | | | '__/ _ \ |  _| '__| |/ _` |
+ |  _| | |_| | |_| |_| | | |  __/ |_| | |  | | (_| |
+ |_|    \__,_|\__|\__,_|_|  \___|\____|_|  |_|\__,_|
+----------------------------------------------------
+    """
     def preloop(self):
-        print "WELCOME"
+        print self.logo
         
     def postloop(self):
         print "BYE FORM GREGOR"
 
     def do_list(self):
-        print "do List"
+        print "to do List"
 
-    def do_config(self, filename)
-        print "do config"
+    def do_config(self, filename):
+        print "to do config"
     
-    def do_debug(self, debug=True)
-        print "do debug"
+    def do_debug(self, debug=True):
+        print "to do debug"
 
-    def do_run(self, arg)
-        print "do run"
+    def do_run(self, arg):
+        print "to do run"
 
-    def do_checkpoint(self, arg)
-        print "do checkpoint"
+    def do_checkpoint(self, arg):
+        print "to do checkpoint"
 
-    def do_restore(self, arg)
-        print "do restore"
+    def do_restore(self, arg):
+        print "to do restore"
 
-    def do_terminate(self, arg)
-        print "do terminate"
+    def do_terminate(self, arg):
+        print "to do terminate"
 
-    def do_status(self, arg)
-        print "do status"
+    def do_status(self, arg):
+        print "to do status"
 
-    def do_list(self, arg)
-        print "do list"
+    def do_list(self, arg):
+        print "to do list"
 
 
+def main():
+    parser = optparse.OptionParser()
+    parser.add_option('-t', '--test', dest='unittests', action='store_true', default=False, help='Run unit test suite')
+    (callopts, callargs) = parser.parse_args()
+    if callopts.unittests:
+        sys.argv = [sys.argv[0]]  # the --test argument upsets unittest.main()
+        unittest.main()
+    else:
+        app = Shell()
+        app.cmdloop()
 
-parser = optparse.OptionParser()
-parser.add_option('-t', '--test', dest='unittests', action='store_true', default=False, help='Run unit test suite')
-(callopts, callargs) = parser.parse_args()
-if callopts.unittests:
-    sys.argv = [sys.argv[0]]  # the --test argument upsets unittest.main()
-    unittest.main()
-else:
-    app = CmdLineAnalyzeEucaData()
-    app.cmdloop()

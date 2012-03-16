@@ -1,7 +1,6 @@
-REPO=
 
 ######################################################################
-# GIT interfaces
+# GIT INTERFACES
 ######################################################################
 push:
 	make -f Makefile clean
@@ -16,7 +15,7 @@ gregor:
 	git config --global user.email laszewski@gmail.com
 
 ######################################################################
-# installation
+# INSTALLATION
 ######################################################################
 dist:
 	make -f Makefile pip
@@ -25,12 +24,9 @@ pip:
 	make -f Makefile clean
 	python setup.py sdist
 
-upload:
-	make -f Makefile pip
-#	python setup.py register
-	python setup.py sdist upload
 
 force:
+	make -f Makefile pip
 	sudo pip install -U dist/*.tar.gz
 
 
@@ -43,6 +39,15 @@ test:
 	sudo pip install --upgrade dist/*.tar.gz
 	fg-cluster
 	fg-local
+
+######################################################################
+# PYPI
+######################################################################
+
+upload:
+	make -f Makefile pip
+#	python setup.py register
+	python setup.py sdist upload
 
 ######################################################################
 # QC
