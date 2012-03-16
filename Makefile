@@ -18,6 +18,9 @@ gregor:
 ######################################################################
 # installation
 ######################################################################
+dist:
+	make -f Makefile pip
+
 pip:
 	make -f Makefile clean
 	python setup.py sdist
