@@ -11,9 +11,10 @@ System requirements
 Introduction
 ------------
 
-Project futuregrid.virtual.cluster is a virtual cluster management software utilizing openstack
-resources on FutureGrid. The software contains several parts that could help users easily manage
-their operations to virtual clusters on FutureGrid. 
+Project futuregrid.virtual.cluster is a virtual cluster management
+software utilizing openstack resources on FutureGrid. The software
+contains several parts that could help users easily manage their
+operations to virtual clusters on FutureGrid.
 
 Managment operations include: 
 
@@ -47,8 +48,8 @@ and install python (version 2.7) from
 
 * http://python.org
 
-After you check all the tools with version are correctly installed, you may 
-proceed with following steps to start installation.
+After you check all the tools with version are correctly installed,
+you may proceed with following steps to start installation.
 
 
 ### Step 0: Prerequisites (using india.futuregrid.org machines):
@@ -63,37 +64,46 @@ To activate python 2.7, simply do:
 
     $ module load python
 
-Those commands will help you load tools with correct version you need to finish 
-installation. So now you may proceed with following installation steps. 
+Those commands will help you load tools with correct version you need
+to finish installation. So now you may proceed with following
+installation steps.
 
 ### Step 1: Download virtualenv
-Since you do not have super user priviledges, you need virtualenv in order to 
-finish the installtion. You may download virtualenv.py by following command:
+
+Since you do not have super user priviledges, you need virtualenv in
+order to finish the installtion. You may download virtualenv.py by
+following command:
 
     $ wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
     
 ### Step 2: Install virtualenv
-After you downloaded virtualenv, you can install it by following command:
+
+After you downloaded virtualenv, you can install it by following
+command:
 
     $ python virtualenv.py --system-site-packages ENV
     
 ### Step 3: Activate virtualenv
-After installation of virtualenv, you can activate virtualenv by following command:
+
+After installation of virtualenv, you can activate virtualenv by
+following command:
 
     $ source ENV/bin/activate
     
 ### Step 4: install the virtual cluster with pip
-Once virtualenv is activated, you can use pip to install our tool by following command:
+
+Once virtualenv is activated, you can use pip to install our tool by
+following command:
 
     $ ENV/bin/pip install futuregrid.virtual.cluster
 
-If you already had our tool installed, and you want to upgrade to newest version, you can 
-do it by following command:
+If you already had our tool installed, and you want to upgrade to
+newest version, you can do it by following command:
 
 	$ ENV/bin/pip install --upgrade futuregrid.virtual.cluster
 
-NOTE: For more information about virtualenv, you may see documentation of 
-virtualenv on 
+NOTE: For more information about virtualenv, you may see documentation
+of virtualenv on
 
 * http://www.virtualenv.org/en/latest/index.html
 
@@ -110,13 +120,14 @@ If you do not have a futuregrid account, please apply for one at link:
 
 * https://portal.futuregrid.org/user/register
 
-In order for you to get access to FutureGrid resources, you need to apply for 
-a portal account and create a Futuregrid project. This is in detail explained at
+In order for you to get access to FutureGrid resources, you need to
+apply for a portal account and create a Futuregrid project. This is in
+detail explained at
 
 * https://portal.futuregrid.org/gettingstarted 
 
-Do not forget to upload your public key. 
-(see also https://portal.futuregrid.org/generating-ssh-keys-futuregrid-access)
+Do not forget to upload your public key.  (see also
+https://portal.futuregrid.org/generating-ssh-keys-futuregrid-access)
 
 Once you have a vaild portal account and a valid project, you can go
 ahead and use FutureGrid
@@ -135,18 +146,22 @@ HOW TO RUN
 Prerequisites
 -------------
 
-In order to use our tool, you need to obatin nova credentials and configuration files for FutureGrid system, 
-you can obtain your nova credentials and configuration files for the FutureGrid systems. These should have 
-been placed in your home directory on the INDIA system. Log in with your FutureGrid username (and SSH public key) 
-and look for a file called 'username'-nova.zip. If you do not have a portal and HPC account please create one. 
-The credential zip file (username-nova.zip)contains the user keys and rc file .Unzip this file in your hom
-e directory. The novarc file contains the necessary environment variables. Add nova environment variables
-to your .bashrc:
+In order to use our tool, you need to obatin nova credentials and
+configuration files for FutureGrid system, you can obtain your nova
+credentials and configuration files for the FutureGrid systems. These
+should have been placed in your home directory on the INDIA
+system. Log in with your FutureGrid username (and SSH public key) and
+look for a file called 'username'-nova.zip. If you do not have a
+portal and HPC account please create one.  The credential zip file
+(username-nova.zip)contains the user keys and rc file .Unzip this
+file in your hom e directory. The novarc file contains the necessary
+environment variables. Add nova environment variables to your .bashrc:
 
     $ cat novarc >> .bashrc
     $ source .bashrc
     
-Create your private key by (Recommended: Use your user name as your private key name):
+Create your private key by (Recommended: Use your user name as your
+private key name):
 
     $ euca-add-keypair youruserkey > youruserkey.pem
     $ chmod 0600 youruserkey.pem
@@ -159,8 +174,10 @@ NOTE: For more information, you can refer to tutorial at:
 Create configuration file
 -------------------------
 
-You need to create a configuration file which needs to be passed to this tool for locating necessary files
-in order to run. You can create configuration file using text editor, or using an example we provide to you
+You need to create a configuration file which needs to be passed to
+this tool for locating necessary files in order to run. You can create
+configuration file using text editor, or using an example we provide
+to you
 
 * https://github.com/futuregrid/virtual-cluster/blob/master/etc/futuregrid.cfg
 
@@ -185,25 +202,29 @@ It has the following format:
     # nova environment file
     novarc = ~/novarc
 
-You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurrence within the file with the 
-name that you use to associate your key. The file is to be placed at ~/.futuregrid/futuregrid.cfg 
-or concatenated to an already existing futuregrid.cfg file.
+You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurrence
+within the file with the name that you use to associate your key. The
+file is to be placed at ~/.futuregrid/futuregrid.cfg or concatenated
+to an already existing futuregrid.cfg file.
 
-NOTE: Please make sure all the files are placed under the location as you specified in configuration 
-file. You can also find an example of slurm.conf.in file which is used by configuring SLURM 
-system from 
+NOTE: Please make sure all the files are placed under the location as
+you specified in configuration file. You can also find an example of
+slurm.conf.in file which is used by configuring SLURM system from
 
 * https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in 
 
-You can modify SLURM configuration parameters for your customized SLURM. But please leave 
-"controlMachine" and "COMPUTE NODES" untouched.
+You can modify SLURM configuration parameters for your customized
+SLURM. But please leave "controlMachine" and "COMPUTE NODES"
+untouched.
 
-After you finished all steps above, you can use our tool to manage your virtual clusters
+After you finished all steps above, you can use our tool to manage
+your virtual clusters
 
 Create a virtual cluster
 -------------------------
 
-Run following command will create a virtual cluster of given parameters (command example is given below):
+Run following command will create a virtual cluster of given
+parameters (command example is given below):
 
     $ fg-cluster -f <config-file> run -n <number-of-computation-nodes> -t <instance-type> -i <image-id> -a <cluster-name>
 
@@ -223,11 +244,12 @@ For example:
 
     $ fg-cluster -f futuregrid.cfg run -n 2 -t m1.small -i ami-0000001d -a mycluster1
 
-Virtual cluster info will be saved in backup file specified in 
-futuregrid configuration file. Note: Cluster name should be different 
-as other virtual clusters which is running if you want to run multiple 
-virtual clusters. If you want to use default configure file, you should put this 
-file at ~/.futuregrid/futuregrid.cfg, then argument -f can be omitted
+Virtual cluster info will be saved in backup file specified in
+futuregrid configuration file. Note: Cluster name should be different
+as other virtual clusters which is running if you want to run multiple
+virtual clusters. If you want to use default configure file, you
+should put this file at ~/.futuregrid/futuregrid.cfg, then argument -f
+can be omitted
 
 
 Save a virtual cluster
@@ -252,8 +274,9 @@ For example:
 
     $ fg-cluster -f futuregrid.cfg -c myname -t c1.img -m myname -e c2.img -a mycluster1
     
-If you successfully upload your control image and compute image, you can find them in openstack
-image repository according to the bucker name and image name you give to them by command:
+If you successfully upload your control image and compute image, you
+can find them in openstack image repository according to the bucker
+name and image name you give to them by command:
 
     $ euca-describe-images
 
@@ -267,8 +290,9 @@ are used for later restore.
 Restore a virtual cluster
 --------------------------
 
-Run following command will restore a virtual cluster state including installed softwares, 
-unfinished jobs which was saved before, so that you can continue your work from that saved point.
+Run following command will restore a virtual cluster state including
+installed softwares, unfinished jobs which was saved before, so that
+you can continue your work from that saved point.
 
     $ fg-cluster -f <config-file> restore -n <number-of-computation-nodes> -c <control-node-image-id> -m <compute-node-image-id> -s <instance-type> -a <cluster-name>
 
@@ -289,9 +313,9 @@ For example:
 
     $ fg-cluster -f futuregrid.cfg -n 2 -c ami-0000001d -m ami-0000001d -s m1.small -a mycluster2
 
-Note: Cluster name should be the name of cluster which had been saved before. 
-Control node image id and compute image id should be ids which are generated 
-by running checkpoint command above.
+Note: Cluster name should be the name of cluster which had been saved
+before.  Control node image id and compute image id should be ids
+which are generated by running checkpoint command above.
 
 
 Shutdown a virtual cluster
@@ -413,7 +437,8 @@ than the acutal number of computaion node you created.
 * -a: Name of virtual cluster you want to run program on
 
 
-Note: Virtual cluster name should be a name of cluster which is currently running
+Note: Virtual cluster name should be a name of cluster which is
+currently running
 
 
 FOR DEVELOPERS ONLY
@@ -422,7 +447,8 @@ FOR DEVELOPERS ONLY
 Generating the Distribution
 ---------------------------
 
-Assume that you have git correctly installed and configured on your computer.
+Assume that you have git correctly installed and configured on your
+computer.
 
 ### Step 1: You can pull source code from github by:
 
