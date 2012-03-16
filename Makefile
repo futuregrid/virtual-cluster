@@ -1,5 +1,8 @@
 REPO=
 
+######################################################################
+# GIT interfaces
+######################################################################
 push:
 	make -f Makefile clean
 	git commit -a 
@@ -8,20 +11,28 @@ push:
 pull:
 	git pull 
 
-install:
-	sudo easy_install dist/*.egg 
+gregor:
+	git config --global user.name "Gregor von Laszewski"
+	git config --global user.email laszewski@gmail.com
 
-forceinstall:
+######################################################################
+# installation
+######################################################################
+pip:
+	make -f Makefile clean
+	python setup.py sdist
+
+upload:
+	make -f Makefile pip
+#	python setup.py register
+	python setup.py sdist upload
+
+force:
 	sudo pip install -U dist/*.tar.gz
 
 
-pipinstall:
+install:
 	sudo pip install dist/*.tar.gz
-
-distall:
-	make -f Makefile egg
-	make -f Makefile tar
-#	make -f Makefile rpm
 
 test:
 	make -f Makefile clean	
@@ -30,9 +41,9 @@ test:
 	fg-cluster
 	fg-local
 
-gitgregor:
-	git config --global user.name "Gregor von Laszewski"
-	git config --global user.email laszewski@gmail.com
+######################################################################
+# QC
+######################################################################
 
 qc-install:
 	sudo pip install pep8
@@ -45,17 +56,8 @@ qc:
 	pyflakes ./futuregrid/virtual/cluster/
 
 # #####################################################################
-# Creating the distribution
+# CLEAN
 # #####################################################################
-egg:
-	python setup.py bdist_egg
-
-pip:
-	make -f Makefile clean
-	python setup.py sdist
-
-rpm:
-	python setup.py bdist_rpm
 
 
 clean:
@@ -63,6 +65,3 @@ clean:
 	find . -name "*.pyc" -exec rm {} \;  
 	rm -rf build dist *.egg-info *~ #*
 
-upload:
-	python setup.py register
-	python setup.py sdist upload
