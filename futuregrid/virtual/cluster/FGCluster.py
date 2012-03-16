@@ -78,7 +78,6 @@ class Cluster(object):
     """
 
     userkey = None
-    if_debug = False
     cloud_instances = None
     backup_file = None
     user = None
@@ -87,6 +86,11 @@ class Cluster(object):
     eucalyptus_cert = None
     novarc = None
     slurm = None
+    
+    # debug switch
+    if_debug = False
+    # if false, using IU ubuntu repository
+    if_default = False
 
     def __init__(self):
         super(Cluster, self).__init__()
@@ -112,6 +116,11 @@ class Cluster(object):
         '''set debug flag'''
 
         self.if_debug = if_debug
+
+    def set_default(self, if_default=False):
+        '''set debug flag'''
+
+        self.if_default = if_default
 
 # ---------------------------------------------------------------------
 # METHOD TO PARSE CONFIGURATION FILE
@@ -409,6 +418,9 @@ class Cluster(object):
         # save cloud instance
         self.cloud_instances.save_instances()
 
+        # choose repo, by defalt, using IU ubuntu repo
+        self.define_repo()
+
         # detect if VMs are ready for deploy
         self.detect_port()
 
@@ -495,11 +507,46 @@ class Cluster(object):
             os.remove(munge_key_file)
         os.remove(slurm_conf_file)
 
+    def define_repo(self):
+        sources_list = 'sources.list'
+        iu_repo = 'http://ftp.ussg.iu.edu/linux/ubuntu/'
+
+#        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
+#        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
+#        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty universe
+#        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty universe
+#        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
+#        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
+#        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
+#        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
+
+        if self.if_default:
+           self.msg('\nUsing default repository')
+        else:
+            self.msg('\nUsing IU ubuntu repository')
+            with open(sources_list, 'w') as source:
+                source.write('deb '+iu_repo+' natty-updates main\n')
+                source.write('deb-src '+iu_repo+' natty-updates main\n')
+                source.write('deb '+iu_repo+' natty universe\n')
+                source.write('deb-src '+iu_repo+' natty universe\n')
+                source.write('deb '+iu_repo+' natty-updates universe\n')
+                source.write('deb-src '+iu_repo+' natty-updates universe\n')
+                source.write('deb '+iu_repo+' natty main\n')
+                source.write('deb-src '+iu_repo+' natty main\n')
+        source.close()
+
     def deploy_services(self, instance):
         '''deploy SLURM and OpenMPI services'''
 
+        sources_list = 'sources.list'
+
         self.msg('\nInstalling SLURM system and OpenMPI on %s\n'
                  % instance['ip'])
+
+        self.copyto(instance, sources_list)
+        self.execute(instance, 'sudo cp %s /etc/apt/'
+                     % sources_list)
+
         self.update(instance)
         # install SLURM
         self.install(instance, 'slurm-llnl')
@@ -875,7 +922,10 @@ def commandline_parser():
                                 ' cluster management operations')
     parser.add_argument('-f', '--file', action='store',
                         help='Specify futuregrid configure file')
-    parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--debug', action='store_true',
+                        help='print debug message')
+    parser.add_argument('--default-repository', action='store_true',
+                        help='using default software repository')
     subparsers = parser.add_subparsers(help='commands')
 
     # status command
@@ -962,6 +1012,8 @@ def commandline_parser():
 
     # set debug flag
     virtual_cluster.set_debug(args.debug)
+    # set default repository flag
+    virtual_cluster.set_default(args.default_repository)
 
     args.func(args)
 
