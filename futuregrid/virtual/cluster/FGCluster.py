@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-"""
+'''
 Operations for managing virtual clusters
 
 Name fg-cluster
@@ -15,6 +15,7 @@ usage:
     -f -- futuregrid configuration file
           which specifies the location of
           necessary files to run program
+
     --debug -- show debug message
 
     subcommands:
@@ -54,7 +55,7 @@ usage:
     status of all virtual clusters recorded
 
     list: list virtual clusters
-"""
+'''
 
 import argparse
 import sys
@@ -64,7 +65,10 @@ import time
 import ConfigParser
 
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+#from CloudInstances import CloudInstances
 from ConfigParser import NoOptionError
+from ConfigParser import MissingSectionHeaderError
+from ConfigParser import NoSectionError
 
 
 class Cluster(object):
@@ -142,6 +146,7 @@ class Cluster(object):
 
         try:
             config.read([file_name,
+                         'futuregrid.cfg',
                          os.path.expanduser('~/.futuregrid/futuregrid.cfg')])
 
             # default location ~/.futuregrid/futuregrid.cfg
@@ -159,10 +164,22 @@ class Cluster(object):
 
             self.cloud_instances.set_backup_file(self.backup_file)
 
-        except (NoOptionError, ValueError, IOError):
-            self.msg('Error in reading configuration file!')
+        except (MissingSectionHeaderError, NoSectionError):
+            self.msg('\nError in reading configuratin file!'
+                     ' No section header?')
             sys.exit()
-
+        except NoOptionError:
+            self.msg('\nError in reading configuration file!'
+                     ' Correct configuration format?')
+            sys.exit()
+        except ValueError:
+            self.msg('\nError in reading configuration file!'
+                     ' Correct python version?')
+            sys.exit()
+        except IOError:
+            self.msg('\nError in reading configuration file!'
+                     ' configuration file not created?')
+            sys.exit()
 # ---------------------------------------------------------------------
 # METHOD TO DETECT OPEN PORT
 # ---------------------------------------------------------------------
@@ -212,10 +229,11 @@ class Cluster(object):
                     count += 1
                     if count > msg_len:
                         count = 0
-                    sys.stdout.write('\rWaiting VMs ready to deploy'
+                    sys.stdout.write('\rWaiting instances ready to deploy'
                                      + '.' * count + ' ' * (msg_len - count))
                     sys.stdout.flush()
                     ready = 0
+#                    time.sleep(0.5)
 
             # check if all vms are ready
             if ready == len(self.cloud_instances.get_list()[1:]):
@@ -302,15 +320,18 @@ class Cluster(object):
         # add instance to instance list
         for num in range(cluster_size):
             try:
-                self.cloud_instances.set_instance(instance_id_list[num], image)
+                self.cloud_instances.set_instance(instance_id_list[num],
+                                                  image,
+                                                  instance_type)
             except:
-                self.msg('\nError in creating instances. Program will exit'
-                         )
+                self.msg('\nError in creating instances.'
+                         ' Program will exit')
                 sys.exit()
 
     def euca_associate_address(self, instance, free_ip):
         '''associates instance with ip'''
 
+        # TODO: check if ip is correctly associated
         os.system('euca-associate-address -i %s %s' % (instance['id'],
                   free_ip))
         # set ip using instance id
@@ -473,7 +494,7 @@ class Cluster(object):
         # install SLURM
         self.install(instance, 'slurm-llnl')
         # install OpenMPI
-        self.install(instance, "openmpi-bin openmpi-doc libopenmpi-dev")
+        self.install(instance, "openmpi-bin libopenmpi-dev")
 
 # ---------------------------------------------------------------------
 # METHODS TO SAVE RUNNING VIRTUAL CLUSTER
@@ -573,14 +594,14 @@ class Cluster(object):
                  manifest).split()].pop()
         self.msg('\nUploading done')
         self.msg('\nRegistering image')
-        # register image
-        self.euca_register(image)
 
-    @classmethod
-    def euca_register(cls, image):
+        # register image, and return image id
+        return filter(str.isalnum, self.euca_register(image).split('\t')[1])
+
+    def euca_register(self, image):
         '''register image'''
 
-        os.system('euca-register %s' % image)
+        return self.get_command_result('euca-register %s' % image)
 
     def checkpoint_cluster(self, args):
         '''
@@ -621,24 +642,44 @@ class Cluster(object):
         # save control node
         self.msg('\nSaving control node %s'
                  % self.cloud_instances.get_by_id(1)['id'])
-        self.save_node(self.cloud_instances.get_by_id(1)['image'],
-                       self.cloud_instances.get_by_id(1)['ip'],
-                       args.controlb, args.controln)
+        control_node_id = self.save_node(
+                            self.cloud_instances.get_by_id(1)['image'],
+                            self.cloud_instances.get_by_id(1)['ip'],
+                            args.controlb, args.controln)
+        self.msg('\nControl node %s saved'
+                 % self.cloud_instances.get_by_id(1)['id'])
 
         # save compute node
         self.msg('\nSaving compute node %s'
                  % self.cloud_instances.get_by_id(2)['id'])
-        self.save_node(self.cloud_instances.get_by_id(2)['image'],
-                       self.cloud_instances.get_by_id(2)['ip'],
-                       args.computeb, args.computen)
+        compute_node_id = self.save_node(
+                            self.cloud_instances.get_by_id(2)['image'],
+                            self.cloud_instances.get_by_id(2)['ip'],
+                            args.computeb, args.computen)
+        self.msg('\nCompute node %s saved'
+                 % self.cloud_instances.get_by_id(2)['id'])
 
-        # change status to saved and save
-        self.cloud_instances.set_status(self.cloud_instances.SAVED)
+        # get instance type
+        instance_type = self.cloud_instances.get_by_id(1)['type']
+        # get compute node number
+        cluster_size = len(self.cloud_instances.get_list()[2:])
+        # copy list for termination
+        temp_instance_list = list(self.cloud_instances.get_list()[1:])
+
+        # delete old info
         self.cloud_instances.del_by_name(args.name)
+
+        # set saved cloud info, and change status to saved
+        self.cloud_instances.checkpoint_cloud_instances(args.name,
+                                                        control_node_id,
+                                                        compute_node_id,
+                                                        instance_type,
+                                                        cluster_size)
+        # save cluster
         self.cloud_instances.save_instances()
 
         # terminate instances
-        for instance in self.cloud_instances.get_list()[1:]:
+        for instance in temp_instance_list:
             self.terminate_instance(instance['id'])
 # ---------------------------------------------------------------------
 # METHODS TO RESTORE VIRTUAL CLUSTER
@@ -655,6 +696,10 @@ class Cluster(object):
             if self.cloud_instances.if_status(self.cloud_instances.SAVED):
                 # if cluster is saved, delete old cluster, and create a
                 # new cloud instance for deploying
+                control_node_id = self.cloud_instances.get_by_id(0)['control']
+                compute_node_id = self.cloud_instances.get_by_id(0)['compute']
+                instance_type = self.cloud_instances.get_by_id(0)['type']
+                cluster_size = self.cloud_instances.get_by_id(0)['size']
                 self.cloud_instances.del_by_name(args.name)
                 self.cloud_instances.clear()
                 self.cloud_instances.set_cloud_instances_by_name(args.name)
@@ -667,20 +712,20 @@ class Cluster(object):
                      % args.name)
             sys.exit()
 
-        cluster_size = int(args.number) + control_node_num
+        cluster_size = int(cluster_size) + control_node_num
         self.msg('\n...Restoring virtual cluster......')
         self.msg('cluster name      -- %s' % args.name)
         self.msg('number of nodes   -- %s' % cluster_size)
-        self.msg('instance type     -- %s' % args.type)
-        self.msg('control image     -- %s' % args.controli)
-        self.msg('compute image     -- %s' % args.computei)
+        self.msg('instance type     -- %s' % instance_type)
+        self.msg('control image     -- %s' % control_node_id)
+        self.msg('compute image     -- %s' % compute_node_id)
 
         # run control node
         self.euca_run_instance(self.user, control_node_num,
-                               args.controli, args.type)
+                               control_node_id, instance_type)
         # run compute nodes given number
-        self.euca_run_instance(self.user, int(args.number),
-                               args.computei, args.type)
+        self.euca_run_instance(self.user, cluster_size,
+                               compute_node_id, instance_type)
 
         # get free ip list
         ip_lists = self.euca_describe_addresses()
@@ -747,10 +792,19 @@ class Cluster(object):
                 self.msg('Virtual Cluster %s (status: %s)'
                          % (cloud[0]['name'], cloud[0]['status']))
                 self.msg('====================================')
-                for instance in cloud[1:]:
-                    self.msg('instance %s: IP -- %s, image -- %s'
-                             % (instance['id'], instance['ip'],
-                             instance['image']))
+                if cloud[0]['status'] == self.cloud_instances.SAVED:
+                    self.msg('Control node -- %s, '
+                             'Compute node -- %s, '
+                             'Instance type -- %s, '
+                             'Cluster size -- %s'
+                             % (cloud[0]['control'], cloud[0]['compute'],
+                                cloud[0]['type'], cloud[0]['size']))
+                else:
+                    for instance in cloud[1:]:
+                        self.msg('Instance %s: IP -- %s, Image id -- %s, '
+                                 'Instance type -- %s'
+                                 % (instance['id'], instance['ip'],
+                                 instance['image'], instance['type']))
         else:
             if not self.cloud_instances.if_exist(args.name):
                 self.msg('Error in finding virtual cluster %s, not created.'
@@ -761,10 +815,22 @@ class Cluster(object):
             self.msg('Virtual Cluster %s (status: %s)'
                      % (args.name, self.cloud_instances.get_status()))
             self.msg('====================================')
-            for instance in self.cloud_instances.get_list()[1:]:
-                self.msg('instance %s: IP -- %s, image -- %s'
-                         % (instance['id'], instance['ip'],
-                         instance['image']))
+            if self.cloud_instances.get_by_id(0)['status'] == \
+                    self.cloud_instances.SAVED:
+                self.msg('Control node -- %s, '
+                         'Compute node -- %s, '
+                         'Instance type -- %s, '
+                         'Cluster size -- %s'
+                         % (self.cloud_instances.get_by_id(0)['control'],
+                            self.cloud_instances.get_by_id(0)['compute'],
+                            self.cloud_instances.get_by_id(0)['type'],
+                            self.cloud_instances.get_by_id(0)['size']))
+            else:
+                for instance in self.cloud_instances.get_list()[1:]:
+                    self.msg('Instance %s: IP -- %s, Image id -- %s, '
+                             'Instance type -- %s'
+                             % (instance['id'], instance['ip'],
+                                instance['image'], instance['type']))
 
 # ---------------------------------------------------------------------
 # METHODS TO SHOW VIRTUAL CLUSTER LIST
@@ -859,17 +925,18 @@ def commandline_parser():
     restore_parser.add_argument('-a', '--name', action='store',
                                 required=True,
                                 help='Virtual cluster name')
-    restore_parser.add_argument('-c', '--controli', action='store',
-                                required=True,
-                                help='Control node image id')
-    restore_parser.add_argument('-m', '--computei', action='store',
-                                required=True,
-                                help='Compute node image id')
-    restore_parser.add_argument('-t', '--type', action='store',
-                                help='Instance type')
-    restore_parser.add_argument('-n', '--number', action='store',
-                                required=True,
-                                help='Number of compute nodes')
+    # TODO: Customized resotre cluster
+#    restore_parser.add_argument('-c', '--controli', action='store',
+#                                required=True,
+#                                help='Control node image id')
+#    restore_parser.add_argument('-m', '--computei', action='store',
+#                                required=True,
+#                                help='Compute node image id')
+#    restore_parser.add_argument('-t', '--type', action='store',
+#                                help='Instance type')
+#    restore_parser.add_argument('-n', '--number', action='store',
+#                                required=True,
+#                                help='Number of compute nodes')
     restore_parser.set_defaults(func=virtual_cluster.restore_cluster)
 
     args = parser.parse_args()

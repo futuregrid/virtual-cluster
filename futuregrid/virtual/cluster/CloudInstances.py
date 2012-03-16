@@ -47,6 +47,24 @@ class CloudInstances:
             if cloud[0]['name'] == name:
                 self.cloud_instances = cloud
 
+    def checkpoint_cloud_instances(self,
+                                   cluster_name,
+                                   control_node_id,
+                                   compute_node_id,
+                                   instance_type,
+                                   cluster_size):
+        ''' set info for saved cluster'''
+
+        self.clear()
+        instance = {}
+        instance['name'] = cluster_name
+        instance['control'] = control_node_id
+        instance['compute'] = compute_node_id
+        instance['type'] = instance_type
+        instance['size'] = cluster_size
+        instance['status'] = self.SAVED
+        self.cloud_instances.append(instance)
+
     def get_all_cloud_instances(self):
         '''get all cloud instances lists'''
         try:
@@ -61,22 +79,26 @@ class CloudInstances:
 
         return self.cloud_instances
 
-    def set_instance(self, instance_id, image_id, instance_ip=''):
+    def set_instance(self,
+                     instance_id,
+                     image_id,
+                     instance_type,
+                     instance_ip=''):
         '''set attributes of a given instance'''
 
         instance = {}
         instance['id'] = instance_id
         instance['image'] = image_id
+        instance['type'] = instance_type
         instance['ip'] = instance_ip
         self.cloud_instances.append(instance)
 
     def set_ip_by_id(self, instance_id, instance_ip):
         '''set ip by given instance id'''
 
-        for instance in self.cloud_instances:
-            if len(instance) == 3:
-                if instance['id'] == instance_id:
-                    instance['ip'] = instance_ip
+        for instance in self.cloud_instances[1:]:
+            if instance['id'] == instance_id:
+                instance['ip'] = instance_ip
 
     def clear(self):
         '''clear cloud intances list'''
