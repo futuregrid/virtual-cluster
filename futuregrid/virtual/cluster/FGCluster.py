@@ -1003,7 +1003,8 @@ def commandline_parser():
 
     parser = \
         argparse.ArgumentParser(description='Virtual'
-                                ' cluster management operations')
+                                ' cluster management operations',
+                                version='0.1.8')
     parser.add_argument('-f', '--file', action='store',
                         help='Specify futuregrid configure file')
     parser.add_argument('--debug', action='store_true',

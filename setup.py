@@ -8,7 +8,7 @@ program is included to test the functionality. of teh virtual cluster.
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.1.7'
+version = '0.1.8'
 
 classifiers = """\
 Intended Audience :: Developers
