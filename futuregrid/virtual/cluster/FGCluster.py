@@ -64,6 +64,7 @@ import socket
 import time
 import threading
 import ConfigParser
+import random
 
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 #from CloudInstances import CloudInstances
@@ -86,11 +87,13 @@ class Cluster(object):
     eucalyptus_cert = None
     novarc = None
     slurm = None
-    
+
     # debug switch
     if_debug = False
     # if false, using IU ubuntu repository
     if_default = False
+    # repo file name
+    sources_list = 'sources.list'
 
     def __init__(self):
         super(Cluster, self).__init__()
@@ -205,8 +208,17 @@ class Cluster(object):
         ready = 0
         count = 0
         msg_len = 5
+        retry = 200
+
         # ready list for instances who are ready to install
         ready_instances = {}
+
+        # waitting time list for instances
+        wait_instances = {}
+
+        # init waitting time for all instanes to 0
+        for instance in self.cloud_instances.get_list()[1:]:
+            wait_instances[instance['id']] = 0
 
         # check if ssh port of all VMs are alive for listening
         while 1:
@@ -214,8 +226,8 @@ class Cluster(object):
                 # create ready dict using ip as key
                 # if True: ready to install
                 # if False: already installed
-                if not instance['ip'] in ready_instances:
-                    ready_instances[instance['ip']] = True
+                if not instance['id'] in ready_instances:
+                    ready_instances[instance['id']] = True
                 # try to connect ssh port
                 try:
                     socket_s = socket.socket(socket.AF_INET,
@@ -226,15 +238,17 @@ class Cluster(object):
 
                     # install on instance which is ready
                     if install:
-                        if ready_instances[instance['ip']]:
+                        if ready_instances[instance['id']]:
                             # set false, block other threads
-                            ready_instances[instance['ip']] = False
+                            ready_instances[instance['id']] = False
                             # ssh may fail due to heavy load of
                             # startup in instance, use sleep
                             time.sleep(2)
-                            processThread = threading.Thread(target = self.deploy_services,args=[instance])
-                            processThread.start()
-                            
+                            process_thread = \
+                                threading.Thread(target=self.deploy_services,
+                                                 args=[instance])
+                            process_thread.start()
+
                     ready = ready + 1
 
                 except IOError:
@@ -245,7 +259,22 @@ class Cluster(object):
                                      + '.' * count + ' ' * (msg_len - count))
                     sys.stdout.flush()
                     ready = 0
-                    time.sleep(0.5)
+                    # increase waitting time for instance
+                    wait_instances[instance['id']] += 1
+                    # if reaches limit
+                    if wait_instances[instance['id']] > retry:
+                        self.msg('Trying different IP address on %s'
+                                 % instance['id'])
+                        # get free ip addresses
+                        ip_lists = self.euca_describe_addresses()
+                        # disassociate current one
+                        self.disassociate_address(instance['ip'])
+                        # associate a new random free ip
+                        self.euca_associate_address(instance['id'],
+                                ip_lists[random.randint(0, len(ip_lists) - 1)])
+                        wait_instances[instance['id']] = 0
+
+                    time.sleep(1)
 
             # check if all vms are ready
             if ready == len(self.cloud_instances.get_list()[1:]):
@@ -345,12 +374,19 @@ class Cluster(object):
         '''associates instance with ip'''
 
         if self.get_command_result('euca-associate-address -i %s %s'
-                                   % (instance['id'], free_ip)).find('ADDRESS') < 0:
+                                   % (instance['id'],
+                                      free_ip)).find('ADDRESS') < 0:
             return 0
         # set ip using instance id
         self.msg('ADDRESS %s instance %s' % (free_ip, instance['id']))
         self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
         return 1
+
+    @classmethod
+    def disassociate_address(cls, current_ip):
+        '''disassociates ip'''
+
+        os.system('euca-disassociate-address %s' % current_ip)
 
     def euca_describe_addresses(self):
         '''return list of free ips'''
@@ -427,6 +463,15 @@ class Cluster(object):
         # config SLURM system
         self.config_slurm()
 
+        # clean repo file
+        self.clean_repo()
+
+    def clean_repo(self):
+        ''' remove source list file'''
+
+        if not self.if_default:
+            os.remove(self.sources_list)
+
     def config_slurm(self, create_key=True):
         '''config slurm'''
 
@@ -478,37 +523,58 @@ class Cluster(object):
 
         # copy SLURM conf file to every node
         for instance in self.cloud_instances.get_list()[1:]:
+            process_thread = threading.Thread(target=self.start_slurm,
+                                              args=[instance,
+                                                    create_key,
+                                                    slurm_conf_file,
+                                                    munge_key_file])
+            process_thread.start()
 
-            # copy slurm.conf
-            self.msg('\nCopying slurm.conf to node %s' % instance['id'])
-            self.copyto(instance, slurm_conf_file)
-            self.execute(instance, 'sudo cp slurm.conf /etc/slurm-llnl')
-
-            # copy munge key
-            if create_key:
-                self.msg('\nCopying munge-key to node %s' % instance['id'])
-                self.copyto(instance, munge_key_file)
-                self.execute(instance,
-                             'sudo cp munge.key /etc/munge/munge.key')
-                self.execute(instance,
-                             'sudo chown munge /etc/munge/munge.key')
-                self.execute(instance,
-                             'sudo chgrp munge /etc/munge/munge.key')
-                self.execute(instance, 'sudo chmod 400 /etc/munge/munge.key'
-                             )
-
-            # start slurm and munge daemon
-            self.msg('\nStarting slurm on node %s' % instance['id'])
-            self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
-            self.execute(instance, 'sudo /etc/init.d/munge start')
+        # wait all threads are done
+        while threading.activeCount() > 1:
+            time.sleep(1)
 
         # clean temp files
         if create_key:
             os.remove(munge_key_file)
         os.remove(slurm_conf_file)
 
+    def start_slurm(self,
+                    instance,
+                    create_key,
+                    slurm_conf_file,
+                    munge_key_file):
+        '''
+        copy slurm configuration file and munge key file
+        to every node, and start slurm
+        '''
+
+         # copy slurm.conf
+        self.msg('\nCopying slurm.conf to node %s' % instance['id'])
+        self.copyto(instance, slurm_conf_file)
+        self.execute(instance, 'sudo cp slurm.conf /etc/slurm-llnl')
+
+        # copy munge key
+        if create_key:
+            self.msg('\nCopying munge-key to node %s' % instance['id'])
+            self.copyto(instance, munge_key_file)
+            self.execute(instance,
+                         'sudo cp munge.key /etc/munge/munge.key')
+            self.execute(instance,
+                         'sudo chown munge /etc/munge/munge.key')
+            self.execute(instance,
+                         'sudo chgrp munge /etc/munge/munge.key')
+            self.execute(instance,
+                         'sudo chmod 400 /etc/munge/munge.key')
+
+            # start slurm and munge daemon
+            self.msg('\nStarting slurm on node %s' % instance['id'])
+            self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
+            self.execute(instance, 'sudo /etc/init.d/munge start')
+
     def define_repo(self):
-        sources_list = 'sources.list'
+        ''' set ubuntu repo to IU repo'''
+
         iu_repo = 'http://ftp.ussg.iu.edu/linux/ubuntu/'
 
 #        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
@@ -521,31 +587,31 @@ class Cluster(object):
 #        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
 
         if self.if_default:
-           self.msg('\nUsing default repository')
+            self.msg('\nUsing default repository')
         else:
             self.msg('\nUsing IU ubuntu repository')
-            with open(sources_list, 'w') as source:
-                source.write('deb '+iu_repo+' natty-updates main\n')
-                source.write('deb-src '+iu_repo+' natty-updates main\n')
-                source.write('deb '+iu_repo+' natty universe\n')
-                source.write('deb-src '+iu_repo+' natty universe\n')
-                source.write('deb '+iu_repo+' natty-updates universe\n')
-                source.write('deb-src '+iu_repo+' natty-updates universe\n')
-                source.write('deb '+iu_repo+' natty main\n')
-                source.write('deb-src '+iu_repo+' natty main\n')
-        source.close()
+            with open(self.sources_list, 'w') as source:
+                source.write('deb ' + iu_repo + ' natty-updates main\n')
+                source.write('deb-src ' + iu_repo + ' natty-updates main\n')
+                source.write('deb ' + iu_repo + ' natty universe\n')
+                source.write('deb-src ' + iu_repo + ' natty universe\n')
+                source.write('deb ' + iu_repo + ' natty-updates universe\n')
+                source.write('deb-src ' + iu_repo +
+                             ' natty-updates universe\n')
+                source.write('deb ' + iu_repo + ' natty main\n')
+                source.write('deb-src ' + iu_repo + ' natty main\n')
+            source.close()
 
     def deploy_services(self, instance):
         '''deploy SLURM and OpenMPI services'''
 
-        sources_list = 'sources.list'
-
         self.msg('\nInstalling SLURM system and OpenMPI on %s\n'
                  % instance['ip'])
 
-        self.copyto(instance, sources_list)
-        self.execute(instance, 'sudo cp %s /etc/apt/'
-                     % sources_list)
+        if not self.if_default:
+            self.copyto(instance, self.sources_list)
+            self.execute(instance, 'sudo cp %s /etc/apt/'
+                         % self.sources_list)
 
         self.update(instance)
         # install SLURM
@@ -738,6 +804,7 @@ class Cluster(object):
         # terminate instances
         for instance in temp_instance_list:
             self.terminate_instance(instance['id'])
+            self.del_known_host(instance)
 # ---------------------------------------------------------------------
 # METHODS TO RESTORE VIRTUAL CLUSTER
 # ---------------------------------------------------------------------
@@ -810,6 +877,22 @@ class Cluster(object):
 # ---------------------------------------------------------------------
 # METHODS TO TERMINATE NAD CLEANUP
 # ---------------------------------------------------------------------
+    def del_known_host(self, instance):
+        '''delete known host info from ~/.ssh/known_hosts'''
+
+        known_hosts = '~/.ssh/known_hosts'
+
+#        self.msg('Deleting host info from known_hosts')
+
+        with open(os.path.expanduser(known_hosts)) as srcf:
+            host_list = srcf.readlines()
+        srcf.close()
+
+        with open(os.path.expanduser(known_hosts), 'w') as destf:
+            for host in host_list:
+                if host.find(instance['ip']) < 0:
+                    destf.write(host)
+        destf.close()
 
     def terminate_instance(self, instance_id):
         '''terminate instance given instance id'''
@@ -834,6 +917,7 @@ class Cluster(object):
 
         for instance in self.cloud_instances.get_list()[1:]:
             self.terminate_instance(instance['id'])
+            self.del_known_host(instance)
 
         # change status to terminated, and save
         if self.cloud_instances.if_status(self.cloud_instances.RUN):
