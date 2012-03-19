@@ -18,6 +18,10 @@ usage:
 
     --debug -- show debug message
 
+    --default-repository -- set if to use IU ubuntu repo
+                            if specifyed, then not use IU
+                            ubuntu repo
+
     subcommands:
 
     run: run a virtual cluster of given parameters
@@ -38,10 +42,6 @@ usage:
     restore: restore state of saved virtual cluster
 
     -a -- virtual cluster name
-    -n -- number of computation nodes
-    -c -- control node image id
-    -m -- compute node image id
-    -s -- instance type
 
     terminate: terminate a virtual cluster of given name
 
@@ -175,7 +175,10 @@ class Cluster(object):
             self.novarc = config.get('virtual-cluster', 'novarc')
             self.slurm = config.get('virtual-cluster', 'slurm')
 
-            self.cloud_instances.set_backup_file(self.backup_file)
+            if not self.cloud_instances.set_backup_file(self.backup_file):
+                self.msg('\nBackup file is corrupted, '
+                         'please delete it and try again')
+                sys.exit(1)
 
         except (MissingSectionHeaderError, NoSectionError):
             self.msg('\nError in reading configuratin file!'
@@ -217,67 +220,72 @@ class Cluster(object):
         wait_instances = {}
 
         # init waitting time for all instanes to 0
-        for instance in self.cloud_instances.get_list()[1:]:
-            wait_instances[instance['id']] = 0
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                wait_instances[instance['id']] = 0
 
         # check if ssh port of all VMs are alive for listening
         while 1:
-            for instance in self.cloud_instances.get_list()[1:]:
-                # create ready dict using ip as key
-                # if True: ready to install
-                # if False: already installed
-                if not instance['id'] in ready_instances:
-                    ready_instances[instance['id']] = True
-                # try to connect ssh port
-                try:
-                    socket_s = socket.socket(socket.AF_INET,
-                            socket.SOCK_STREAM)
-                    socket_s.settimeout(1)
-                    socket_s.connect((instance['ip'], 22))
-                    socket_s.close()
+            for instance in self.cloud_instances.get_list().values():
+                if type(instance) is dict:
+                    # create ready dict using ip as key
+                    # if True: ready to install
+                    # if False: already installed
+                    if not instance['id'] in ready_instances:
+                        ready_instances[instance['id']] = True
+                    # try to connect ssh port
+                    try:
+                        socket_s = socket.socket(socket.AF_INET,
+                                socket.SOCK_STREAM)
+                        socket_s.settimeout(1)
+                        socket_s.connect((instance['ip'], 22))
+                        socket_s.close()
 
-                    # install on instance which is ready
-                    if install:
-                        if ready_instances[instance['id']]:
-                            # set false, block other threads
-                            ready_instances[instance['id']] = False
-                            # ssh may fail due to heavy load of
-                            # startup in instance, use sleep
-                            time.sleep(2)
-                            process_thread = \
+                        # install on instance which is ready
+                        if install:
+                            if ready_instances[instance['id']]:
+                                # set false, block other threads
+                                ready_instances[instance['id']] = False
+                                # ssh may fail due to heavy load of
+                                # startup in instance, use sleep
+                                time.sleep(2)
+                                process_thread = \
                                 threading.Thread(target=self.deploy_services,
                                                  args=[instance])
-                            process_thread.start()
+                                process_thread.start()
 
-                    ready = ready + 1
+                        ready = ready + 1
 
-                except IOError:
-                    count += 1
-                    if count > msg_len:
-                        count = 0
-                    sys.stdout.write('\rWaiting instances ready to deploy'
-                                     + '.' * count + ' ' * (msg_len - count))
-                    sys.stdout.flush()
-                    ready = 0
-                    # increase waitting time for instance
-                    wait_instances[instance['id']] += 1
-                    # if reaches limit
-                    if wait_instances[instance['id']] > retry:
-                        self.msg('Trying different IP address on %s'
-                                 % instance['id'])
-                        # get free ip addresses
-                        ip_lists = self.euca_describe_addresses()
-                        # disassociate current one
-                        self.disassociate_address(instance['ip'])
-                        # associate a new random free ip
-                        self.euca_associate_address(instance['id'],
-                                ip_lists[random.randint(0, len(ip_lists) - 1)])
-                        wait_instances[instance['id']] = 0
+                    except IOError:
+                        count += 1
+                        if count > msg_len:
+                            count = 0
+                        sys.stdout.write('\rWaiting instances ready to deploy'
+                                         + '.' * count + ' ' *
+                                         (msg_len - count))
+                        sys.stdout.flush()
+                        ready = 0
+                        # increase waitting time for instance
+                        wait_instances[instance['id']] += 1
+                        # if reaches limit
+                        if wait_instances[instance['id']] > retry:
+                            self.msg('Trying different IP address on %s'
+                                     % instance['id'])
+                            # get free ip addresses
+                            ip_lists = self.euca_describe_addresses()
+                            # disassociate current one
+                            self.disassociate_address(instance['ip'])
+                            # associate a new random free ip
+                            self.euca_associate_address(instance['id'],
+                                    ip_lists[random.randint(0,
+                                                            len(ip_lists)
+                                                            - 1)])
+                            wait_instances[instance['id']] = 0
 
-                    time.sleep(1)
+                        time.sleep(1)
 
             # check if all vms are ready
-            if ready == len(self.cloud_instances.get_list()[1:]):
+            if ready == self.cloud_instances.get_cluster_size():
                 # wait all threads are done
                 while threading.activeCount() > 1:
                     time.sleep(1)
@@ -346,7 +354,6 @@ class Cluster(object):
                                              ' -n %d -t %s %s'
                       % (userkey, cluster_size, instance_type,
                      image)).split()]
-
         # find created instance, store into list
         for instance in instances:
             if instance.find('i-') == 0:
@@ -354,7 +361,8 @@ class Cluster(object):
 
         # check if all instances are created correctly
         if not len(instance_id_list) == cluster_size:
-            self.msg('\nError in creating cluster, please check your input')
+            self.msg('\nError in creating cluster, please check your input'
+                     'or instance limit exceeded?')
             for created_instance_id in instance_id_list:
                 self.terminate_instance(created_instance_id)
             sys.exit()
@@ -376,11 +384,13 @@ class Cluster(object):
         if self.get_command_result('euca-associate-address -i %s %s'
                                    % (instance['id'],
                                       free_ip)).find('ADDRESS') < 0:
-            return 0
+            return False
         # set ip using instance id
         self.msg('ADDRESS %s instance %s' % (free_ip, instance['id']))
         self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
-        return 1
+        # delete host from known_host file in case man-in-middle-attack
+        self.del_known_host(free_ip)
+        return True
 
     @classmethod
     def disassociate_address(cls, current_ip):
@@ -443,7 +453,7 @@ class Cluster(object):
 
         self.msg('\nAssociating IPs')
         for i in range(cluster_size):
-            instance = self.cloud_instances.get_by_id(i + 1)
+            instance = self.cloud_instances.get_by_id(i)
             time.sleep(1)
             while not self.euca_associate_address(instance, ip_lists[i]):
                 self.msg('Error in associating IP %s with instance %s, '
@@ -484,7 +494,7 @@ class Cluster(object):
         srcf.close()
 
         # set control machine
-        controlMachine = self.cloud_instances.get_by_id(1)['id']
+        controlMachine = self.cloud_instances.get_by_id(0)['id']
         output = ''.join(input_content) % vars()
 
         self.msg('\nControl node %s' % controlMachine)
@@ -496,12 +506,14 @@ class Cluster(object):
 
         # add compute machines to slurm conf file
         with open(slurm_conf_file, 'a') as conf:
-            for instance in self.cloud_instances.get_list()[2:]:
-                conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
-                           % instance['id'])
-                conf.write('PartitionName=debug Nodes=%s Default=YES'
-                ' MaxTime=INFINITE State=UP\n'
-                            % instance['id'])
+            for instance in self.cloud_instances.get_list().values():
+                if type(instance) is dict:
+                    if not instance['id'] == controlMachine:
+                        conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
+                                   % instance['id'])
+                        conf.write('PartitionName=debug Nodes=%s Default=YES'
+                        ' MaxTime=INFINITE State=UP\n'
+                                    % instance['id'])
         conf.close()
 
         # if needs to create munge key
@@ -510,25 +522,26 @@ class Cluster(object):
 
             # generate munge-key on control node
 
-            self.execute(self.cloud_instances.get_by_id(1),
+            self.execute(self.cloud_instances.get_by_id(0),
                          'sudo /usr/sbin/create-munge-key')
             munge_key = open(munge_key_file, 'w')
             print >> munge_key, \
                 self.get_command_result("ssh -i %s ubuntu@%s"
                                         " 'sudo cat /etc/munge/munge.key'"
                                          % (self.userkey,
-                                        self.cloud_instances.get_by_id(1)['ip'
+                                        self.cloud_instances.get_by_id(0)['ip'
                                         ]))
             munge_key.close()
 
         # copy SLURM conf file to every node
-        for instance in self.cloud_instances.get_list()[1:]:
-            process_thread = threading.Thread(target=self.start_slurm,
-                                              args=[instance,
-                                                    create_key,
-                                                    slurm_conf_file,
-                                                    munge_key_file])
-            process_thread.start()
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                process_thread = threading.Thread(target=self.start_slurm,
+                                                  args=[instance,
+                                                        create_key,
+                                                        slurm_conf_file,
+                                                        munge_key_file])
+                process_thread.start()
 
         # wait all threads are done
         while threading.activeCount() > 1:
@@ -719,7 +732,7 @@ class Cluster(object):
         self.msg('\nRegistering image')
 
         # register image, and return image id
-        return filter(str.isalnum, self.euca_register(image).split('\t')[1])
+        return self.euca_register(image).split('\t')[1].strip()
 
     def euca_register(self, image):
         '''register image'''
@@ -754,7 +767,8 @@ class Cluster(object):
         self.msg('compute node name    -- %s' % args.computen)
 
         # copy necessary files to instances, and source profile
-        for instance in self.cloud_instances.get_list()[1:3]:
+        for instance in [self.cloud_instances.get_by_id(0),
+                         self.cloud_instances.get_by_id(1)]:
             self.copyto(instance, self.ec2_cert)
             self.copyto(instance, self.ec2_private_key)
             self.copyto(instance, self.eucalyptus_cert)
@@ -763,31 +777,29 @@ class Cluster(object):
             self.execute(instance, 'source ~/.profile')
 
         # save control node
-        self.msg('\nSaving control node %s'
-                 % self.cloud_instances.get_by_id(1)['id'])
-        control_node_id = self.save_node(
-                            self.cloud_instances.get_by_id(1)['image'],
-                            self.cloud_instances.get_by_id(1)['ip'],
-                            args.controlb, args.controln)
-        self.msg('\nControl node %s saved'
-                 % self.cloud_instances.get_by_id(1)['id'])
+        control = self.cloud_instances.get_by_id(0)
+        self.msg('\nSaving control node %s' % control['id'])
+        control_node_id = self.save_node(control['image'],
+                                         control['ip'],
+                                         args.controlb,
+                                         args.controln)
+        self.msg('\nControl node %s saved' % control['id'])
 
         # save compute node
-        self.msg('\nSaving compute node %s'
-                 % self.cloud_instances.get_by_id(2)['id'])
-        compute_node_id = self.save_node(
-                            self.cloud_instances.get_by_id(2)['image'],
-                            self.cloud_instances.get_by_id(2)['ip'],
-                            args.computeb, args.computen)
-        self.msg('\nCompute node %s saved'
-                 % self.cloud_instances.get_by_id(2)['id'])
+        compute = self.cloud_instances.get_by_id(1)
+        self.msg('\nSaving compute node %s' % compute['id'])
+        compute_node_id = self.save_node(compute['image'],
+                                         compute['ip'],
+                                         args.computeb,
+                                         args.computen)
+        self.msg('\nCompute node %s saved' % compute['id'])
 
         # get instance type
-        instance_type = self.cloud_instances.get_by_id(1)['type']
+        instance_type = control['type']
         # get compute node number
-        cluster_size = len(self.cloud_instances.get_list()[2:])
+        cluster_size = self.cloud_instances.get_cluster_size() - 1
         # copy list for termination
-        temp_instance_list = list(self.cloud_instances.get_list()[1:])
+        temp_instance_list = list(self.cloud_instances.get_list().values())
 
         # delete old info
         self.cloud_instances.del_by_name(args.name)
@@ -803,8 +815,9 @@ class Cluster(object):
 
         # terminate instances
         for instance in temp_instance_list:
-            self.terminate_instance(instance['id'])
-            self.del_known_host(instance)
+            if type(instance) is dict:
+                self.terminate_instance(instance['id'])
+                self.del_known_host(instance['ip'])
 # ---------------------------------------------------------------------
 # METHODS TO RESTORE VIRTUAL CLUSTER
 # ---------------------------------------------------------------------
@@ -820,11 +833,10 @@ class Cluster(object):
             if self.cloud_instances.if_status(self.cloud_instances.SAVED):
                 # if cluster is saved, delete old cluster, and create a
                 # new cloud instance for deploying
-                control_node_id = self.cloud_instances.get_by_id(0)['control']
-                compute_node_id = self.cloud_instances.get_by_id(0)['compute']
-                instance_type = self.cloud_instances.get_by_id(0)['type']
-                cluster_size = self.cloud_instances.get_by_id(0)['size']
-                self.cloud_instances.del_by_name(args.name)
+                control_node_id = self.cloud_instances.get_list()['control']
+                compute_node_id = self.cloud_instances.get_list()['compute']
+                instance_type = self.cloud_instances.get_list()['type']
+                cluster_size = self.cloud_instances.get_list()['size']
                 self.cloud_instances.clear()
                 self.cloud_instances.set_cloud_instances_by_name(args.name)
             else:
@@ -859,7 +871,7 @@ class Cluster(object):
         self.msg('\nAssociating IPs')
         for i in range(cluster_size):
             time.sleep(1)
-            instance = self.cloud_instances.get_by_id(i + 1)
+            instance = self.cloud_instances.get_by_id(i)
             while not self.euca_associate_address(instance, ip_lists[i]):
                 self.msg('Error in associating IP %s with instance %s, '
                      'trying again'
@@ -872,12 +884,13 @@ class Cluster(object):
         self.config_slurm(False)
         # set status to run and save
         self.cloud_instances.set_status(self.cloud_instances.RUN)
+        self.cloud_instances.del_by_name(args.name)
         self.cloud_instances.save_instances()
 
 # ---------------------------------------------------------------------
 # METHODS TO TERMINATE NAD CLEANUP
 # ---------------------------------------------------------------------
-    def del_known_host(self, instance):
+    def del_known_host(self, ip_addr):
         '''delete known host info from ~/.ssh/known_hosts'''
 
         known_hosts = '~/.ssh/known_hosts'
@@ -890,7 +903,7 @@ class Cluster(object):
 
         with open(os.path.expanduser(known_hosts), 'w') as destf:
             for host in host_list:
-                if host.find(instance['ip']) < 0:
+                if host.find(ip_addr) < 0:
                     destf.write(host)
         destf.close()
 
@@ -915,9 +928,10 @@ class Cluster(object):
                      % args.name)
             sys.exit()
 
-        for instance in self.cloud_instances.get_list()[1:]:
-            self.terminate_instance(instance['id'])
-            self.del_known_host(instance)
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                self.terminate_instance(instance['id'])
+                self.del_known_host(instance['ip'])
 
         # change status to terminated, and save
         if self.cloud_instances.if_status(self.cloud_instances.RUN):
@@ -935,21 +949,22 @@ class Cluster(object):
             for cloud in self.cloud_instances.get_all_cloud_instances():
                 self.msg('\n====================================')
                 self.msg('Virtual Cluster %s (status: %s)'
-                         % (cloud[0]['name'], cloud[0]['status']))
+                         % (cloud['name'], cloud['status']))
                 self.msg('====================================')
-                if cloud[0]['status'] == self.cloud_instances.SAVED:
+                if cloud['status'] == self.cloud_instances.SAVED:
                     self.msg('Control node -- %s, '
                              'Compute node -- %s, '
                              'Instance type -- %s, '
                              'Cluster size -- %s'
-                             % (cloud[0]['control'], cloud[0]['compute'],
-                                cloud[0]['type'], cloud[0]['size']))
+                             % (cloud['control'], cloud['compute'],
+                                cloud['type'], cloud['size']))
                 else:
-                    for instance in cloud[1:]:
+                    for index in range(self.cloud_instances.get_cluster_size(
+                                                        cloud)):
                         self.msg('Instance %s: IP -- %s, Image id -- %s, '
                                  'Instance type -- %s'
-                                 % (instance['id'], instance['ip'],
-                                 instance['image'], instance['type']))
+                                 % (cloud[index]['id'], cloud[index]['ip'],
+                                 cloud[index]['image'], cloud[index]['type']))
         else:
             if not self.cloud_instances.if_exist(args.name):
                 self.msg('Error in finding virtual cluster %s, not created.'
@@ -960,22 +975,23 @@ class Cluster(object):
             self.msg('Virtual Cluster %s (status: %s)'
                      % (args.name, self.cloud_instances.get_status()))
             self.msg('====================================')
-            if self.cloud_instances.get_by_id(0)['status'] == \
+            if self.cloud_instances.get_list()['status'] == \
                     self.cloud_instances.SAVED:
                 self.msg('Control node -- %s, '
                          'Compute node -- %s, '
                          'Instance type -- %s, '
                          'Cluster size -- %s'
-                         % (self.cloud_instances.get_by_id(0)['control'],
-                            self.cloud_instances.get_by_id(0)['compute'],
-                            self.cloud_instances.get_by_id(0)['type'],
-                            self.cloud_instances.get_by_id(0)['size']))
+                         % (self.cloud_instances.get_list()['control'],
+                            self.cloud_instances.get_list()['compute'],
+                            self.cloud_instances.get_list()['type'],
+                            self.cloud_instances.get_list()['size']))
             else:
-                for instance in self.cloud_instances.get_list()[1:]:
-                    self.msg('Instance %s: IP -- %s, Image id -- %s, '
-                             'Instance type -- %s'
-                             % (instance['id'], instance['ip'],
-                                instance['image'], instance['type']))
+                for instance in self.cloud_instances.get_list().values():
+                    if type(instance) is dict:
+                        self.msg('Instance %s: IP -- %s, Image id -- %s, '
+                                 'Instance type -- %s'
+                                 % (instance['id'], instance['ip'],
+                                    instance['image'], instance['type']))
 
 # ---------------------------------------------------------------------
 # METHODS TO SHOW VIRTUAL CLUSTER LIST
@@ -989,7 +1005,9 @@ class Cluster(object):
         self.msg('================================')
         for cloud in self.cloud_instances.get_all_cloud_instances():
             self.msg('%s: %d compute nodes; status: %s'
-                     % (cloud[0]['name'], len(cloud[1:]), cloud[0]['status']))
+                     % (cloud['name'],
+                        self.cloud_instances.get_cluster_size(cloud),
+                        cloud['status']))
 
 ######################################################################
 # MAIN
@@ -998,6 +1016,10 @@ class Cluster(object):
 
 def commandline_parser():
     '''parse commandline'''
+
+    if sys.version_info < (2, 7):
+        print "ERROR: you must use python 2.7 or greater"
+        sys.exit(1)
 
     virtual_cluster = Cluster()
 
@@ -1074,17 +1096,6 @@ def commandline_parser():
     restore_parser.add_argument('-a', '--name', action='store',
                                 required=True,
                                 help='Virtual cluster name')
-#    restore_parser.add_argument('-c', '--controli', action='store',
-#                                required=True,
-#                                help='Control node image id')
-#    restore_parser.add_argument('-m', '--computei', action='store',
-#                                required=True,
-#                                help='Compute node image id')
-#    restore_parser.add_argument('-t', '--type', action='store',
-#                                help='Instance type')
-#    restore_parser.add_argument('-n', '--number', action='store',
-#                                required=True,
-#                                help='Number of compute nodes')
     restore_parser.set_defaults(func=virtual_cluster.restore_cluster)
 
     args = parser.parse_args()
