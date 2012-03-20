@@ -183,6 +183,17 @@ class Cluster(object):
             self.slurm = config.get('virtual-cluster', 'slurm')
             self.debug('SLURM configuration input file %s' % self.slurm)
 
+            self.debug('Checking if all files are present')
+            if not os.path.exists(os.path.expanduser(self.userkey)) or \
+                not os.path.exists(os.path.expanduser(self.ec2_cert)) or \
+                not os.path.exists(os.path.expanduser(self.ec2_private_key)) or \
+                not os.path.exists(os.path.expanduser(self.eucalyptus_cert)) or \
+                not os.path.exists(os.path.expanduser(self.novarc)) or \
+                not os.path.exists(os.path.expanduser(self.slurm)):
+                self.msg('You must have all the files present as specified in '
+                         'configuration file!')
+                sys.exit(1)
+
             self.debug('Checking backup file')
             if not self.cloud_instances.set_backup_file(self.backup_file):
                 self.msg('\nBackup file is corrupted, '
