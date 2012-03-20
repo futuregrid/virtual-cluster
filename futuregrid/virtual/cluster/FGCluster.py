@@ -156,13 +156,13 @@ class Cluster(object):
         """
 
         config = ConfigParser.ConfigParser()
-
         try:
-            config.read([file_name,
-                         'futuregrid.cfg',
-                         os.path.expanduser('~/.futuregrid/futuregrid.cfg')])
-
             # default location ~/.futuregrid/futuregrid.cfg
+            # read[], reads begin from last to first
+            # so, first reads file_name, then current directory, then default
+            config.read([os.path.expanduser('~/.futuregrid/futuregrid.cfg'),
+                         'futuregrid.cfg',
+                         os.path.expanduser(file_name)])
 
             self.backup_file = config.get('virtual-cluster', 'backup')
             self.userkey = config.get('virtual-cluster', 'userkey')
@@ -180,6 +180,10 @@ class Cluster(object):
                          'please delete it and try again')
                 sys.exit(1)
 
+        except IOError:
+            self.msg('\nError in reading configuration file!'
+                     ' configuration file not created?')
+            sys.exit()
         except (MissingSectionHeaderError, NoSectionError):
             self.msg('\nError in reading configuratin file!'
                      ' No section header?')
@@ -191,10 +195,6 @@ class Cluster(object):
         except ValueError:
             self.msg('\nError in reading configuration file!'
                      ' Correct python version?')
-            sys.exit()
-        except IOError:
-            self.msg('\nError in reading configuration file!'
-                     ' configuration file not created?')
             sys.exit()
 # ---------------------------------------------------------------------
 # METHOD TO DETECT OPEN PORT

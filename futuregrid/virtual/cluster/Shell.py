@@ -2,13 +2,16 @@
 
 #import argparse
 
-import os
+#import os
 import pprint
 import optparse
 from cmd2 import Cmd
 from cmd2 import make_option
 from cmd2 import options
-from cmd2 import Cmd2TestCase
+#from cmd2 import Cmd2TestCase
+
+from futuregrid.virtual.cluster.FGCluster import Cluster
+#from FGCluster import Cluster
 
 import unittest
 import sys
@@ -24,6 +27,7 @@ class Shell(Cmd):
 
     echo = True
     timing = True
+    cluster = None
 
     prompt = "fg> "
 
@@ -37,37 +41,96 @@ class Shell(Cmd):
     """
 
     def preloop(self):
+        self.cluster = Cluster()
         print self.logo
 
     def postloop(self):
         print "BYE FORM GREGOR"
 
-    def do_list(self):
-        print "to do List"
-
     def do_config(self, filename):
-        print "to do config"
+        self.cluster.parse_conf(filename)
 
     def do_debug(self, debug=True):
         print "to do debug"
 
-    def do_run(self, arg):
-        print "to do run"
+    @options([
+        make_option('-a', '--name', type="string",
+                    help="cluster name"),
+        make_option('-n', '--number', type="int",
+                    help="number of computation nodes"),
+        make_option('-t', '--type', type="string",
+                    help="instance type"),
+        make_option('-i', '--image', type="string",
+                    help="image id"),
+        make_option('-f', '--file', type="string",
+                    default='not specified',
+                    help="configuration file"),
+        ])
+    def do_run(self, opts):
+        self.cluster.parse_conf(opts.file)
+        self.cluster.create_cluster(opts)
 
-    def do_checkpoint(self, arg):
-        print "to do checkpoint"
+    @options([
+        make_option('-a', '--name', type="string",
+                    help="cluster name"),
+        make_option('-c', '--controlb', type="string",
+                    help="control node bucket"),
+        make_option('-t', '--controln', type="string",
+                    help="control node image"),
+        make_option('-m', '--computeb', type="string",
+                    help="compute node bucket"),
+        make_option('-e', '--computen', type="string",
+                    default='not specified',
+                    help="compute node image"),
+        make_option('-f', '--file', type="string",
+                    default='not specified',
+                    help="configuration file"),
+        ])
+    def do_checkpoint(self, opts):
+        self.cluster.parse_conf(opts.file)
+        self.cluster.checkpoint_cluster(opts)
 
-    def do_restore(self, arg):
-        print "to do restore"
+    @options([
+        make_option('-a', '--name', type="string",
+                    help="cluster name"),
+        make_option('-f', '--file', type="string",
+                    default='not specified',
+                    help="configuration file"),
+        ])
+    def do_restore(self, opts):
+        self.cluster.parse_conf(opts.file)
+        self.cluster.restore_cluster(opts)
 
-    def do_terminate(self, arg):
-        print "to do terminate"
+    @options([
+        make_option('-a', '--name', type="string",
+                    help="cluster name"),
+        make_option('-f', '--file', type="string",
+                    default='not specified',
+                    help="configuration file"),
+        ])
+    def do_terminate(self, opts):
+        self.cluster.parse_conf(opts.file)
+        self.cluster.shut_down(opts)
 
-    def do_status(self, arg):
-        print "to do status"
+    @options([
+        make_option('-a', '--name', type="string",
+                    help="cluster name"),
+        make_option('-f', '--file', type="string",
+                    default='not specified',
+                    help="configuration file"),
+        ])
+    def do_status(self, opts):
+        self.cluster.parse_conf(opts.file)
+        self.cluster.show_status(opts)
 
-    def do_list(self, arg):
-        print "to do list"
+    @options([
+        make_option('-f', '--file', type="string",
+                    default='not specified',
+                    help="configuration file"),
+        ])
+    def do_list(self, opts):
+        self.cluster.parse_conf(opts.file)
+        self.cluster.get_list(opts)
 
 
 def main():
@@ -77,6 +140,8 @@ def main():
                       action='store_true',
                       default=False,
                       help='Run unit test suite')
+    parser.add_option("-f", "--file", dest="filename",
+                  help="write report to FILE", metavar="FILE")
     (callopts, callargs) = parser.parse_args()
     if callopts.unittests:
         sys.argv = [sys.argv[0]]  # the --test argument upsets unittest.main()
@@ -84,3 +149,6 @@ def main():
     else:
         app = Shell()
         app.cmdloop()
+
+if __name__ == '__main__':
+    main()
