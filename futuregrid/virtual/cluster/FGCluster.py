@@ -113,7 +113,7 @@ class Cluster(object):
         '''method for printing debug message'''
 
         if self.if_debug:
-            print '\r' + message
+            print message
 
     def set_debug(self, if_debug=False):
         '''set debug flag'''
@@ -165,20 +165,30 @@ class Cluster(object):
                          os.path.expanduser(file_name)])
 
             self.backup_file = config.get('virtual-cluster', 'backup')
+            self.debug('Backup file %s' % self.backup_file)
             self.userkey = config.get('virtual-cluster', 'userkey')
+            self.debug('Userkey %s' % self.userkey)
             self.user = config.get('virtual-cluster', 'user')
+            self.debug('User %s' % self.user)
             self.ec2_cert = config.get('virtual-cluster', 'ec2_cert')
+            self.debug('EC2_CERT %s' % self.ec2_cert)
             self.ec2_private_key = config.get('virtual-cluster',
                     'ec2_private_key')
+            self.debug('EC2_PRIVATE_KEY %s' % self.ec2_private_key)
             self.eucalyptus_cert = config.get('virtual-cluster',
                     'eucalyptus_cert')
+            self.debug('EUCALYPTUS_CERT %s' % self.eucalyptus_cert)
             self.novarc = config.get('virtual-cluster', 'novarc')
+            self.debug('novarc %s' % self.novarc)
             self.slurm = config.get('virtual-cluster', 'slurm')
+            self.debug('SLURM configuration input file %s' % self.slurm)
 
+            self.debug('Checking backup file')
             if not self.cloud_instances.set_backup_file(self.backup_file):
                 self.msg('\nBackup file is corrupted, '
                          'please delete it and try again')
                 sys.exit(1)
+            self.debug('Checking done')
 
         except IOError:
             self.msg('\nError in reading configuration file!'
@@ -235,6 +245,8 @@ class Cluster(object):
                         ready_instances[instance['id']] = True
                     # try to connect ssh port
                     try:
+                        self.debug('trying to connect %s'
+                                   % instance['ip'])
                         socket_s = socket.socket(socket.AF_INET,
                                 socket.SOCK_STREAM)
                         socket_s.settimeout(1)
@@ -249,6 +261,8 @@ class Cluster(object):
                                 # ssh may fail due to heavy load of
                                 # startup in instance, use sleep
                                 time.sleep(2)
+                                self.msg('Starting thread to install '
+                                         'on %s' % instance['ip'])
                                 process_thread = \
                                 threading.Thread(target=self.deploy_services,
                                                  args=[instance])
@@ -257,6 +271,7 @@ class Cluster(object):
                         ready = ready + 1
 
                     except IOError:
+                        self.debug('ssh in %s is closed' % instance['ip'])
                         count += 1
                         if count > msg_len:
                             count = 0
@@ -276,40 +291,51 @@ class Cluster(object):
                             # disassociate current one
                             self.disassociate_address(instance['ip'])
                             # associate a new random free ip
+                            self.debug('Associating new IP on %s'
+                                       % instance['id'])
                             self.euca_associate_address(instance['id'],
                                     ip_lists[random.randint(0,
                                                             len(ip_lists)
                                                             - 1)])
+                            self.debug('New IP is %s' % instance['ip'])
                             wait_instances[instance['id']] = 0
 
                         time.sleep(1)
 
             # check if all vms are ready
+            self.debug('Total number of instances %d'
+                       % int(self.cloud_instances.get_cluster_size()))
+            self.debug('%d instances are ready' % ready)
             if ready == self.cloud_instances.get_cluster_size():
                 # wait all threads are done
+                self.debug('Waitting all thread are done')
                 while threading.activeCount() > 1:
                     time.sleep(1)
+                self.debug('All thread are done')
                 break
 
 # ---------------------------------------------------------------------
 # METHODS TO DO RPCs
 # ---------------------------------------------------------------------
 
-    @classmethod
-    def get_command_result(cls, command):
+    def get_command_result(self, command):
         '''gets command output'''
-
+        self.debug(command)
         return os.popen(command).read()
 
     def execute(self, instance, command):
         '''runs a command on the instance'''
 
+        self.debug("ssh -i %s ubuntu@%s '%s'" % (self.userkey,
+                  instance['ip'], command))
         os.system("ssh -i %s ubuntu@%s '%s'" % (self.userkey,
                   instance['ip'], command))
 
     def copyto(self, instance, filename):
         '''copyies the named file to the instance'''
 
+        self.debug('scp -i %s %s ubuntu@%s:~/' % (self.userkey,
+                  filename, instance['ip']))
         os.system('scp -i %s %s ubuntu@%s:~/' % (self.userkey,
                   filename, instance['ip']))
 
@@ -348,6 +374,11 @@ class Cluster(object):
         instance_id_list = []
 
         # get run instances store int instances list
+        self.debug('euca-run-instances -k %s -n %d -t %s %s'
+                   % (userkey,
+                      cluster_size,
+                      instance_type,
+                      image))
         instances = [x for x in
                      self.get_command_result(
                                              'euca-run-instances -k %s'
@@ -357,19 +388,24 @@ class Cluster(object):
         # find created instance, store into list
         for instance in instances:
             if instance.find('i-') == 0:
+                self.debug('%s is created' % instance)
                 instance_id_list.append(instance)
 
+        self.debug('Checking if all instances are created')
         # check if all instances are created correctly
         if not len(instance_id_list) == cluster_size:
             self.msg('\nError in creating cluster, please check your input'
-                     'or instance limit exceeded?')
+                     ' or instance limit exceeded?')
             for created_instance_id in instance_id_list:
                 self.terminate_instance(created_instance_id)
             sys.exit()
+        self.debug('Checking done')
 
+        self.debug('Adding instances into cloud instances list')
         # add instance to instance list
         for num in range(cluster_size):
             try:
+                self.debug('Adding instance %s' % instance_id_list[num])
                 self.cloud_instances.set_instance(instance_id_list[num],
                                                   image,
                                                   instance_type)
@@ -381,6 +417,8 @@ class Cluster(object):
     def euca_associate_address(self, instance, free_ip):
         '''associates instance with ip'''
 
+        self.debug('euca-associate-address -i %s %s'
+                   % (instance['id'], free_ip))
         if self.get_command_result('euca-associate-address -i %s %s'
                                    % (instance['id'],
                                       free_ip)).find('ADDRESS') < 0:
@@ -389,13 +427,15 @@ class Cluster(object):
         self.msg('ADDRESS %s instance %s' % (free_ip, instance['id']))
         self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
         # delete host from known_host file in case man-in-middle-attack
+        self.debug('Deleting %s from known host if it already existed'
+                   % free_ip)
         self.del_known_host(free_ip)
         return True
 
-    @classmethod
-    def disassociate_address(cls, current_ip):
+    def disassociate_address(self, current_ip):
         '''disassociates ip'''
 
+        self.debug('euca-disassociate-address %s' % current_ip)
         os.system('euca-disassociate-address %s' % current_ip)
 
     def euca_describe_addresses(self):
@@ -419,11 +459,16 @@ class Cluster(object):
         them, do configure accordingly
         '''
 
+        self.debug('Checking if %s is existed' % args.name)
         if self.cloud_instances.if_exist(args.name):
             # if exists, get cloud info by name
+            self.debug('%s is existed, gettting it from backup file'
+                       % args.name)
             self.cloud_instances.get_cloud_instances_by_name(args.name)
             # if cluster is terminated, delete old info, start over
+            self.debug('Checking if %s is currently down' % args.name)
             if self.cloud_instances.if_status(self.cloud_instances.DOWN):
+                self.debug('Deleting old info')
                 self.cloud_instances.del_by_name(args.name)
                 self.cloud_instances.clear()
             else:
@@ -432,18 +477,23 @@ class Cluster(object):
                 sys.exit()
 
         cluster_size = int(args.number) + 1
+        self.debug('Cluster size is (control node included): %d'
+                   % cluster_size)
         self.msg('\n...Creating virtual cluster......')
         self.msg('cluster name    -- %s' % args.name)
         self.msg('numbe of nodes  -- %s' % cluster_size)
         self.msg('instance type   -- %s' % args.type)
         self.msg('image id        -- %s' % args.image)
 
+        self.debug('Creating new cloud instance %s' % args.name)
         # set cloud instance list
         self.cloud_instances.set_cloud_instances_by_name(args.name)
 
+        self.debug('Creating cluster')
         # run instances given parameters
         self.euca_run_instance(self.user, cluster_size, args.image,
                                args.type)
+        self.debug('Getting free public IPs')
         # get free IP list
         ip_lists = self.euca_describe_addresses()
 
@@ -461,25 +511,32 @@ class Cluster(object):
                      % (ip_lists[i], instance['id']))
                 time.sleep(1)
 
+        self.debug('Saving cloud instance into backup file')
         # save cloud instance
         self.cloud_instances.save_instances()
 
+        self.debug('Creating IU ubunto repo source list')
         # choose repo, by defalt, using IU ubuntu repo
         self.define_repo()
 
+        self.debug('Checking alive instance for deploying')
         # detect if VMs are ready for deploy
         self.detect_port()
 
+        self.debug('Configuraing SLURM')
         # config SLURM system
         self.config_slurm()
 
+        self.debug('Cleaning up')
         # clean repo file
         self.clean_repo()
+        self.debug('Done creationg of cluster')
 
     def clean_repo(self):
         ''' remove source list file'''
 
         if not self.if_default:
+            self.debug('Removing %s' % self.sources_list)
             os.remove(self.sources_list)
 
     def config_slurm(self, create_key=True):
@@ -488,27 +545,33 @@ class Cluster(object):
         slurm_conf_file = 'slurm.conf'
         munge_key_file = 'munge.key'
 
+        self.debug('Opening %s' % self.slurm)
         self.msg('\nConfiguring slurm.conf')
         with open(os.path.expanduser(self.slurm)) as srcf:
             input_content = srcf.readlines()
         srcf.close()
 
+        self.debug('Getting control machie id')
         # set control machine
         controlMachine = self.cloud_instances.get_by_id(0)['id']
         output = ''.join(input_content) % vars()
 
         self.msg('\nControl node %s' % controlMachine)
 
+        self.debug('Writting into %s' % slurm_conf_file)
         # write control machine into slurm.conf file
         destf = open(slurm_conf_file, 'w')
         print >> destf, output
         destf.close()
 
+        self.debug('Openning %s for adding computation nodes'
+                   % slurm_conf_file)
         # add compute machines to slurm conf file
         with open(slurm_conf_file, 'a') as conf:
             for instance in self.cloud_instances.get_list().values():
                 if type(instance) is dict:
                     if not instance['id'] == controlMachine:
+                        self.debug('Adding instance %s' % instance['id'])
                         conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
                                    % instance['id'])
                         conf.write('PartitionName=debug Nodes=%s Default=YES'
@@ -524,6 +587,7 @@ class Cluster(object):
 
             self.execute(self.cloud_instances.get_by_id(0),
                          'sudo /usr/sbin/create-munge-key')
+            self.debug('Opening %s for writting munge-key' % munge_key_file)
             munge_key = open(munge_key_file, 'w')
             print >> munge_key, \
                 self.get_command_result("ssh -i %s ubuntu@%s"
@@ -536,6 +600,7 @@ class Cluster(object):
         # copy SLURM conf file to every node
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
+                self.debug('Starting SLURM on %s' % instance['id'])
                 process_thread = threading.Thread(target=self.start_slurm,
                                                   args=[instance,
                                                         create_key,
@@ -544,12 +609,15 @@ class Cluster(object):
                 process_thread.start()
 
         # wait all threads are done
+        self.debug('Waitting all threads are done')
         while threading.activeCount() > 1:
             time.sleep(1)
 
         # clean temp files
         if create_key:
+            self.debug('Removing %s' % munge_key_file)
             os.remove(munge_key_file)
+        self.debug('Removing %s' % slurm_conf_file)
         os.remove(slurm_conf_file)
 
     def start_slurm(self,
@@ -603,6 +671,8 @@ class Cluster(object):
             self.msg('\nUsing default repository')
         else:
             self.msg('\nUsing IU ubuntu repository')
+            self.debug('Using %s' % iu_repo)
+            self.debug('Opening %s for writting' % self.sources_list)
             with open(self.sources_list, 'w') as source:
                 source.write('deb ' + iu_repo + ' natty-updates main\n')
                 source.write('deb-src ' + iu_repo + ' natty-updates main\n')
@@ -622,14 +692,19 @@ class Cluster(object):
                  % instance['ip'])
 
         if not self.if_default:
+            self.debug('Copying %s to %s' % (self.sources_list,
+                                             instance['id']))
             self.copyto(instance, self.sources_list)
             self.execute(instance, 'sudo cp %s /etc/apt/'
                          % self.sources_list)
 
+        self.debug('Updating on %s' % instance['id'])
         self.update(instance)
         # install SLURM
+        self.debug('Installing slrum-llnl on %s' % instance['id'])
         self.install(instance, 'slurm-llnl')
         # install OpenMPI
+        self.debug('Installing openmpi on %s' % instance['id'])
         self.install(instance, "openmpi-bin libopenmpi-dev")
 
 # ---------------------------------------------------------------------
@@ -646,6 +721,12 @@ class Cluster(object):
         '''save instance given paramenters'''
 
         if kernel_id == None:
+            self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
+                       " sudo euca-bundle-vol -c ${EC2_CERT}"
+                       " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
+                       " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
+                       " -p %s -s 1024 -d /mnt/'"
+                       % (self.userkey, instance_ip, instance_name))
             return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
@@ -654,6 +735,13 @@ class Cluster(object):
                              % (self.userkey, instance_ip,
                                 instance_name))
         elif ramdisk_id == None:
+            self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
+                       " sudo euca-bundle-vol -c ${EC2_CERT}"
+                       " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
+                       " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
+                       " -p %s -s 1024 -d /mnt/ --kernel %s'"
+                       % (self.userkey, instance_ip, instance_name,
+                          kernel_id))
             return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
@@ -662,6 +750,13 @@ class Cluster(object):
                              % (self.userkey, instance_ip, instance_name,
                             kernel_id))
         else:
+            self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
+                       " sudo euca-bundle-vol -c ${EC2_CERT}"
+                       " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
+                       " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
+                       " -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
+                       % (self.userkey, instance_ip, instance_name,
+                          kernel_id, ramdisk_id))
             return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
@@ -678,6 +773,10 @@ class Cluster(object):
         ):
         '''upload bundle given manifest'''
 
+        self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
+                   " euca-upload-bundle -b %s -m %s'"
+                   % (self.userkey, instance_ip, bucket_name,
+                      manifest))
         return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
                         " euca-upload-bundle -b %s -m %s'"
                          % (self.userkey, instance_ip, bucket_name,
@@ -686,6 +785,7 @@ class Cluster(object):
     def describe_images(self, image_id):
         '''get images infos'''
 
+        self.debug('euca-describe-images %s' % image_id)
         return self.get_command_result('euca-describe-images %s' % image_id)
 
     def get_kernel_id(self, image_id):
@@ -694,6 +794,7 @@ class Cluster(object):
         command_result = [x for x in
                           self.describe_images(image_id).split()]
         if len(command_result) >= 8:
+            self.debug('Kernel ID %s' % command_result[7])
             return command_result[7]
 
     def get_ramdisk_id(self, image_id):
@@ -702,6 +803,7 @@ class Cluster(object):
         command_result = [x for x in
                           self.describe_images(image_id).split()]
         if len(command_result) == 9:
+            self.debug("Ramdisk ID %s" % command_result[8])
             return command_result[8]
 
     def save_node(
@@ -717,7 +819,9 @@ class Cluster(object):
         '''
 
         kernel_id = self.get_kernel_id(image_id)
+        self.debug('Kernel ID %s' % kernel_id)
         ramdisk_id = self.get_ramdisk_id(image_id)
+        self.debug("Ramdisk ID %s" % ramdisk_id)
         # get manifest from the last unit
         manifest = [x for x in self.save_instance(kernel_id,
                     ramdisk_id, instance_ip, image_name).split()].pop()
@@ -728,6 +832,7 @@ class Cluster(object):
         # upload image
         image = [x for x in self.upload_bundle(instance_ip, bucket_name,
                  manifest).split()].pop()
+        self.debug(image)
         self.msg('\nUploading done')
         self.msg('\nRegistering image')
 
@@ -745,9 +850,11 @@ class Cluster(object):
         and terminate the old one
         '''
 
+        self.debug('Checking if %s is existed' % args.name)
         # check if cluter is existed
         if self.cloud_instances.if_exist(args.name):
             # get cluter by name
+            self.debug('Getting cloud instance %s' % args.name)
             self.cloud_instances.get_cloud_instances_by_name(args.name)
             # if cluster is down, terminate the program
             if self.cloud_instances.if_status(self.cloud_instances.DOWN):
@@ -766,9 +873,12 @@ class Cluster(object):
         self.msg('compute node bucket  -- %s' % args.computeb)
         self.msg('compute node name    -- %s' % args.computen)
 
+        control = self.cloud_instances.get_by_id(0)
+        compute = self.cloud_instances.get_by_id(1)
+        self.debug('Control node %s, compute node %s'
+                   % (control, compute))
         # copy necessary files to instances, and source profile
-        for instance in [self.cloud_instances.get_by_id(0),
-                         self.cloud_instances.get_by_id(1)]:
+        for instance in [control, compute]:
             self.copyto(instance, self.ec2_cert)
             self.copyto(instance, self.ec2_private_key)
             self.copyto(instance, self.eucalyptus_cert)
@@ -777,7 +887,6 @@ class Cluster(object):
             self.execute(instance, 'source ~/.profile')
 
         # save control node
-        control = self.cloud_instances.get_by_id(0)
         self.msg('\nSaving control node %s' % control['id'])
         control_node_id = self.save_node(control['image'],
                                          control['ip'],
@@ -786,7 +895,6 @@ class Cluster(object):
         self.msg('\nControl node %s saved' % control['id'])
 
         # save compute node
-        compute = self.cloud_instances.get_by_id(1)
         self.msg('\nSaving compute node %s' % compute['id'])
         compute_node_id = self.save_node(compute['image'],
                                          compute['ip'],
@@ -796,14 +904,18 @@ class Cluster(object):
 
         # get instance type
         instance_type = control['type']
+        self.debug('Instance type %s' % instance_type)
         # get compute node number
         cluster_size = self.cloud_instances.get_cluster_size() - 1
+        self.debug('Number of computation nodes %d' % cluster_size)
         # copy list for termination
         temp_instance_list = list(self.cloud_instances.get_list().values())
 
         # delete old info
+        self.debug('Deleting %s from backup file' % args.name)
         self.cloud_instances.del_by_name(args.name)
 
+        self.debug('Setting save info')
         # set saved cloud info, and change status to saved
         self.cloud_instances.checkpoint_cloud_instances(args.name,
                                                         control_node_id,
@@ -811,6 +923,7 @@ class Cluster(object):
                                                         instance_type,
                                                         cluster_size)
         # save cluster
+        self.debug('Saving cluster into backup file')
         self.cloud_instances.save_instances()
 
         # terminate instances
@@ -828,16 +941,25 @@ class Cluster(object):
         control_node_num = 1
 
         # only restore cluster which is saved
+        self.debug('Checking if %s is existed' % args.name)
         if self.cloud_instances.if_exist(args.name):
+            self.debug('Getting cloud %s' % args.name)
             self.cloud_instances.get_cloud_instances_by_name(args.name)
             if self.cloud_instances.if_status(self.cloud_instances.SAVED):
+                self.debug('Cloud status: %s' % self.cloud_instances.SAVED)
                 # if cluster is saved, delete old cluster, and create a
                 # new cloud instance for deploying
                 control_node_id = self.cloud_instances.get_list()['control']
+                self.debug('control node %s' % control_node_id)
                 compute_node_id = self.cloud_instances.get_list()['compute']
+                self.debug('compute node %s' % compute_node_id)
                 instance_type = self.cloud_instances.get_list()['type']
+                self.debug('instance type %s' % instance_type)
                 cluster_size = self.cloud_instances.get_list()['size']
+                self.debug('cluster size %s' % cluster_size)
+                self.debug('Creating new cloud instance list')
                 self.cloud_instances.clear()
+                self.debug('Deleting old info from backup file')
                 self.cloud_instances.set_cloud_instances_by_name(args.name)
             else:
                 self.msg('Error in restoring virtual cluster %s, not saved?'
@@ -857,13 +979,16 @@ class Cluster(object):
         self.msg('compute image     -- %s' % compute_node_id)
 
         # run control node
+        self.debug('Creating control node %s' % control_node_id)
         self.euca_run_instance(self.user, control_node_num,
                                control_node_id, instance_type)
         # run compute nodes given number
+        self.debug('Creating compute node %s' % compute_node_id)
         self.euca_run_instance(self.user, cluster_size,
                                compute_node_id, instance_type)
 
         # get free ip list
+        self.debug('Getting free IP list')
         ip_lists = self.euca_describe_addresses()
 
         time.sleep(3)
@@ -871,6 +996,7 @@ class Cluster(object):
         self.msg('\nAssociating IPs')
         for i in range(cluster_size):
             time.sleep(1)
+            self.debug('Getting cloud from index %d' % i)
             instance = self.cloud_instances.get_by_id(i)
             while not self.euca_associate_address(instance, ip_lists[i]):
                 self.msg('Error in associating IP %s with instance %s, '
@@ -879,18 +1005,24 @@ class Cluster(object):
                 time.sleep(1)
 
         # check ssh port but not install
+        self.debug('Checking alive instance for deploying')
         self.detect_port(False)
-        # cnfig SLURM but not generating munge-key
+        # cnfig SLURM but not generating munge-keys
+        self.debug('Configuating SLURM')
         self.config_slurm(False)
         # set status to run and save
+        self.debug('Setting status to %s' % self.cloud_instances.RUN)
         self.cloud_instances.set_status(self.cloud_instances.RUN)
+        self.debug('Deleting old cloud instance info')
         self.cloud_instances.del_by_name(args.name)
+        self.debug('Saving cloud instance info')
         self.cloud_instances.save_instances()
 
 # ---------------------------------------------------------------------
 # METHODS TO TERMINATE NAD CLEANUP
 # ---------------------------------------------------------------------
-    def del_known_host(self, ip_addr):
+    @classmethod
+    def del_known_host(cls, ip_addr):
         '''delete known host info from ~/.ssh/known_hosts'''
 
         known_hosts = '~/.ssh/known_hosts'
@@ -917,8 +1049,11 @@ class Cluster(object):
         '''method for shutting down a cluster'''
 
         # only terminate cluster which is not terminated
+        self.debug('Checking if %s is existed' % args.name)
         if self.cloud_instances.if_exist(args.name):
+            self.debug('Getting cloud instance %s' % args.name)
             self.cloud_instances.get_cloud_instances_by_name(args.name)
+            self.debug('Checking cloud status')
             if self.cloud_instances.if_status(self.cloud_instances.DOWN):
                 self.msg('\nError in terminating cluster %s, already down?'
                           % args.name)
@@ -934,9 +1069,13 @@ class Cluster(object):
                 self.del_known_host(instance['ip'])
 
         # change status to terminated, and save
+        self.debug('If status is %s' % self.cloud_instances.RUN)
         if self.cloud_instances.if_status(self.cloud_instances.RUN):
+            self.debug('Setting status to %s' % self.cloud_instances.DOWN)
             self.cloud_instances.set_status(self.cloud_instances.DOWN)
+            self.debug('Deleting instance old info')
             self.cloud_instances.del_by_name(args.name)
+            self.debug('Saving instance into backup file')
             self.cloud_instances.save_instances()
 # ---------------------------------------------------------------------
 # METHODS TO SHOW VIRTUAL CLUSTER(S) STATUS
