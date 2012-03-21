@@ -22,6 +22,8 @@ usage:
                             if specifyed, then not use IU
                             ubuntu repo
 
+    --create-key -- create euca key file
+
     subcommands:
 
     run: run a virtual cluster of given parameters
@@ -92,6 +94,8 @@ class Cluster(object):
     if_debug = False
     # if false, using IU ubuntu repository
     if_default = False
+    # if true, create userkey key
+    if_create_key = False
     # repo file name
     sources_list = 'sources.list'
 
@@ -115,15 +119,27 @@ class Cluster(object):
         if self.if_debug:
             print message
 
-    def set_debug(self, if_debug=False):
+    def set_flag(self, args):
         '''set debug flag'''
 
-        self.if_debug = if_debug
+        self.if_debug = args.debug
+        self.if_default = args.default_repository
+        self.if_create_key = args.create_key
 
-    def set_default(self, if_default=False):
-        '''set debug flag'''
+    def if_keypair_exits(self, name):
+        '''check if key is already created'''
 
-        self.if_default = if_default
+        command = 'euca-describe-keypairs'
+        for element in self.get_command_result(command).split('\t'):
+            if element.find(name) >= 0:
+                return True
+        return False
+
+    def add_keypair(self, name, key):
+        '''use euca-add-keypair to add keypair'''
+
+        os.system('euca-add-keypair %s > %s' % (name, key))
+        os.chmod(os.path.expanduser(key), 0600)
 
 # ---------------------------------------------------------------------
 # METHOD TO PARSE CONFIGURATION FILE
@@ -183,15 +199,36 @@ class Cluster(object):
             self.slurm = config.get('virtual-cluster', 'slurm')
             self.debug('SLURM configuration input file %s' % self.slurm)
 
-            self.debug('Checking if all files are present')
-            if not os.path.exists(os.path.expanduser(self.userkey)) or \
-                not os.path.exists(os.path.expanduser(self.ec2_cert)) or \
-                not os.path.exists(os.path.expanduser(self.ec2_private_key)) or \
-                not os.path.exists(os.path.expanduser(self.eucalyptus_cert)) or \
-                not os.path.exists(os.path.expanduser(self.novarc)) or \
-                not os.path.exists(os.path.expanduser(self.slurm)):
-                self.msg('You must have all the files present as specified in '
-                         'configuration file!')
+            # checking if all file are present
+            self.debug('Checking if all file are present')
+            if not os.path.exists(os.path.expanduser(self.userkey)):
+                if self.if_create_key:
+                    # create key for user
+#                    self.add_keypair(self.user)
+                    if self.if_keypair_exits(self.user):
+                        self.msg('\nYou have userkey %s.pem, please correct'
+                                 ' its location in configuration file'
+                                 % self.user)
+                        sys.exit()
+                    else:
+                        self.add_keypair(self.user, self.userkey)
+                else:
+                    self.msg('ERROR: You must have userkey file')
+                    sys.exit(1)
+            if not os.path.exists(os.path.expanduser(self.ec2_cert)):
+                self.msg('ERROR: You must have cert.pem file')
+                sys.exit(1)
+            if not os.path.exists(os.path.expanduser(self.ec2_private_key)):
+                self.msg('ERROR: You must have pk.pem file')
+                sys.exit(1)
+            if not os.path.exists(os.path.expanduser(self.eucalyptus_cert)):
+                self.msg('ERROR: You must have cacert.pem file')
+                sys.exit(1)
+            if not os.path.exists(os.path.expanduser(self.novarc)):
+                self.msg('ERROR: You must have novarc file')
+                sys.exit(1)
+            if not os.path.exists(os.path.expanduser(self.slurm)):
+                self.msg('ERROR: You must have slurm.conf.in file')
                 sys.exit(1)
 
             self.debug('Checking backup file')
@@ -1096,7 +1133,11 @@ class Cluster(object):
         '''show status of cluster(s)'''
 
         if not args.name:
-            for cloud in self.cloud_instances.get_all_cloud_instances():
+            cloud_set = self.cloud_instances.get_all_cloud_instances()
+            if len(cloud_set) == 0:
+                self.msg('\nYou do not have any virtual clusters')
+                sys.exit()
+            for cloud in cloud_set:
                 self.msg('\n====================================')
                 self.msg('Virtual Cluster %s (status: %s)'
                          % (cloud['name'], cloud['status']))
@@ -1150,10 +1191,16 @@ class Cluster(object):
     def get_list(self, args):
         '''list all virtual clusters and status'''
 
+        # get all cloud instances lists
+        cloud_set = self.cloud_instances.get_all_cloud_instances()
+        if len(cloud_set) == 0:
+            self.msg('\nYou do not have any virtual clusters')
+            sys.exit()
+
         self.msg('\n===============================')
         self.msg('Virtual Cluster list')
         self.msg('================================')
-        for cloud in self.cloud_instances.get_all_cloud_instances():
+        for cloud in cloud_set:
             self.msg('%s: %d compute nodes; status: %s'
                      % (cloud['name'],
                         self.cloud_instances.get_cluster_size(cloud),
@@ -1167,8 +1214,24 @@ class Cluster(object):
 def commandline_parser():
     '''parse commandline'''
 
+    # Check pyhon version
     if sys.version_info < (2, 7):
         print "ERROR: you must use python 2.7 or greater"
+        sys.exit(1)
+
+    # check if has nova env
+    if not 'EC2_ACCESS_KEY' in os.environ or \
+        not 'EC2_SECRET_KEY' in os.environ or \
+        not 'EC2_URL' in os.environ or \
+        not 'S3_URL' in os.environ or \
+        not 'EC2_USER_ID' in os.environ or \
+        not 'EC2_PRIVATE_KEY' in os.environ or \
+        not 'EC2_CERT' in os.environ or \
+        not 'EUCALYPTUS_CERT' in os.environ or \
+        not 'NOVA_API_KEY' in os.environ or \
+        not 'NOVA_USERNAME' in os.environ or \
+        not 'NOVA_URL' in os.environ:
+        print 'ERROR: you must set nova environment'
         sys.exit(1)
 
     virtual_cluster = Cluster()
@@ -1177,12 +1240,14 @@ def commandline_parser():
         argparse.ArgumentParser(description='Virtual'
                                 ' cluster management operations',
                                 version='0.1.8')
-    parser.add_argument('-f', '--file', action='store',
+    parser.add_argument('--file', action='store',
                         help='Specify futuregrid configure file')
     parser.add_argument('--debug', action='store_true',
                         help='print debug message')
     parser.add_argument('--default-repository', action='store_true',
                         help='using default software repository')
+    parser.add_argument('--create-key', action='store_true',
+                        help='create userkey')
     subparsers = parser.add_subparsers(help='commands')
 
     # status command
@@ -1250,16 +1315,13 @@ def commandline_parser():
 
     args = parser.parse_args()
 
+    # set flags
+    virtual_cluster.set_flag(args)
     # parse config file
     if args.file:
         virtual_cluster.parse_conf(args.file)
     else:
         virtual_cluster.parse_conf()
-
-    # set debug flag
-    virtual_cluster.set_debug(args.debug)
-    # set default repository flag
-    virtual_cluster.set_default(args.default_repository)
 
     args.func(args)
 
