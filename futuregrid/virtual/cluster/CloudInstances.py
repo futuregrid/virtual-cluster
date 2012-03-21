@@ -26,7 +26,11 @@ class CloudInstances:
         return
 
     def set_backup_file(self, filename):
-        '''setting backup file for reading and writting'''
+        '''
+        setting backup file for reading and writting
+
+        Checks if the backup file has the correct format
+        '''
 
         self.backup_file = filename
 
@@ -52,14 +56,25 @@ class CloudInstances:
         return True
 
     def set_cloud_instances_by_name(self, name):
-        '''set and add a cloud instance into list'''
+        '''
+        set and add a cloud instance into list
+
+        Granted this cluster is new and about to be created
+        so set status to RUN
+        '''
 
         self.cloud_instances['name'] = name
         # if create cluster, set status to RUN
         self.cloud_instances['status'] = self.RUN
 
     def get_cloud_instances_by_name(self, name):
-        '''get cloud instance list by cluster name'''
+        '''
+        get cloud instance list by cluster name
+
+        Granted checking cluster existence before
+        each operation (create, save, restore, terminate)
+        so no need to check if backup file is existed
+        '''
 
         # return cluster by given name
         # using key 'name'
@@ -75,7 +90,13 @@ class CloudInstances:
                                    compute_node_id,
                                    instance_type,
                                    cluster_size):
-        ''' set info for saved cluster'''
+        '''
+        set info for saved cluster
+
+        Set all possible values that could be used to
+        restore cluster in the future
+        Change cluster status to SAVED
+        '''
 
         # if save cluster, set basic info in backupfile
         # resotre this cluster based on this info
@@ -88,7 +109,12 @@ class CloudInstances:
         self.cloud_instances['status'] = self.SAVED
 
     def get_all_cloud_instances(self):
-        '''get all cloud instances lists'''
+        '''
+        get all cloud instances lists
+
+        Load all cloud instances from backup file,
+        if file is not existed, return []
+        '''
 
         try:
             src_file = open(os.path.expanduser(self.backup_file), "r")
@@ -98,7 +124,15 @@ class CloudInstances:
             return []
 
     def get_cluster_size(self, cluster=None):
-        ''' return cluster size'''
+        '''
+        return cluster size
+
+        Default cloud instance is self.cloud_instances
+        Given cluster_instance has the format
+        {'name':'', 'status':'', '0':'', '1':'',...}
+        The size of cluster is the length of this dict subtracts
+        name and status
+        '''
 
         # get cluster size
         # not include name and status fileds
@@ -117,7 +151,14 @@ class CloudInstances:
                      image_id,
                      instance_type,
                      instance_ip=''):
-        '''set attributes of a given instance'''
+        '''
+        set attributes of a given instance
+
+        Set id, image, type, ip for one instance
+        Using current cluster size as key
+        So first instance has key 0
+        second has key 1 ...
+        '''
 
         instance = {}
         instance['id'] = instance_id
@@ -126,7 +167,7 @@ class CloudInstances:
         instance['ip'] = instance_ip
         # instance key '0, 1, 2...'
         # can use index to get instance
-        self.cloud_instances[len(self.cloud_instances) - 2] = instance
+        self.cloud_instances[self.get_cluster_size()] = instance
 
     def set_ip_by_id(self, instance_id, instance_ip):
         '''set ip by given instance id'''
@@ -148,7 +189,15 @@ class CloudInstances:
         return self.cloud_instances[cloud_id]
 
     def save_instances(self):
-        '''write current running cloud intances list into backup file'''
+        '''
+        write current running cloud intances list into backup file
+        Open backup file to save cloud_instance
+        If file is not existed, then create backup file, dump
+        cloud_instances into file
+        If file is existed, then load the content from the file,
+        combine all cloud instance into list, dump this list into
+        file. So the list has the format of [{cluster1},{cluster2},{}]
+        '''
 
         try:
             # open file for reading
@@ -186,7 +235,13 @@ class CloudInstances:
             return False
 
     def del_by_name(self, name):
-        '''delete cloud instances list from backup file given name'''
+        '''
+        delete cloud instances list from backup file given name
+
+        Loads content from backup file, given content is list, then
+        delete the cluster which matches name using remove, then
+        dump the new content into backup file
+        '''
 
         src_file = open(os.path.expanduser(self.backup_file), "r")
         cloud_list = pickle.load(src_file)

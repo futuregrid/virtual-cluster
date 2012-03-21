@@ -169,6 +169,15 @@ class Cluster(object):
         eucalyptus_cert = ~/cacert.pem
         # nova environment file
         novarc = ~/novarc
+
+        Checks if all files are present
+        If create-key is set to true,
+        first check if key is existed, if key is not
+        existed, then create key as config file says
+        Due to different version of this tool, backend
+        structure of backup file may change, so check
+        if backup file has the correct format before starts
+        Checks all possible errors about config file
         """
 
         config = ConfigParser.ConfigParser()
@@ -260,9 +269,13 @@ class Cluster(object):
 
     def detect_port(self, install=True):
         '''
-        detect if ssh port 22 is alive for listening
-        if install is set to true, installation of
+        Detect if ssh port 22 is alive for listening
+        If install is set to true, installation of
         SLURM and OpenMPI will start on VM which is ready
+        Each instances associates a count of times for trying
+        If exceeds the max try limit, get free public IPs, and
+        associates it with a random new one, reset count to 0
+        Break after all threads are done
         '''
 
         # ready count for VM
@@ -412,6 +425,7 @@ class Cluster(object):
         ):
         '''
         runs instances given parameters
+
         check if all instances are created
         correctly. program will exit if
         not all instances required are
@@ -463,7 +477,13 @@ class Cluster(object):
                 sys.exit()
 
     def euca_associate_address(self, instance, free_ip):
-        '''associates instance with ip'''
+        '''
+        associates instance with ip
+
+        Return false if association failed
+        Return false if succeeded
+        Delete host info if has before return
+        '''
 
         self.debug('euca-associate-address -i %s %s'
                    % (instance['id'], free_ip))
@@ -501,10 +521,15 @@ class Cluster(object):
 
     def create_cluster(self, args):
         '''
-        method for creating cluster, associate ip with
-        instances created, detect if they are ready to
-        deploy, and then install SLURM and OpenMPI on
-        them, do configure accordingly
+        method for creating cluster
+
+        Check existence before creation of cluster
+        If cluster was created before, only start creating
+        if status is DOWN
+        Save each instance into cloud instance list
+        Associate IP with each instance
+        Create source list file if using IU repo
+        Delete it after configuration
         '''
 
         self.debug('Checking if %s is existed' % args.name)
@@ -588,7 +613,16 @@ class Cluster(object):
             os.remove(self.sources_list)
 
     def config_slurm(self, create_key=True):
-        '''config slurm'''
+        '''
+        config slurm
+
+        Read slurm config input file, substitute controlMachine
+        to control machine id
+        Append each computation node into config file
+        Generate munge-key on control node
+        Do configuration in parallel
+        After all threads are done, remove temp files
+        '''
 
         slurm_conf_file = 'slurm.conf'
         munge_key_file = 'munge.key'
@@ -702,18 +736,22 @@ class Cluster(object):
             self.execute(instance, 'sudo /etc/init.d/munge start')
 
     def define_repo(self):
-        ''' set ubuntu repo to IU repo'''
+        '''
+        set ubuntu repo to IU repo
+
+        file content:
+
+        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
+        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
+        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty universe
+        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty universe
+        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
+        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
+        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
+        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
+        '''
 
         iu_repo = 'http://ftp.ussg.iu.edu/linux/ubuntu/'
-
-#        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
-#        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
-#        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty universe
-#        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty universe
-#        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
-#        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
-#        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
-#        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
 
         if self.if_default:
             self.msg('\nUsing default repository')
@@ -734,7 +772,12 @@ class Cluster(object):
             source.close()
 
     def deploy_services(self, instance):
-        '''deploy SLURM and OpenMPI services'''
+        '''
+        deploy SLURM and OpenMPI services
+
+        If using IU ubuntu repo, then copy source_list into each instance
+        Install slurm and openmpi
+        '''
 
         self.msg('\nInstalling SLURM system and OpenMPI on %s\n'
                  % instance['ip'])
@@ -896,6 +939,15 @@ class Cluster(object):
         '''
         method for saving currently running instance into image
         and terminate the old one
+
+        Checks existence before saving
+        Only save cluster which is running
+        Save control node and 1 compute node
+        Save new control node image id and new compute node image id
+        into backup file for later restore
+        Change status to SAVED
+        Terminates cluster after saving
+        Delete host info after each termination
         '''
 
         self.debug('Checking if %s is existed' % args.name)
@@ -905,7 +957,7 @@ class Cluster(object):
             self.debug('Getting cloud instance %s' % args.name)
             self.cloud_instances.get_cloud_instances_by_name(args.name)
             # if cluster is down, terminate the program
-            if self.cloud_instances.if_status(self.cloud_instances.DOWN):
+            if not self.cloud_instances.if_status(self.cloud_instances.RUN):
                 self.msg('Error in locating virtual cluster %s, not running?'
                           % args.name)
                 sys.exit()
@@ -984,7 +1036,20 @@ class Cluster(object):
 # ---------------------------------------------------------------------
 
     def restore_cluster(self, args):
-        '''method for restoring cluster'''
+        '''
+        method for restoring cluster
+
+        Loads control node id, compute node id, instance type,
+        cluster size from backup file.
+        Create cluster of size 1 using control node id
+        Create cluster of cluster size using compute node id
+        Associates IPs with all created instances
+        Granted cluster was saved before, so do not install
+        software, but need to config SLURM accordingly.
+        Do not need to create mumge-key because munge-key was
+        also saved in each instance.
+        Change status to RUN
+        '''
 
         control_node_num = 1
 
@@ -1094,7 +1159,16 @@ class Cluster(object):
         os.system('euca-terminate-instances %s' % instance_id)
 
     def shut_down(self, args):
-        '''method for shutting down a cluster'''
+        '''
+        method for shutting down a cluster
+
+        Only terminates cloud instance which is not terminated
+        Checking its existence before termination.
+        Delete host info from ~/.ssh/known_hosts after each termination
+        Change status according to following:
+            if current status is SAVED, then do not change status
+            if current status is RUN, then change it to DOWN
+        '''
 
         # only terminate cluster which is not terminated
         self.debug('Checking if %s is existed' % args.name)
@@ -1102,6 +1176,7 @@ class Cluster(object):
             self.debug('Getting cloud instance %s' % args.name)
             self.cloud_instances.get_cloud_instances_by_name(args.name)
             self.debug('Checking cloud status')
+            # check if cloud instance is terminated
             if self.cloud_instances.if_status(self.cloud_instances.DOWN):
                 self.msg('\nError in terminating cluster %s, already down?'
                           % args.name)
@@ -1130,10 +1205,20 @@ class Cluster(object):
 # ---------------------------------------------------------------------
 
     def show_status(self, args):
-        '''show status of cluster(s)'''
+        '''
+        show status of cluster(s)
+
+        Read from backup file
+        If cluster name is specified, then after checks its existence,
+        loads it to display
+        If no cluster name is specified, then loads all cluster instances
+        to display. If no cluster saved, prints help message then quits
+        '''
 
         if not args.name:
+            # get all cloud intances
             cloud_set = self.cloud_instances.get_all_cloud_instances()
+            # if no cloud instances created, then prints msg and quits
             if len(cloud_set) == 0:
                 self.msg('\nYou do not have any virtual clusters')
                 sys.exit()
@@ -1189,10 +1274,16 @@ class Cluster(object):
 # ---------------------------------------------------------------------
 
     def get_list(self, args):
-        '''list all virtual clusters and status'''
+        '''
+        list all virtual clusters and status
+
+        Read from backup file
+        If no cloud instance saved, shows help message and quits the program
+        '''
 
         # get all cloud instances lists
         cloud_set = self.cloud_instances.get_all_cloud_instances()
+        # if no cloud created, then prints msg and quits
         if len(cloud_set) == 0:
             self.msg('\nYou do not have any virtual clusters')
             sys.exit()
@@ -1317,7 +1408,8 @@ def commandline_parser():
 
     # set flags
     virtual_cluster.set_flag(args)
-    # parse config file
+    # parse config file, if config file is not specified,
+    # then use default file which is ~/.futuregrid/futuregrid.cfg
     if args.file:
         virtual_cluster.parse_conf(args.file)
     else:
