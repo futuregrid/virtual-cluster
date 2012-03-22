@@ -2,8 +2,28 @@
 # -*- coding: utf-8 -*-
 
 '''
-class for managing currently running or saved
-virtual cluster(s)
+CloudInstances.py (python)
+-------------------------
+
+Operations on clusters based on backup file
+
+Backup file is the file which stores information of
+a list of virtual clusters
+
+Backup file format
+-------------------------
+[{cluster1}, {cluster2}, {cluster3}, {}]
+
+Each cluster is a dictionary, it has the following format:
+{'name':'cluster1', 'status':'run', '0':'{}', '1':'{}', ...}
+The first two keys are name, and status, the rest are instances.
+Name represents the name of virtual cluster and status represents
+the status of cluster. Key '0', '1', ... represent instances, each
+instance is associated with a number which can be used to refer to.
+Instance key starts at 0.
+
+Each instance is a dictionary, it has the following format:
+{'id':'', 'image':'', 'type':'', 'ip':''}
 '''
 
 import pickle
@@ -12,7 +32,7 @@ import os
 
 class CloudInstances:
     '''
-    Methods for managing cloud instances
+    Class CloudInstances
     '''
 
     cloud_instances = {}
@@ -27,9 +47,20 @@ class CloudInstances:
 
     def set_backup_file(self, filename):
         '''
-        setting backup file for reading and writting
+        Sets backup file for reading and writing
 
-        Checks if the backup file has the correct format
+        Parameters:
+            filename -- backup file name
+
+        Logic:
+            Checks if the backup file has the correct format by
+            checking if all keys are present in each dictionary.
+
+        Return:
+            true  -- If can not find backup file, so the file has not
+                     been created.
+            false -- If file exists, but can not find all the keys
+                     which are needed.
         '''
 
         self.backup_file = filename
@@ -57,10 +88,16 @@ class CloudInstances:
 
     def set_cloud_instances_by_name(self, name):
         '''
-        set and add a cloud instance into list
+        Sets a new cloud instance
 
-        Granted this cluster is new and about to be created
-        so set status to RUN
+        Parameters:
+            name -- virtual cluster name
+
+        Logic:
+            Granted this cluster is new and about to be created,
+            sets cluster name to name, and sets status to run.
+
+        No returns
         '''
 
         self.cloud_instances['name'] = name
@@ -69,11 +106,21 @@ class CloudInstances:
 
     def get_cloud_instances_by_name(self, name):
         '''
-        get cloud instance list by cluster name
+        Gets cloud instance list by cluster name
 
-        Granted checking cluster existence before
-        each operation (create, save, restore, terminate)
-        so no need to check if backup file is existed
+        Parameters:
+            name -- virtual cluster name
+
+        Logic:
+            Granted we check cluster existence every time before
+            each operation (create, save, restore, terminate, ...)
+            so here no need to check if backup file is existed
+
+            Opens backup file for reading, loads cluster lists,
+            find cluster instances list given cluster name, then
+            sets cloud_instances to the cluster loaded
+
+        No returns
         '''
 
         # return cluster by given name
@@ -91,11 +138,22 @@ class CloudInstances:
                                    instance_type,
                                    cluster_size):
         '''
-        set info for saved cluster
+        Sets cluster saving information after actually saves it
 
-        Set all possible values that could be used to
-        restore cluster in the future
-        Change cluster status to SAVED
+        Parameters:
+            cluster_name -- virtual cluster name
+            control_node_id -- control node image id
+            compute_node_id -- compute node image id
+            instance_type -- instance type
+            cluster_size -- size of cluster (control node not included)
+
+        Logic:
+            Sets all possible values that could be used to restore cluster
+            in the future before saves it into backup file
+
+            Sets cluster status to SAVED
+
+        No returns
         '''
 
         # if save cluster, set basic info in backupfile
@@ -110,10 +168,17 @@ class CloudInstances:
 
     def get_all_cloud_instances(self):
         '''
-        get all cloud instances lists
+        Gets all cloud instances lists
 
-        Load all cloud instances from backup file,
-        if file is not existed, return []
+        No parameters
+
+        Logic:
+            Loads all cloud instances from backup file.
+
+        Return:
+            cloud_list -- if file exists, return all the cloud lists
+                          saved
+            [] -- if file does not exist
         '''
 
         try:
@@ -125,13 +190,25 @@ class CloudInstances:
 
     def get_cluster_size(self, cluster=None):
         '''
-        return cluster size
+        Gets virtual cluster size
 
-        Default cloud instance is self.cloud_instances
-        Given cluster_instance has the format
-        {'name':'', 'status':'', '0':'', '1':'',...}
-        The size of cluster is the length of this dict subtracts
-        name and status
+        Parameters:
+            cluster -- virtual cluster name
+            default: None
+
+        Logic:
+            Default cloud instance is the dictionary self.cloud_instances,
+            if cluster is specified, then returns the size of cluster given
+            name.
+
+            Given cluster_instance has the format of:
+            {'name':'', 'status':'', '0':'', '1':'',...}
+            The size of cluster is the length of this dictionary subtracts
+            length of name and status which is 2
+
+        Return:
+            length of self.cloud_instances -- if cluster is set to default
+            length of cluster -- if cluster is set to any other clusters
         '''
 
         # get cluster size
@@ -142,7 +219,14 @@ class CloudInstances:
             return len(cluster) - 2
 
     def get_list(self):
-        '''get cloud intances list'''
+        '''
+        Gets cloud instances list
+
+        No parameters
+
+        Return:
+            cloud instances list -- self.cloud_instances
+        '''
 
         return self.cloud_instances
 
@@ -152,12 +236,21 @@ class CloudInstances:
                      instance_type,
                      instance_ip=''):
         '''
-        set attributes of a given instance
+        Sets attributes of a given instance
 
-        Set id, image, type, ip for one instance
-        Using current cluster size as key
-        So first instance has key 0
-        second has key 1 ...
+        Parameters:
+            instance_id -- instance id
+            image_id -- image id
+            instance_type -- instance type
+            instance_ip -- public IP associated with instance
+            default: ''
+
+        Logic:
+            Set id, image, type, IP for one instance
+            Using current cluster size as key
+            So first instance has key 0, second has key 1 ...
+
+        No returns
         '''
 
         instance = {}
@@ -170,7 +263,20 @@ class CloudInstances:
         self.cloud_instances[self.get_cluster_size()] = instance
 
     def set_ip_by_id(self, instance_id, instance_ip):
-        '''set ip by given instance id'''
+        '''
+        Sets IP by given instance id
+
+        Parameters:
+            instance_id -- instance id
+            instance_ip -- public IP associated with instance
+
+        Logic:
+            Loop all values in cloud_instances, given an instance
+            is a dictionary, if current element is a dictionary,
+            check key 'id', and then set 'ip' if key 'id' matches
+
+        No returns
+        '''
 
         for element in self.cloud_instances.values():
             # if element is an instance
@@ -179,24 +285,49 @@ class CloudInstances:
                     element['ip'] = instance_ip
 
     def clear(self):
-        '''clear cloud intances list'''
+        '''
+        Clears cloud instances list
+
+        No parameters
+        No returns
+        '''
 
         self.cloud_instances = {}
 
     def get_by_id(self, cloud_id):
-        '''get instance by index'''
+        '''
+        Gets instance by index
+
+        Parameters:
+            cloud_id -- instance index, which is also the key for instance
+
+        Logic:
+            Given that we use current size of cluster as key, so we can use
+            this index to get one specific instance
+
+        Return:
+            Instance dictionary -- an instance which has the format of
+                                   {'id':'', 'image':'', 'type':'', 'ip':''}
+        '''
 
         return self.cloud_instances[cloud_id]
 
     def save_instances(self):
         '''
-        write current running cloud intances list into backup file
-        Open backup file to save cloud_instance
-        If file is not existed, then create backup file, dump
-        cloud_instances into file
-        If file is existed, then load the content from the file,
-        combine all cloud instance into list, dump this list into
-        file. So the list has the format of [{cluster1},{cluster2},{}]
+        Writes current cloud instances list into backup file
+
+        No parameters
+
+        Logic:
+            Opens backup file to save cloud_instance
+            If file does not exist, then creates backup file, dumps
+            cloud_instances into the file
+            If file exists, then loads the content from the file,
+            combine all cloud instance into list, dump this list into
+            file. So the list has the format of [{cluster1},{cluster2},{}]
+            (may need to change it to dictionary)
+
+        No returns
         '''
 
         try:
@@ -221,7 +352,24 @@ class CloudInstances:
             src_file.close()
 
     def if_exist(self, name):
-        '''check if a given cluster name exists'''
+        '''
+        Checks if a given cluster name exists
+
+        Parameters:
+            name -- cluster name
+
+        Logic:
+            Given all clusters stored in backup file is a list, so loop
+            this list, and check key 'name' in each cluster dictionary
+
+        Return:
+            true -- if find a cluster matches the cluster name given as
+                    parameter
+            false -- if 1) file does not exist
+                        2) Cannot find a cluster matches the cluster
+                           name given as parameter after checking
+                           all clusters saved in the backup file
+        '''
 
         try:
             src_file = open(os.path.expanduser(self.backup_file), "r")
@@ -236,11 +384,17 @@ class CloudInstances:
 
     def del_by_name(self, name):
         '''
-        delete cloud instances list from backup file given name
+        Deletes cloud instances list from backup file given name
 
-        Loads content from backup file, given content is list, then
-        delete the cluster which matches name using remove, then
-        dump the new content into backup file
+        Parameter:
+            name -- cluster name
+
+        Logic:
+            Loads content from backup file, given content is list, then
+            delete the cluster which matches name using remove, then
+            dump the new content into backup file
+
+        No returns
         '''
 
         src_file = open(os.path.expanduser(self.backup_file), "r")
@@ -255,16 +409,52 @@ class CloudInstances:
                 return
 
     def set_status(self, status):
-        ''' get status of virtual cluster'''
+        '''
+        Gets status of virtual cluster
+
+        Parameters:
+            status -- cluster status (run, saved, terminated)
+
+        Logic:
+            Sets the status in cloud instance list
+
+        No returns
+        '''
 
         self.cloud_instances['status'] = status
 
     def if_status(self, status):
-        ''' check status of virtual cluster'''
+        '''
+        Checks status of virtual cluster
+
+        Parameters:
+            status -- cluster status (run, saved, terminated)
+
+        Logic:
+            checks if status in cluster instance list matches
+            status given as parameter
+
+        Return:
+            true -- if status of cluster instance list matches
+                    the status given as parameter
+            false -- if status of cluster instance list does
+                     not match the status given as parameter
+        '''
 
         return self.cloud_instances['status'] == status
 
     def get_status(self):
-        ''' get cluster staus'''
+        '''
+        Gets cluster status
+
+        Parameters:
+            status -- cluster status (run, saved, terminated)
+
+        Logic:
+            Get the value of key 'status'
+
+        Return:
+            Returns the value of status
+        '''
 
         return self.cloud_instances['status']

@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 '''
+FGCluster.py (python)
+-------------------------
+
 Operations for managing virtual clusters
 
 Name fg-cluster
