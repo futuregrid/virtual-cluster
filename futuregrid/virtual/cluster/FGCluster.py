@@ -1460,7 +1460,7 @@ class Cluster(object):
                                control_node_id, instance_type)
         # run compute nodes given number
         self.debug('Creating compute node %s' % compute_node_id)
-        self.euca_run_instance(self.user, cluster_size,
+        self.euca_run_instance(self.user, cluster_size - control_node_num,
                                compute_node_id, instance_type)
 
         # get free ip list
