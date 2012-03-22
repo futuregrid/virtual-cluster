@@ -72,8 +72,8 @@ import ConfigParser
 import random
 import Queue
 
-from futuregrid.virtual.cluster.CloudInstances import CloudInstances
-#from CloudInstances import CloudInstances
+#from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+from CloudInstances import CloudInstances
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
 from ConfigParser import NoSectionError
@@ -1234,7 +1234,7 @@ class Cluster(object):
         instance_ip,
         bucket_name,
         image_name,
-        node_type
+        node_type,
         out_queue
         ):
         '''
@@ -1350,19 +1350,19 @@ class Cluster(object):
 
         save_queue = Queue.Queue()
         self.msg('\nSaving control node %s' % control['id'])
-        threading.Thread(target=save_node, args=[control['image'],
+        threading.Thread(target=self.save_node, args=[control['image'],
                                                  control['ip'],
                                                  args.controlb,
                                                  args.controln,
-                                                 'control'
+                                                 'control',
                                                  save_queue
                                                  ]).start()
         self.msg('\nSaving compute node %s' % compute['id'])
-        threading.Thread(target=save_node, args=[compute['image'],
+        threading.Thread(target=self.save_node, args=[compute['image'],
                                                  compute['ip'],
                                                  args.computeb,
                                                  args.computen,
-                                                 'compute'
+                                                 'compute',
                                                  save_queue
                                                  ]).start()
         while threading.activeCount() > 1:
@@ -1370,7 +1370,7 @@ class Cluster(object):
 
         # return values has the format:
         # {'control':'', 'compute':''}, but not sure the order
-        for bundled_image_id in [my_queue.get(),my_queue.get()]:
+        for bundled_image_id in [save_queue.get(),save_queue.get()]:
             if 'control' in bundled_image_id:
                 control_node_id = bundled_image_id['control']
             elif 'compute' in bundled_image_id:
