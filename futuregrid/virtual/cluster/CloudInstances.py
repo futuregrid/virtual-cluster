@@ -82,6 +82,8 @@ class CloudInstances:
                             not 'type' in element or \
                             not 'ip' in element:
                             return False
+        except (KeyError, TypeError):
+            return False
         except IOError:
             return True
         return True

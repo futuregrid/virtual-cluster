@@ -473,8 +473,6 @@ class Cluster(object):
                             self.debug('New IP is %s' % instance['ip'])
                             wait_instances[instance['id']] = 0
 
-                        time.sleep(1)
-
             # check if all vms are ready
             self.debug('Total number of instances %d'
                        % int(self.cloud_instances.get_cluster_size()))
