@@ -457,7 +457,7 @@ class Cluster(object):
                         wait_instances[instance['id']] += 1
                         # if reaches limit
                         if wait_instances[instance['id']] > retry:
-                            self.msg('Trying different IP address on %s'
+                            self.msg('\nTrying different IP address on %s'
                                      % instance['id'])
                             # get free ip addresses
                             ip_lists = self.euca_describe_addresses()
@@ -466,12 +466,13 @@ class Cluster(object):
                             # associate a new random free ip
                             self.debug('Associating new IP on %s'
                                        % instance['id'])
-                            self.euca_associate_address(instance['id'],
+                            self.euca_associate_address(instance,
                                     ip_lists[random.randint(0,
                                                             len(ip_lists)
                                                             - 1)])
                             self.debug('New IP is %s' % instance['ip'])
                             wait_instances[instance['id']] = 0
+			time.sleep(1)
 
             # check if all vms are ready
             self.debug('Total number of instances %d'
