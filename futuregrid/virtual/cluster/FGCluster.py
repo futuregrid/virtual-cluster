@@ -978,10 +978,10 @@ class Cluster(object):
             self.execute(instance,
                          'sudo chmod 400 /etc/munge/munge.key')
 
-            # start slurm and munge daemon
-            self.msg('\nStarting slurm on node %s' % instance['id'])
-            self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
-            self.execute(instance, 'sudo /etc/init.d/munge start')
+        # start slurm and munge daemon
+        self.msg('\nStarting slurm on node %s' % instance['id'])
+        self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
+        self.execute(instance, 'sudo /etc/init.d/munge start')
 
     def define_repo(self):
         '''
