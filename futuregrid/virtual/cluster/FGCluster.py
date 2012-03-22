@@ -79,8 +79,16 @@ from ConfigParser import NoSectionError
 
 
 class Cluster(object):
-    """class of methods for run, checkpoint,
-    restore, terminate, show status of cluster
+    """
+    Class Cluster
+    -------------
+    Methods to
+        run virtual cluster
+        checkpoint virtual cluster
+        restore virtual cluster
+        terminate virtual cluster
+        show status of virtual cluster(s)
+        list virtual clusters
     """
 
     userkey = None
@@ -103,6 +111,9 @@ class Cluster(object):
     sources_list = 'sources.list'
 
     def __init__(self):
+        '''
+        init method
+        '''
         super(Cluster, self).__init__()
         self.cloud_instances = CloudInstances()
 
@@ -112,25 +123,83 @@ class Cluster(object):
 
     @classmethod
     def msg(cls, message):
-        '''method for printing messages'''
+        '''
+        Method for printing help messages
+
+        Parameters:
+            message -- message to print
+
+        Logic:
+            use print to print message
+
+        No returns
+        '''
 
         print message
 
     def debug(self, message):
-        '''method for printing debug message'''
+        '''
+        Method for printing debug message
+
+        Parameter:
+            message -- message to print
+
+        Logic:
+            Checks debug flag, if debug flag is set to
+            true, then prints debug message, if is set
+            to false, then does not print debug message
+
+        No returns
+        '''
 
         if self.if_debug:
             print message
 
     def set_flag(self, args):
-        '''set debug flag'''
+        '''
+        Sets control flags
+
+        Parameter:
+            args -- this method deals args.if_debug, if_default
+                    if_create_key.
+
+                    if_debug: default is false
+                              true to print debug message
+                              false not to print
+
+                    if_default: default is false
+                                true to use default ubuntu repository
+                                false to use IU ubuntu repository
+
+                    if_create_key: default is false
+                                   true to create key for users
+                                   false not to create
+
+        Logic:
+            Sets control flags
+
+        No returns
+        '''
 
         self.if_debug = args.debug
         self.if_default = args.default_repository
         self.if_create_key = args.create_key
 
     def if_keypair_exits(self, name):
-        '''check if key is already created'''
+        '''
+        Checks if key is already created
+
+        Parameters:
+            name -- key name
+
+        Logic:
+            Uses euca-describe-keypairs to check the keys created,
+            finds name in the command result
+
+        Return:
+            true -- if finds the key given name as parameter
+            false -- if does not fine the key given name as parameter
+        '''
 
         command = 'euca-describe-keypairs'
         for element in self.get_command_result(command).split('\t'):
@@ -138,8 +207,21 @@ class Cluster(object):
                 return True
         return False
 
-    def add_keypair(self, name, key):
-        '''use euca-add-keypair to add keypair'''
+    @classmethod
+    def add_keypair(cls, name, key):
+        '''
+        Adds keypair
+
+        Parameter:
+            name -- userkey name
+            key -- location of userkey
+
+        Logic:
+            Uses euca-add-keypair to create key for user, key will
+            be created under the location referred by key
+
+        No returns
+        '''
 
         os.system('euca-add-keypair %s > %s' % (name, key))
         os.chmod(os.path.expanduser(key), 0600)
@@ -150,37 +232,52 @@ class Cluster(object):
 
     def parse_conf(self, file_name='unspecified'):
         """
-        Parse configuration file if given, default location
-        '~/.futuregrid/futuregrid.cfg'
+        Parse configuration file
 
-        configuration file format:
-        [virtual-cluster]
-        username = PUT-YOUR-USER-NAME-HERE
-        # Backup file for saving and loading virtual cluster(s)
-        backup = ~/.futuregrid/virtual-cluster
-        # Slurm configuration input file
-        slurm = ~/.futuregrid/slurm.conf.in
-        # userkey pem file
-        userkey = ~/%(username).pem
-        # userkey name
-        user = %(username)
-        # euca2ools certificate file
-        ec2_cert = ~/cert.pem
-        # euca2ools private file
-        ec2_private_key = ~/pk.pem
-        # nova certificate file
-        eucalyptus_cert = ~/cacert.pem
-        # nova environment file
-        novarc = ~/novarc
+        Parameters:
+            file_name -- configuration file name
+            default: unspecified
 
-        Checks if all files are present
-        If create-key is set to true,
-        first check if key is existed, if key is not
-        existed, then create key as config file says
-        Due to different version of this tool, backend
-        structure of backup file may change, so check
-        if backup file has the correct format before starts
-        Checks all possible errors about config file
+        Logic:
+            Parse configuration file if given, default location
+            '~/.futuregrid/futuregrid.cfg'. If no file is given,
+            finds configuration file by following order:
+                1) finds current directory 'futuregrid.cfg'
+                2) finds in default location
+
+            configuration file format:
+            [virtual-cluster]
+            username = PUT-YOUR-USER-NAME-HERE
+            # Backup file for saving and loading virtual cluster(s)
+            backup = ~/.futuregrid/virtual-cluster
+            # Slurm configuration input file
+            slurm = ~/.futuregrid/slurm.conf.in
+            # userkey pem file
+            userkey = ~/%(username).pem
+            # userkey name
+            user = %(username)
+            # euca2ools certificate file
+            ec2_cert = ~/cert.pem
+            # euca2ools private file
+            ec2_private_key = ~/pk.pem
+            # nova certificate file
+            eucalyptus_cert = ~/cacert.pem
+            # nova environment file
+            novarc = ~/novarc
+
+            Checks if all files specified in configuration
+            file are present.If create-key is set to true,
+            first check if key exists, if key does not exist,
+            then creates key under the location where is specified
+            by userkey in the configuration file
+
+            Due to different version of this tool, back-end
+            structure of backup file may change, so checks
+            if backup file has the correct format before the start
+
+            Checks all possible errors about configuration file
+
+        No returns
         """
 
         config = ConfigParser.ConfigParser()
@@ -245,8 +342,9 @@ class Cluster(object):
 
             self.debug('Checking backup file')
             if not self.cloud_instances.set_backup_file(self.backup_file):
-                self.msg('\nBackup file is corrupted, '
-                         'please delete it and try again')
+                self.msg('\nBackup file is corrupted, or you are using an old'
+                        ' version of this tool. Please delete this backup file'
+                        ' and try again.')
                 sys.exit(1)
             self.debug('Checking done')
 
@@ -272,13 +370,24 @@ class Cluster(object):
 
     def detect_port(self, install=True):
         '''
-        Detect if ssh port 22 is alive for listening
-        If install is set to true, installation of
-        SLURM and OpenMPI will start on VM which is ready
-        Each instances associates a count of times for trying
-        If exceeds the max try limit, get free public IPs, and
-        associates it with a random new one, reset count to 0
-        Break after all threads are done
+        Checks if instances are ready to deploy
+
+        Parameters:
+            install -- indicates if need to the installation
+            default: true
+
+        Logic:
+            Detect if ssh port 22 is alive for listening
+            If install is set to true, installation of
+            SLURM and OpenMPI will start on VM which is ready
+
+            Each instances associates a count of times for trying
+            If exceeds the max try limit, then gets free public IPs,
+            and associates it with a random new one, reset count to 0
+
+            Break after all threads are done
+
+        No returns
         '''
 
         # ready count for VM
@@ -383,12 +492,34 @@ class Cluster(object):
 # ---------------------------------------------------------------------
 
     def get_command_result(self, command):
-        '''gets command output'''
+        '''
+        Gets command output
+
+        Parameters:
+            command -- shell command
+
+        Logic:
+            Gets result of command
+
+        Return:
+            Command output
+        '''
         self.debug(command)
         return os.popen(command).read()
 
     def execute(self, instance, command):
-        '''runs a command on the instance'''
+        '''
+        Executes a command on the instance
+
+        Parameters:
+            instance -- cloud instance
+            command -- shell command
+
+        Logic:
+            Executes a command on the remote host
+
+        No returns
+        '''
 
         self.debug("ssh -i %s ubuntu@%s '%s'" % (self.userkey,
                   instance['ip'], command))
@@ -396,7 +527,18 @@ class Cluster(object):
                   instance['ip'], command))
 
     def copyto(self, instance, filename):
-        '''copyies the named file to the instance'''
+        '''
+        Copies the named file to the instance
+
+        Parameters:
+            instance -- cloud instance
+            filename -- the name of file to copy
+
+        Logic:
+            Copies the named file to the home directory of remote host
+
+        No returns
+        '''
 
         self.debug('scp -i %s %s ubuntu@%s:~/' % (self.userkey,
                   filename, instance['ip']))
@@ -404,13 +546,34 @@ class Cluster(object):
                   filename, instance['ip']))
 
     def update(self, instance):
-        '''executes a software update on the specified instance'''
+        '''
+        Executes a software update on the specified instance
+
+        Parameters:
+            instance -- cloud instance
+
+        Logic:
+            Executes software update on a remote host
+
+        No returns
+        '''
 
         self.execute(instance, 'sudo apt-get update')
 
     def install(self, instance, packagenames):
-        '''installs the package names
-        that are specified (blank separated on the given instance'''
+        '''
+        Installs the package names that are specified
+        (blank separated on the given instance)
+
+        Parameter:
+            instance -- cloud instance
+            packagenames -- software names
+
+        Logic:
+            Installs a software on a remote host
+
+        No returns
+        '''
 
         self.execute(instance, 'sudo apt-get install --yes '
                      + packagenames)
@@ -429,11 +592,20 @@ class Cluster(object):
         '''
         runs instances given parameters
 
-        check if all instances are created
-        correctly. program will exit if
-        not all instances required are
-        created, and terminate those which
-        are running already
+        Parameters:
+            userkey -- userkey name
+            cluster_size -- number of nodes
+            image -- image id
+            instance_type -- instance type
+
+        Logic:
+            check if all instances are created
+            correctly. program will exit if
+            not all instances required are
+            created, and terminate those which
+            are running already
+
+        No returns
         '''
 
         instance_id_list = []
@@ -481,11 +653,19 @@ class Cluster(object):
 
     def euca_associate_address(self, instance, free_ip):
         '''
-        associates instance with ip
+        Associates instance with ip
 
-        Return false if association failed
-        Return false if succeeded
-        Delete host info if has before return
+        Parameters:
+            instance -- cloud instance
+            free_ip -- free public IP address
+
+        Logic:
+            Associates IP with a given instance, set IP in cloud_instances
+            delete host information in known_hosts if it has
+
+        Return:
+            false: if association failed
+            trueL: if association succeeded
         '''
 
         self.debug('euca-associate-address -i %s %s'
@@ -504,13 +684,35 @@ class Cluster(object):
         return True
 
     def disassociate_address(self, current_ip):
-        '''disassociates ip'''
+        '''
+        Disassociates IP address
+
+        Parameters:
+            current_ip -- instance IP which is currently in use
+
+        Logic:
+            Uses euca-disassociates-address to disassociates a
+            given IP address
+
+        No returns
+        '''
 
         self.debug('euca-disassociate-address %s' % current_ip)
         os.system('euca-disassociate-address %s' % current_ip)
 
     def euca_describe_addresses(self):
-        '''return list of free ips'''
+        '''
+        Return list of free public IP addresses
+
+        No parameters
+
+        Logic:
+            Uses euca-describe-addresses to get all the IP addresses,
+            filter those which are currently in use
+
+        Return:
+            ip_list -- a list of free public IP addresses
+        '''
 
         ip_list = []
         ips = [x for x in self.get_command_result('euca-describe-addresses'
@@ -524,15 +726,27 @@ class Cluster(object):
 
     def create_cluster(self, args):
         '''
-        method for creating cluster
+        Method for creating cluster
 
-        Check existence before creation of cluster
-        If cluster was created before, only start creating
-        if status is DOWN
-        Save each instance into cloud instance list
-        Associate IP with each instance
-        Create source list file if using IU repo
-        Delete it after configuration
+        Parameters:
+            args -- this method deals
+                    args.name: cluster name
+                    args.number: cluster compute nodes number
+                    args.typy: instance type
+                    args,image: image id
+
+        Logic:
+            Check existence before creation of cluster
+            If cluster was created before, only start creating
+            if status is DOWN
+
+            Save each instance into cloud instance list
+            Associate IP with each instance
+            Create source list file if using IU ubuntu repository
+            Delete source list file after installtion and configuration
+            of SLURM and OpenMPI
+
+        No returns
         '''
 
         self.debug('Checking if %s is existed' % args.name)
@@ -609,7 +823,17 @@ class Cluster(object):
         self.debug('Done creationg of cluster')
 
     def clean_repo(self):
-        ''' remove source list file'''
+        '''
+        Remove source list file
+
+        No parameters:
+
+        Logic:
+            If if_default flag is set to false, then delete
+            source list file
+
+        No returns
+        '''
 
         if not self.if_default:
             self.debug('Removing %s' % self.sources_list)
@@ -617,14 +841,21 @@ class Cluster(object):
 
     def config_slurm(self, create_key=True):
         '''
-        config slurm
+        Configures slurm
 
-        Read slurm config input file, substitute controlMachine
-        to control machine id
-        Append each computation node into config file
-        Generate munge-key on control node
-        Do configuration in parallel
-        After all threads are done, remove temp files
+        Parameters:
+            create_key -- indicates whether to create munge-key
+            default: true, creates key
+
+        Logic:
+            Reads slurm configuration input file, substitutes controlMachine
+            with control machine id. Append each computation node into
+            configuration file in COMPUTE NODES section
+            Generates munge-key on control node if flag is set to true
+            Does configuration on each node in parallel
+            After all threads are done, removes temp files
+
+        No returns
         '''
 
         slurm_conf_file = 'slurm.conf'
@@ -711,8 +942,22 @@ class Cluster(object):
                     slurm_conf_file,
                     munge_key_file):
         '''
-        copy slurm configuration file and munge key file
-        to every node, and start slurm
+        Copies SLURM configuration file and munge key file
+        to every node, and start slurm on each node
+
+        Parameters:
+            instance -- cloud instance
+            create_key -- flag indicates whether needs to create munge key
+            slurm_conf_file -- SLURM configuration file name
+            munge_key_file -- munge key file name
+
+        Logic:
+            Copies SLURM configuration file to each node in cluster.
+            If needs to create munge key, then creates munge key on
+            control node, copies it to each node in cluster. Starts
+            SLURM and munge after copy is done
+
+        No returns
         '''
 
          # copy slurm.conf
@@ -740,9 +985,12 @@ class Cluster(object):
 
     def define_repo(self):
         '''
-        set ubuntu repo to IU repo
+        Set ubuntu repo to IU ubuntu repository
 
-        file content:
+        No parameters
+
+        Source list file content:
+        -------------------------
 
         deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
         deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
@@ -752,6 +1000,12 @@ class Cluster(object):
         deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
         deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
         deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
+
+        Logic:
+            If uses IU ubuntu repository, creates sources_list file
+            which has the former content
+
+        No returns
         '''
 
         iu_repo = 'http://ftp.ussg.iu.edu/linux/ubuntu/'
@@ -776,10 +1030,17 @@ class Cluster(object):
 
     def deploy_services(self, instance):
         '''
-        deploy SLURM and OpenMPI services
+        Deploies SLURM and OpenMPI services
 
-        If using IU ubuntu repo, then copy source_list into each instance
-        Install slurm and openmpi
+        Parameters:
+            instance -- cloud instance
+
+        Logic:
+            If using IU ubuntu repository, then copies source_list
+            to each instance in the cluster, installs SLURM and
+            OpenMPI on the instance
+
+        No returns
         '''
 
         self.msg('\nInstalling SLURM system and OpenMPI on %s\n'
@@ -812,7 +1073,21 @@ class Cluster(object):
         instance_ip,
         instance_name,
         ):
-        '''save instance given paramenters'''
+        '''
+        Saves one instance
+
+        Parameters:
+            kernel_id: image kernel id
+            ramdisk_id: image ramdisk id
+            instance_ip: instance public IP address
+            instance_name: image name
+
+        Logic:
+            Uses euca-bundle-vol to create a bundle of current image on
+            a remote host. Image has the size of 1GB, and stored under /mnt/
+
+        No returns
+        '''
 
         if kernel_id == None:
             self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
@@ -865,7 +1140,19 @@ class Cluster(object):
         bucket_name,
         manifest,
         ):
-        '''upload bundle given manifest'''
+        '''
+        Uploads bundle image given manifest
+
+        Parameters:
+            instance_ip -- instance public IP address
+            bucket_name -- bucket name for bundled image
+            manifest -- manifest for bundled image
+
+        Logic:
+            Uses euca-upload-bundle to upload bundle
+
+        No returns
+        '''
 
         self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
                    " euca-upload-bundle -b %s -m %s'"
@@ -877,13 +1164,39 @@ class Cluster(object):
                         manifest))
 
     def describe_images(self, image_id):
-        '''get images infos'''
+        '''
+        Gets image infomation
+
+        Parameters:
+            image_id -- image id
+
+        Logic:
+            Uses euca-describe-images to get all the inforamtion of image
+            given image id
+
+        Return:
+            Command result of euca-describe-images of given image id
+        '''
 
         self.debug('euca-describe-images %s' % image_id)
         return self.get_command_result('euca-describe-images %s' % image_id)
 
     def get_kernel_id(self, image_id):
-        '''get kernel id'''
+        '''
+        Gets kernel id
+
+        Parameters:
+            image_id -- image id
+
+        Logic:
+            Parses the command results returned by describe image method.
+            Given that sometimes kernel id is empty for certain images,
+            checks if the command returens a kernel id before return it
+
+        Return:
+            kernal id -- kernal id is the 8th element of returned command
+                         result
+        '''
 
         command_result = [x for x in
                           self.describe_images(image_id).split()]
@@ -892,7 +1205,21 @@ class Cluster(object):
             return command_result[7]
 
     def get_ramdisk_id(self, image_id):
-        '''get ramdisk id'''
+        '''
+        Gets ramdisk id
+
+        Parameters:
+            image_id -- image id
+
+        Logic:
+            Parses the command results returned by describe image method.
+            Given that sometimes ramdisk id is empty for certain images,
+            checks if the command returens a ramdisk id before return it
+
+        Return:
+            ramdisk id -- ramdisk id is the 9th element of returned command
+                          result
+        '''
 
         command_result = [x for x in
                           self.describe_images(image_id).split()]
@@ -908,8 +1235,21 @@ class Cluster(object):
         image_name,
         ):
         '''
-        save node given parameters
-        upload and register
+        Saves nodem, upload and register
+
+        Parameters:
+            image_id -- image id of instance
+            instance_ip -- instance public IP address
+            bucket_name -- bucket name for bundled image
+            image_name -- image name for bundled image
+
+        Logic:
+            After gets all the necessary infomraion to save bundle a node,
+            then saves the node, uploads the bundle
+
+        Return:
+            bundled image id -- Parses the command result, gets the bundled
+                                image id, then returns it
         '''
 
         kernel_id = self.get_kernel_id(image_id)
@@ -940,17 +1280,27 @@ class Cluster(object):
 
     def checkpoint_cluster(self, args):
         '''
-        method for saving currently running instance into image
-        and terminate the old one
+        Method for saving virtual cluster
 
-        Checks existence before saving
-        Only save cluster which is running
-        Save control node and 1 compute node
-        Save new control node image id and new compute node image id
-        into backup file for later restore
-        Change status to SAVED
-        Terminates cluster after saving
-        Delete host info after each termination
+        Parameters:
+            args -- this method deals with
+                    args.name -- virtual cluster name
+                    args.controlb -- control node bucket name
+                    args.controln -- control node image name
+                    args.computeb -- compute node bucket name
+                    args.computen -- compute node image name
+
+        Logic;
+            Checks existence before saving virtual cluster
+            Only saves cluster which is running (Because saved and
+            terminated clusters are not currenly running)
+            Only saves control node and one compute node into images
+            Saves new control node image id and new compute node image id
+            into backup file for later restore. Change status to SAVED after
+            the saving. Then terminates cluster before deletes host information
+            after each termination
+
+        No returns
         '''
 
         self.debug('Checking if %s is existed' % args.name)
@@ -1040,18 +1390,28 @@ class Cluster(object):
 
     def restore_cluster(self, args):
         '''
-        method for restoring cluster
+        Method for restoring cluster
 
-        Loads control node id, compute node id, instance type,
-        cluster size from backup file.
-        Create cluster of size 1 using control node id
-        Create cluster of cluster size using compute node id
-        Associates IPs with all created instances
-        Granted cluster was saved before, so do not install
-        software, but need to config SLURM accordingly.
-        Do not need to create mumge-key because munge-key was
-        also saved in each instance.
-        Change status to RUN
+        Parameters:
+            args -- this method deals with
+                    args.name -- virtual cluster name
+
+        Logic:
+            Loads control node id, compute node id, instance type,
+            cluster size from backup file.
+            Creates cluster of size one using control node id
+            Creates cluster of cluster size using compute node id
+            Associates IP addresses with all created instances
+            Granted cluster was saved before, so no need to install
+            softwares again, but need to configure SLURM accordingly
+            because all host names changed. No need to create mumge-key
+            because munge-key was also saved in each instance during the
+            saving process.
+
+            Change status to RUN in the end, and save this restored cluster
+            infomation into backup file
+
+        No returns
         '''
 
         control_node_num = 1
@@ -1139,7 +1499,19 @@ class Cluster(object):
 # ---------------------------------------------------------------------
     @classmethod
     def del_known_host(cls, ip_addr):
-        '''delete known host info from ~/.ssh/known_hosts'''
+        '''
+        Deletes known host info from ~/.ssh/known_hosts
+
+        Parameter:
+            ip_addr -- IP address
+
+        Logic:
+            Deletes known host information from ~/.ssh/known_hosts
+            in case it shows man-in-middle-attack message when starts
+            different cluster but using the same IP addresses
+
+        No returns
+        '''
 
         known_hosts = '~/.ssh/known_hosts'
 
@@ -1163,14 +1535,21 @@ class Cluster(object):
 
     def shut_down(self, args):
         '''
-        method for shutting down a cluster
+        Method for shutting down a cluster
 
-        Only terminates cloud instance which is not terminated
-        Checking its existence before termination.
-        Delete host info from ~/.ssh/known_hosts after each termination
-        Change status according to following:
-            if current status is SAVED, then do not change status
-            if current status is RUN, then change it to DOWN
+        Parameters:
+            args -- this method deals with
+                    args.name -- virtual cluster name
+
+        Logic:
+            Only terminates cloud instance which is not terminated
+            Checking its existence before termination.
+            Delete host info from ~/.ssh/known_hosts after each termination
+            Change status according to following:
+                If current status is SAVED, then does not change status
+                If current status is RUN, then changes it to DOWN
+
+        No returns
         '''
 
         # only terminate cluster which is not terminated
@@ -1209,13 +1588,21 @@ class Cluster(object):
 
     def show_status(self, args):
         '''
-        show status of cluster(s)
+        Show status of cluster(s)
 
-        Read from backup file
-        If cluster name is specified, then after checks its existence,
-        loads it to display
-        If no cluster name is specified, then loads all cluster instances
-        to display. If no cluster saved, prints help message then quits
+        Parameters:
+            args -- this method deals with
+                    args.name -- virtual cluster name
+
+        Logic:
+            Reads from backup file to load cluster information given
+            cluster name. If cluster name is specified, then after
+            checks its existence, loads it to display. If no cluster
+            name is specified, then loads all cluster instances to
+            display. If no clusters are saved in the backup file, after
+            prints help message, then quits the program
+
+        No returns
         '''
 
         if not args.name:
@@ -1276,12 +1663,18 @@ class Cluster(object):
 # METHODS TO SHOW VIRTUAL CLUSTER LIST
 # ---------------------------------------------------------------------
 
-    def get_list(self, args):
+    def get_list(self, _args):
         '''
-        list all virtual clusters and status
+        lists all virtual clusters and status
 
-        Read from backup file
-        If no cloud instance saved, shows help message and quits the program
+        Parameters:
+            args -- this method deals with
+                    None
+
+        Logic:
+            Reads from backup file to load all virtual cluster information
+            If no cloud instance saved, after shows help message, then quits
+            the program
         '''
 
         # get all cloud instances lists
@@ -1306,7 +1699,12 @@ class Cluster(object):
 
 
 def commandline_parser():
-    '''parse commandline'''
+    '''
+    Parses commandline
+
+    Checks if python version is above 2.7
+    Checks if euca environments are set
+    '''
 
     # Check pyhon version
     if sys.version_info < (2, 7):
