@@ -71,8 +71,8 @@ import threading
 import ConfigParser
 import random
 
-from futuregrid.virtual.cluster.CloudInstances import CloudInstances
-#from CloudInstances import CloudInstances
+#from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+from CloudInstances import CloudInstances
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
 from ConfigParser import NoSectionError
