@@ -70,9 +70,10 @@ import time
 import threading
 import ConfigParser
 import random
+import Queue
 
-#from futuregrid.virtual.cluster.CloudInstances import CloudInstances
-from CloudInstances import CloudInstances
+from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+#from CloudInstances import CloudInstances
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
 from ConfigParser import NoSectionError
@@ -1233,6 +1234,8 @@ class Cluster(object):
         instance_ip,
         bucket_name,
         image_name,
+        node_type
+        out_queue
         ):
         '''
         Saves nodem, upload and register
@@ -1242,6 +1245,8 @@ class Cluster(object):
             instance_ip -- instance public IP address
             bucket_name -- bucket name for bundled image
             image_name -- image name for bundled image
+            node_type -- control node or compute node
+            out_queue -- queue in which puts output
 
         Logic:
             After gets all the necessary infomraion to save bundle a node,
@@ -1251,6 +1256,8 @@ class Cluster(object):
             bundled image id -- Parses the command result, gets the bundled
                                 image id, then returns it
         '''
+
+        bundled_image_id = {}
 
         kernel_id = self.get_kernel_id(image_id)
         self.debug('Kernel ID %s' % kernel_id)
@@ -1271,7 +1278,9 @@ class Cluster(object):
         self.msg('\nRegistering image')
 
         # register image, and return image id
-        return self.euca_register(image).split('\t')[1].strip()
+        bundled_image_id[node_type] = \
+            self.euca_register(image).split('\t')[1].strip()
+        out_queue.put(bundled_image_id)
 
     def euca_register(self, image):
         '''register image'''
@@ -1339,21 +1348,33 @@ class Cluster(object):
             self.execute(instance, 'cat novarc >> ~/.profile')
             self.execute(instance, 'source ~/.profile')
 
-        # save control node
+        save_queue = Queue.Queue()
         self.msg('\nSaving control node %s' % control['id'])
-        control_node_id = self.save_node(control['image'],
-                                         control['ip'],
-                                         args.controlb,
-                                         args.controln)
-        self.msg('\nControl node %s saved' % control['id'])
-
-        # save compute node
+        threading.Thread(target=save_node, args=[control['image'],
+                                                 control['ip'],
+                                                 args.controlb,
+                                                 args.controln,
+                                                 'control'
+                                                 save_queue
+                                                 ]).start()
         self.msg('\nSaving compute node %s' % compute['id'])
-        compute_node_id = self.save_node(compute['image'],
-                                         compute['ip'],
-                                         args.computeb,
-                                         args.computen)
-        self.msg('\nCompute node %s saved' % compute['id'])
+        threading.Thread(target=save_node, args=[compute['image'],
+                                                 compute['ip'],
+                                                 args.computeb,
+                                                 args.computen,
+                                                 'compute'
+                                                 save_queue
+                                                 ]).start()
+        while threading.activeCount() > 1:
+            time.sleep(1)
+
+        # return values has the format:
+        # {'control':'', 'compute':''}, but not sure the order
+        for bundled_image_id in [my_queue.get(),my_queue.get()]:
+            if 'control' in bundled_image_id:
+                control_node_id = bundled_image_id['control']
+            elif 'compute' in bundled_image_id:
+                compute_node_id = bundled_image_id['compute']
 
         # get instance type
         instance_type = control['type']
