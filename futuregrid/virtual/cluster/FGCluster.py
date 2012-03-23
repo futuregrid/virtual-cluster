@@ -443,6 +443,8 @@ class Cluster(object):
                     sys.stdout.flush()
                     # increase waitting time for instance
                     wait_instances[instance['id']] += 1
+                    self.debug('%s waits %d' % (instance['id'],
+                                            wait_instances[instance['id']]))
                      # if reaches limit
                     if wait_instances[instance['id']] > retry:
                         self.msg('\nTrying different IP address on %s'
