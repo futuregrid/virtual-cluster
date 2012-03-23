@@ -394,7 +394,7 @@ class Cluster(object):
         # ready count for VM
         count = 0
         msg_len = 5
-        retry = 200
+        retry = 50
 
         # ready list for instances who are ready to install
         ready_instances = []
