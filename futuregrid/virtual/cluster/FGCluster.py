@@ -392,95 +392,79 @@ class Cluster(object):
         '''
 
         # ready count for VM
-        ready = 0
         count = 0
         msg_len = 5
         retry = 200
 
         # ready list for instances who are ready to install
-        ready_instances = {}
+        ready_instances = []
 
         # waitting time list for instances
         wait_instances = {}
 
         # init waitting time for all instanes to 0
+        # add instance to ready_instances
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 wait_instances[instance['id']] = 0
+                ready_instances.append(instance)
 
         # check if ssh port of all VMs are alive for listening
-        while 1:
-            for instance in self.cloud_instances.get_list().values():
-                if type(instance) is dict:
-                    # create ready dict using ip as key
-                    # if True: ready to install
-                    # if False: already installed
-                    if not instance['id'] in ready_instances:
-                        ready_instances[instance['id']] = True
-                    # try to connect ssh port
-                    try:
-                        self.debug('trying to connect %s'
-                                   % instance['ip'])
-                        socket_s = socket.socket(socket.AF_INET,
-                                socket.SOCK_STREAM)
-                        socket_s.settimeout(1)
-                        socket_s.connect((instance['ip'], 22))
-                        socket_s.close()
+        while True:
+            for instance in ready_instances:
+                # try to connect ssh port
+                try:
+                    self.debug('trying to connect %s' % instance['ip'])
+                    socket_s = socket.socket(socket.AF_INET,
+                                             socket.SOCK_STREAM)
+                    socket_s.settimeout(1)
+                    socket_s.connect((instance['ip'], 22))
+                    socket_s.close()
 
-                        # install on instance which is ready
-                        if install:
-                            if ready_instances[instance['id']]:
-                                # set false, block other threads
-                                ready_instances[instance['id']] = False
-                                # ssh may fail due to heavy load of
-                                # startup in instance, use sleep
-                                time.sleep(2)
-                                self.msg('Starting thread to install '
-                                         'on %s' % instance['ip'])
-                                process_thread = \
+                    # install on instance which is ready
+                    if install:
+                        time.sleep(2)
+                        self.msg('Starting thread to install '
+                                 'on %s' % instance['ip'])
+                        process_thread = \
                                 threading.Thread(target=self.deploy_services,
                                                  args=[instance])
-                                process_thread.start()
+                        process_thread.start()
+                        ready_instances.remove(instance)
 
-                        ready = ready + 1
+                except IOError:
+                    self.debug('ssh in %s is closed' % instance['ip'])
+                    count += 1
+                    if count > msg_len:
+                        count = 0
+                    sys.stdout.write('\rWaiting instances ready to deploy'
+                                     + '.' * count + ' ' *
+                                     (msg_len - count))
+                    sys.stdout.flush()
+                    # increase waitting time for instance
+                    wait_instances[instance['id']] += 1
+                     # if reaches limit
+                    if wait_instances[instance['id']] > retry:
+                        self.msg('\nTrying different IP address on %s'
+                                 % instance['id'])
+                        # get free ip addresses
+                        ip_lists = self.euca_describe_addresses()
+                        # disassociate current one
+                        self.disassociate_address(instance['ip'])
+                        # associate a new random free ip
+                        self.debug('Associating new IP on %s'
+                                   % instance['id'])
+                        self.euca_associate_address(instance,
+                                                    ip_lists[random.randint(0,
+                                                        len(ip_lists)
+                                                        - 1)])
+                        self.debug('New IP is %s' % instance['ip'])
+                        wait_instances[instance['id']] = 0
 
-                    except IOError:
-                        self.debug('ssh in %s is closed' % instance['ip'])
-                        count += 1
-                        if count > msg_len:
-                            count = 0
-                        sys.stdout.write('\rWaiting instances ready to deploy'
-                                         + '.' * count + ' ' *
-                                         (msg_len - count))
-                        sys.stdout.flush()
-                        ready = 0
-                        # increase waitting time for instance
-                        wait_instances[instance['id']] += 1
-                        # if reaches limit
-                        if wait_instances[instance['id']] > retry:
-                            self.msg('\nTrying different IP address on %s'
-                                     % instance['id'])
-                            # get free ip addresses
-                            ip_lists = self.euca_describe_addresses()
-                            # disassociate current one
-                            self.disassociate_address(instance['ip'])
-                            # associate a new random free ip
-                            self.debug('Associating new IP on %s'
-                                       % instance['id'])
-                            self.euca_associate_address(instance,
-                                    ip_lists[random.randint(0,
-                                                            len(ip_lists)
-                                                            - 1)])
-                            self.debug('New IP is %s' % instance['ip'])
-                            wait_instances[instance['id']] = 0
-
-                        time.sleep(1)
+                    time.sleep(1)
 
             # check if all vms are ready
-            self.debug('Total number of instances %d'
-                       % int(self.cloud_instances.get_cluster_size()))
-            self.debug('%d instances are ready' % ready)
-            if ready == self.cloud_instances.get_cluster_size():
+            if len(ready_instances) == 0:
                 # wait all threads are done
                 self.debug('Waitting all thread are done')
                 while threading.activeCount() > 1:
