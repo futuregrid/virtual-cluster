@@ -404,7 +404,7 @@ class Cluster(object):
         '''
 
         # max retry
-        max_retry = 30
+        max_retry = 200
 
         # ready list for instances who are ready to install
         ready_instances = []
@@ -519,8 +519,6 @@ class Cluster(object):
                                                             - 1)])
                             self.debug('New IP is %s' % instance['ip'])
                             wait_instances[instance['id']] = 0
-
-                    time.sleep(1)
 
             # check if all vms are ready
             if len(ready_instances) == 0:
@@ -1755,9 +1753,9 @@ class Cluster(object):
         self.msg('Virtual Cluster list')
         self.msg('================================')
         for cloud in cloud_set:
-            self.msg('%s: %d compute nodes; status: %s'
+            self.msg('%s: %d compute nodes, 1 control node; status: %s'
                      % (cloud['name'],
-                        self.cloud_instances.get_cluster_size(cloud),
+                        self.cloud_instances.get_cluster_size(cloud) - 1,
                         cloud['status']))
 
 ######################################################################
