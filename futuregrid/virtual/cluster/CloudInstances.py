@@ -232,10 +232,31 @@ class CloudInstances:
 
         return self.cloud_instances
 
+    def get_index(self, instance):
+        '''
+        Gets instance key from cloud instance list
+
+        Parameters:
+            instance -- an instance dictionary
+
+        Logic:
+            Finds the instance matches the id
+            then return the key
+
+        Return:
+            key -- instance index
+        '''
+        for key, element in self.cloud_instances.items():
+            # if element is an instance
+            if type(element) is dict:
+                if element['id'] == instance['id']:
+                    return key
+
     def set_instance(self,
                      instance_id,
                      image_id,
                      instance_type,
+                     index,
                      instance_ip=''):
         '''
         Sets attributes of a given instance
@@ -262,7 +283,29 @@ class CloudInstances:
         instance['ip'] = instance_ip
         # instance key '0, 1, 2...'
         # can use index to get instance
-        self.cloud_instances[self.get_cluster_size()] = instance
+        if not index:
+            self.cloud_instances[self.get_cluster_size()] = instance
+        else:
+            self.cloud_instances[index] = instance
+
+    def del_instance(self, instance):
+        '''
+        Deletes an instance from cloud instance list
+
+        Parameters:
+            instance -- an instance dictionary
+
+        Logic:
+            Find the instance matches id then delete
+            the instance using key
+
+        No returns
+        '''
+        for key, element in self.cloud_instances.items():
+            # if element is an instance
+            if type(element) is dict:
+                if element['id'] == instance['id']:
+                    del self.cloud_instances[key]
 
     def set_ip_by_id(self, instance_id, instance_ip):
         '''
