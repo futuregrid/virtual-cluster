@@ -404,7 +404,7 @@ class Cluster(object):
         '''
 
         # max retry
-        max_retry = 200
+        max_retry = 50
 
         # ready list for instances who are ready to install
         ready_instances = []
@@ -1768,27 +1768,11 @@ def commandline_parser():
     Parses commandline
 
     Checks if python version is above 2.7
-    Checks if euca environments are set
     '''
 
     # Check pyhon version
     if sys.version_info < (2, 7):
         print "ERROR: you must use python 2.7 or greater"
-        sys.exit(1)
-
-    # check if has nova env
-    if not 'EC2_ACCESS_KEY' in os.environ or \
-        not 'EC2_SECRET_KEY' in os.environ or \
-        not 'EC2_URL' in os.environ or \
-        not 'S3_URL' in os.environ or \
-        not 'EC2_USER_ID' in os.environ or \
-        not 'EC2_PRIVATE_KEY' in os.environ or \
-        not 'EC2_CERT' in os.environ or \
-        not 'EUCALYPTUS_CERT' in os.environ or \
-        not 'NOVA_API_KEY' in os.environ or \
-        not 'NOVA_USERNAME' in os.environ or \
-        not 'NOVA_URL' in os.environ:
-        print 'ERROR: you must set nova environment'
         sys.exit(1)
 
     virtual_cluster = Cluster()
