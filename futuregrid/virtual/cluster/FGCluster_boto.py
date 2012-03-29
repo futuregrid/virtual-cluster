@@ -69,12 +69,9 @@ from time import sleep
 import threading
 import ConfigParser
 import random
-import Queue
 import boto.ec2
-import boto
 
 from boto.ec2.connection import EC2Connection
-from boto.ec2.instanceinfo import InstanceInfo
 from CloudInstances import CloudInstances
 #from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 from subprocess import Popen, PIPE
@@ -476,7 +473,7 @@ class Cluster(object):
         '''
 
         # max retry
-        max_retry = 50
+        max_retry = 20
 
         # ready list for instances who are ready to install
         ready_instances = []
@@ -484,14 +481,11 @@ class Cluster(object):
         # waitting time list for instances
         wait_instances = {}
 
-        # ip change time count for instance
-        ip_change_count = {}
         # init waitting time for all instanes to 0
         # add instance to ready_instances
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 wait_instances[instance['id']] = 0
-                ip_change_count[instance['id']] = 0
                 ready_instances.append(instance)
 
         # check if ssh port of all VMs are alive for listening
@@ -508,7 +502,7 @@ class Cluster(object):
                                 threading.Thread(target=self.deploy_services,
                                                  args=[instance])
                         process_thread.start()
-                        ready_instances.remove(instance)
+                    ready_instances.remove(instance)
 
                 else:
                     self.debug('ssh in %s is closed' % instance['ip'])
@@ -521,68 +515,34 @@ class Cluster(object):
                                             wait_instances[instance['id']]))
                     # if reaches limit
                     if wait_instances[instance['id']] > max_retry:
-                        # if change IP does not help
-                        # then give up this intacne
-                        if ip_change_count[instance['id']] == 1:
-                            
-                            # get instance index
-                            instance_index = \
-                                self.cloud_instances.get_index(instance)
-#                            # remove this instance from ready instance list
-#                            ready_instances.remove(instance)
-#                            self.msg('Instance %s creation failed'
-#                                     % instance['id'])
-#                            # delete this instance from cloud instance list
-#                            self.cloud_instances.del_instance(instance)
-#                            # if no control node or only control node left
-#                            if self.cloud_instances.get_cluster_size() == 1:
-#                                self.msg('Create cluster failed, '
-#                                         'please try again')
-#                                for element in \
-#                                    self.cloud_instances.get_list().values():
-#                                    if type(element) is dict:
-#                                        self.terminate_instance(element['id'])
-#                                sys.exit()
-#                            else:
-#                                self.terminate_instance(instance['id'])
-#                                # try to create a new one
-#                                self.euca_run_instance(self.user,
-#                                                       1,
-#                                                       instance['image'],
-#                                                       instance['type'],
-#                                                       instance_index)
-#                                self.debug('Getting free public IPs')
-#                                # get free IP list
-#                                ip_lists = self.euca_describe_addresses()
-#                                sleep(2)
-#
-#                                new_instance = \
-#                                    self.cloud_instances.get_by_id(
-#                                                        instance_index)
-#                                self.msg('\nAssociating IP with %s'
-#                                         % new_instance['id'])
-#                                new_ip = ip_lists[random.randint(0,
-#                                                        len(ip_lists) - 1)]
-#                                while not \
-#                                    self.euca_associate_address(new_instance,
-#                                                                new_ip):
-#                                    self.msg('Error in associating IP %s '
-#                                             'with instance %s, '
-#                                             'trying again'
-#                                             % (new_ip, new_instance['id']))
-#                                    sleep(1)
-#                                wait_instances[new_instance['id']] = 0
-#                                ip_change_count[new_instance['id']] = 0
-#                                ready_instances.append(new_instance)
-
-                        else:
-                            self.msg('\nTrying different IP address on %s'
-                                 % instance['id'])
-                            self.debug('Associating new IP on %s'
-                                       % instance['id'])
+                        reserved_instance = self.get_instance_from_reservation(instance['id'])
+                        if reserved_instance.state == 'running':
+                            self.msg('\nTrying different IP address on %s' % instance['id'])
+                            self.debug('Associating new IP on %s' % instance['id'])
                             self.change_public_ip(instance['id'], instance['ip'])
                             wait_instances[instance['id']] = 0
-                            ip_change_count[instance['id']] += 1
+                        else:
+                            instance_index = self.cloud_instances.get_index(instance)
+                            # remove this instance from ready instance list
+                            ready_instances.remove(instance)
+                            self.msg('ERROR: Instance %s creation failed' % instance['id'])
+                            # delete this instance from cloud instance list
+                            self.cloud_instances.del_instance(instance)
+                            self.terminate_instance(instance)
+                            self.msg('Creating new instance')
+                            reservation = self.run_instances(instance['image'], 1, instance['type'])
+                            nr_instance = reservation.instances[0]
+                            self.cloud_instances.set_instance(instance_id=nr_instance.id,
+                                                              image_id=nr_instance.image_id,
+                                                              instance_type=nr_instance.instance_type,
+                                                              index=instance_index)
+                            ip_list = self.get_free_ip()
+                            free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
+                            self.associate_public_ip(nr_instance.id, free_public_ip)
+                            nr_instance.update()
+                            ready_instances.append(self.cloud_instances.get_by_id(instance_index))
+                            wait_instances[nr_instance.id] = 0
+                            self.msg('New instance id -- %s, ip -- %s' % (nr_instance.id, free_public_ip))
 
             # check if all vms are ready
             if len(ready_instances) == 0:
@@ -594,7 +554,78 @@ class Cluster(object):
                 break
 
     def show_status(self, args):
-        print args
+        '''
+        Show status of cluster(s)
+
+        Parameters:
+            args -- this method deals with
+                    args.name -- virtual cluster name
+
+        Logic:
+            Reads from backup file to load cluster information given
+            cluster name. If cluster name is specified, then after
+            checks its existence, loads it to display. If no cluster
+            name is specified, then loads all cluster instances to
+            display. If no clusters are saved in the backup file, after
+            prints help message, then quits the program
+
+        No returns
+        '''
+
+        if not args.name:
+            # get all cloud intances
+            cloud_set = self.cloud_instances.get_all_cloud_instances()
+            # if no cloud instances created, then prints msg and quits
+            if len(cloud_set) == 0:
+                self.msg('\nYou do not have any virtual clusters')
+                sys.exit()
+            for cloud in cloud_set:
+                self.msg('\n====================================')
+                self.msg('Virtual Cluster %s (status: %s)'
+                         % (cloud['name'], cloud['status']))
+                self.msg('====================================')
+                if cloud['status'] == self.cloud_instances.SAVED:
+                    self.msg('Control node -- %s, '
+                             'Compute node -- %s, '
+                             'Instance type -- %s, '
+                             'Cluster size -- %s'
+                             % (cloud['control'], cloud['compute'],
+                                cloud['type'], cloud['size']))
+                else:
+                    for index in range(self.cloud_instances.get_cluster_size(
+                                                        cloud)):
+                        self.msg('Instance %s: IP -- %s, Image id -- %s, '
+                                 'Instance type -- %s'
+                                 % (cloud[index]['id'], cloud[index]['ip'],
+                                 cloud[index]['image'], cloud[index]['type']))
+        else:
+            if not self.cloud_instances.if_exist(args.name):
+                self.msg('Error in finding virtual cluster %s, not created.'
+                          % args.name)
+                sys.exit()
+            self.cloud_instances.get_cloud_instances_by_name(args.name)
+            self.msg('\n====================================')
+            self.msg('Virtual Cluster %s (status: %s)'
+                     % (args.name, self.cloud_instances.get_status()))
+            self.msg('====================================')
+            if self.cloud_instances.get_list()['status'] == \
+                    self.cloud_instances.SAVED:
+                self.msg('Control node -- %s, '
+                         'Compute node -- %s, '
+                         'Instance type -- %s, '
+                         'Cluster size -- %s'
+                         % (self.cloud_instances.get_list()['control'],
+                            self.cloud_instances.get_list()['compute'],
+                            self.cloud_instances.get_list()['type'],
+                            self.cloud_instances.get_list()['size']))
+            else:
+                for instance in self.cloud_instances.get_list().values():
+                    if type(instance) is dict:
+                        self.msg('Instance %s: IP -- %s, Image id -- %s, '
+                                 'Instance type -- %s'
+                                 % (instance['id'], instance['ip'],
+                                    instance['image'], instance['type']))
+
 
     def ec2_connect(self, cloud):
 
@@ -620,8 +651,36 @@ class Cluster(object):
             self.msg('ERROR: error in connecting to EC2')
             sys.exit()
 
-    def get_list(self, args):
-        print ''
+    def get_list(self, _args):
+        '''
+        lists all virtual clusters and status
+
+        Parameters:
+            args -- this method deals with
+                    None
+
+        Logic:
+            Reads from backup file to load all virtual cluster information
+            If no cloud instance saved, after shows help message, then quits
+            the program
+        '''
+
+        # get all cloud instances lists
+        cloud_set = self.cloud_instances.get_all_cloud_instances()
+        # if no cloud created, then prints msg and quits
+        if len(cloud_set) == 0:
+            self.msg('\nYou do not have any virtual clusters')
+            sys.exit()
+
+        self.msg('\n===============================')
+        self.msg('Virtual Cluster list')
+        self.msg('================================')
+        for cloud in cloud_set:
+            self.msg('%s: %d compute nodes, 1 control node; status: %s'
+                     % (cloud['name'],
+                        self.cloud_instances.get_cluster_size(cloud) - 1,
+                        cloud['status']))
+
     def clean_repo(self):
         '''
         Remove source list file
@@ -866,39 +925,51 @@ class Cluster(object):
         return self.ec2_conn.get_all_addresses(addresses=None, filters=None)
 
     def get_free_ip(self):
+        ip_list = []
         for address in self.get_all_public_ips():
             address_public_ip = address.public_ip
             address_instance_id = address.instance_id
             if not address_instance_id:
-                return address_public_ip
+                ip_list.append(address_public_ip)
+        return ip_list
+
+    def get_instance_from_reservation(self, instance_id):
+        return self.ec2_conn.get_all_instances(instance_ids=[instance_id])[0].instances[0]
 
     def associate_public_ip(self, instance_id, address_public_ip):
-        try:
-            self.ec2_conn.associate_address(instance.id, address_public_ip)
-            self.cloud_instances.
-            return True
-        except:
-            return False
+        while True:
+            try:
+                sleep(2)
+                self.ec2_conn.associate_address(instance_id, address_public_ip)
+                break
+            except:
+#                self.msg('ERROR: error in associating % with %, trying again'
+#                         % (instance_id, address_public_ip))
+                self.msg('ERROR: Associating ip %s with instance %s failed, trying again'
+                         % (address_public_ip, instance_id))
+        self.msg('ADDRESS: %s %s' % (address_public_ip, instance_id))
+        self.cloud_instances.set_ip_by_id(instance_id, address_public_ip)
+        self.del_known_host(address_public_ip)
 
-#    def change_public_ip(self, instance_id, address_public_ip):
-#        rediasso = True
-#        reasso = True
-#        free_public_ip = self.get_free_ip()
-#        while (rediasso):
-#            try:
-#                self.ec2_conn.disassociate_address(address_public_ip)
-#                rediasso = False
-#            except:
-#                self.msg('ERROR: error in disassociating IP %s, trying again' % address_public_ip)
-#        
-#        while (reasso):
-#            try:
-#                self.ec2_conn.associate_address(instance_id, free_public_ip)
-#                reasso = False
-#            except:
-#                self.msg('ERROR: error in associating IP %s, trying again' % address_public_ip)
-#
-#        self.cloud_instances.set_ip_by_id(instance_id, free_public_ip)
+    def change_public_ip(self, instance_id, address_public_ip):
+        
+        ip_list = self.get_free_ip()
+        free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
+        self.ec2_conn.disassociate_address(address_public_ip)
+        self.get_instance_from_reservation(instance_id).update()
+        self.associate_public_ip(instance_id, free_public_ip)
+
+    def run_instances(self, image, cluster_size, instance_type):
+        try:
+            return self.ec2_conn.run_instances(image_id=image,
+                                               min_count=cluster_size,
+                                               max_count=cluster_size,
+                                               key_name=self.user,
+                                               instance_type=instance_type)
+        except:
+            self.msg('ERROR: Error in lunching instances, please try again')
+            self.ec2_conn.close()
+            sys.exit()
 
     def create_cluster(self,args):
 
@@ -942,33 +1013,124 @@ class Cluster(object):
         self.debug('Creating new cloud instance %s' % args.name)
         # set cloud instance list
         self.cloud_instances.set_cloud_instances_by_name(args.name)
-       
-        try:
-            reservation = self.ec2_conn.run_instances(args.image, cluster_size, cluster_size, self.user)
-        except:
-            self.msg('ERROR: Error in lunching instances, please try again')
-            self.ec2_conn.close()
-            sys.exit()
+
+        reservation = self.run_instances(args.image, cluster_size, args.type)
 
         self.msg('Associating public IPs')
+        ip_index = 0
         for instance in reservation.instances:
-            sleep(1)
-            free_public_ip = self.get_free_ip()
-            while not self.associate_public_ip(instance, free_public_ip):
-                self.msg('ERROR: error in associating IP address with %s, trying again' % instance.id)
+            self.cloud_instances.set_instance(instance.id, instance.image_id, instance.instance_type)
+            free_public_ip = self.get_free_ip()[ip_index]
+            ip_index += 1
+            self.associate_public_ip(instance.id, free_public_ip)
+            instance.update()
         
-
+        
         self.debug('Creating IU ubunto repo source list')
         # choose repo, by defalt, using IU ubuntu repo
-#        self.define_repo()
-#        self.installation()
+        self.define_repo()
+        self.installation()
+        self.config_slurm()
+
+        self.debug('Cleaning up')
+        # clean repo file
+        self.clean_repo()
+        self.debug('Saving cloud instance into backup file')
+        # save cloud instance
+        self.cloud_instances.save_instances()
+
+    def terminate_instance(self, instance):
+        try:
+            self.msg('Terminating instance %s' % instance['id'])
+            self.ec2_conn.terminate_instances([instance['id']])
+            self.del_known_host(instance['ip'])
+        except:
+            self.msg('ERROR: terminat instance %s failed' % instance['id'])
+        
+
     def shut_down(self, args):
-        print ''
+        '''
+        Method for shutting down a cluster
+
+        Parameters:
+            args -- this method deals with
+                    args.name -- virtual cluster name
+
+        Logic:
+            Only terminates cloud instance which is not terminated
+            Checking its existence before termination.
+            Delete host info from ~/.ssh/known_hosts after each termination
+            Change status according to following:
+                If current status is SAVED, then does not change status
+                If current status is RUN, then changes it to DOWN
+
+        No returns
+        '''
+
+        # only terminate cluster which is not terminated
+        self.debug('Checking if %s is existed' % args.name)
+        if self.cloud_instances.if_exist(args.name):
+            self.debug('Getting cloud instance %s' % args.name)
+            self.cloud_instances.get_cloud_instances_by_name(args.name)
+            self.debug('Checking cloud status')
+            # check if cloud instance is terminated
+            if self.cloud_instances.if_status(self.cloud_instances.DOWN):
+                self.msg('\nError in terminating cluster %s, already down?'
+                          % args.name)
+                sys.exit()
+        else:
+            self.msg('\nError in finding virtual cluster %s, not created?'
+                     % args.name)
+            sys.exit()
+
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                self.terminate_instance(instance)
+
+        # change status to terminated, and save
+        self.debug('If status is %s' % self.cloud_instances.RUN)
+        if self.cloud_instances.if_status(self.cloud_instances.RUN):
+            self.debug('Setting status to %s' % self.cloud_instances.DOWN)
+            self.cloud_instances.set_status(self.cloud_instances.DOWN)
+            self.debug('Deleting instance old info')
+            self.cloud_instances.del_by_name(args.name)
+            self.debug('Saving instance into backup file')
+            self.cloud_instances.save_instances()
+
     def checkpoint_cluster(self, args):
         print ''
     def restore_cluster(self, args):
         print ''
-        
+
+    @classmethod
+    def del_known_host(cls, ip_addr):
+        '''
+        Deletes known host info from ~/.ssh/known_hosts
+
+        Parameter:
+            ip_addr -- IP address
+
+        Logic:
+            Deletes known host information from ~/.ssh/known_hosts
+            in case it shows man-in-middle-attack message when starts
+            different cluster but using the same IP addresses
+
+        No returns
+        '''
+
+        known_hosts = '~/.ssh/known_hosts'
+
+#        self.msg('Deleting host info from known_hosts')
+
+        with open(os.path.expanduser(known_hosts)) as srcf:
+            host_list = srcf.readlines()
+        srcf.close()
+
+        with open(os.path.expanduser(known_hosts), 'w') as destf:
+            for host in host_list:
+                if host.find(ip_addr) < 0:
+                    destf.write(host)
+        destf.close()
 ######################################################################
 # MAIN
 ######################################################################
