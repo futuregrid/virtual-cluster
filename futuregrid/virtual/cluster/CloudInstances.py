@@ -256,7 +256,7 @@ class CloudInstances:
                      instance_id,
                      image_id,
                      instance_type,
-                     instance_ip,
+                     instance_ip='',
                      index=None):
         '''
         Sets attributes of a given instance

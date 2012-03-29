@@ -688,10 +688,10 @@ class Cluster(object):
         for num in range(cluster_size):
             try:
                 self.debug('Adding instance %s' % instance_id_list[num])
-                self.cloud_instances.set_instance(instance_id_list[num],
-                                                  image,
-                                                  instance_type,
-                                                  index)
+                self.cloud_instances.set_instance(instance_id=instance_id_list[num],
+                                                  image_id=image,
+                                                  instance_type=instance_type,
+                                                  index=index)
             except:
                 self.msg('\nError in creating instances.'
                          ' Program will exit')
