@@ -872,33 +872,33 @@ class Cluster(object):
             if not address_instance_id:
                 return address_public_ip
 
-    def associate_public_ip(self, instance, address_public_ip):
+    def associate_public_ip(self, instance_id, address_public_ip):
         try:
             self.ec2_conn.associate_address(instance.id, address_public_ip)
-            self.cloud_instances.set_instance(instance.id, instance.image_id, instance.instance_type, address_public_ip)
+            self.cloud_instances.
             return True
         except:
             return False
 
-    def change_public_ip(self, instance_id, address_public_ip):
-        rediasso = True
-        reasso = True
-        free_public_ip = self.get_free_ip()
-        while (rediasso):
-            try:
-                self.ec2_conn.disassociate_address(address_public_ip)
-                rediasso = False
-            except:
-                self.msg('ERROR: error in disassociating IP %s, trying again' % address_public_ip)
-        
-        while (reasso):
-            try:
-                self.ec2_conn.associate_address(instance_id, free_public_ip)
-                reasso = False
-            except:
-                self.msg('ERROR: error in associating IP %s, trying again' % address_public_ip)
-
-        self.cloud_instances.set_ip_by_id(instance_id, free_public_ip)
+#    def change_public_ip(self, instance_id, address_public_ip):
+#        rediasso = True
+#        reasso = True
+#        free_public_ip = self.get_free_ip()
+#        while (rediasso):
+#            try:
+#                self.ec2_conn.disassociate_address(address_public_ip)
+#                rediasso = False
+#            except:
+#                self.msg('ERROR: error in disassociating IP %s, trying again' % address_public_ip)
+#        
+#        while (reasso):
+#            try:
+#                self.ec2_conn.associate_address(instance_id, free_public_ip)
+#                reasso = False
+#            except:
+#                self.msg('ERROR: error in associating IP %s, trying again' % address_public_ip)
+#
+#        self.cloud_instances.set_ip_by_id(instance_id, free_public_ip)
 
     def create_cluster(self,args):
 

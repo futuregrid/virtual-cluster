@@ -404,7 +404,7 @@ class Cluster(object):
         '''
 
         # max retry
-        max_retry = 50
+        max_retry = 30
 
         # ready list for instances who are ready to install
         ready_instances = []
@@ -436,7 +436,7 @@ class Cluster(object):
                                 threading.Thread(target=self.deploy_services,
                                                  args=[instance])
                         process_thread.start()
-                        ready_instances.remove(instance)
+                    ready_instances.remove(instance)
 
                 else:
                     self.debug('ssh in %s is closed' % instance['ip'])
