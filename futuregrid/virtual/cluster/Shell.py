@@ -62,12 +62,8 @@ class Shell(Cmd):
                     help="instance type"),
         make_option('-i', '--image', type="string",
                     help="image id"),
-        make_option('-f', '--file', type="string",
-                    default='not specified',
-                    help="configuration file"),
         ])
-    def do_run(self, opts):
-        self.cluster.parse_conf(opts.file)
+    def do_run(self, args, opts):
         self.cluster.create_cluster(opts)
 
     @options([
@@ -82,55 +78,33 @@ class Shell(Cmd):
         make_option('-e', '--computen', type="string",
                     default='not specified',
                     help="compute node image"),
-        make_option('-f', '--file', type="string",
-                    default='not specified',
-                    help="configuration file"),
         ])
-    def do_checkpoint(self, opts):
-        self.cluster.parse_conf(opts.file)
+    def do_checkpoint(self, args, opts):
         self.cluster.checkpoint_cluster(opts)
 
     @options([
         make_option('-a', '--name', type="string",
                     help="cluster name"),
-        make_option('-f', '--file', type="string",
-                    default='not specified',
-                    help="configuration file"),
         ])
-    def do_restore(self, opts):
-        self.cluster.parse_conf(opts.file)
+    def do_restore(self, args, opts):
         self.cluster.restore_cluster(opts)
 
     @options([
         make_option('-a', '--name', type="string",
                     help="cluster name"),
-        make_option('-f', '--file', type="string",
-                    default='not specified',
-                    help="configuration file"),
         ])
-    def do_terminate(self, opts):
-        self.cluster.parse_conf(opts.file)
+    def do_terminate(self, args, opts):
         self.cluster.shut_down(opts)
 
     @options([
         make_option('-a', '--name', type="string",
                     help="cluster name"),
-        make_option('-f', '--file', type="string",
-                    default='not specified',
-                    help="configuration file"),
         ])
-    def do_status(self, opts):
-        self.cluster.parse_conf(opts.file)
+    def do_status(self, args, opts):
         self.cluster.show_status(opts)
 
-    @options([
-        make_option('-f', '--file', type="string",
-                    default='not specified',
-                    help="configuration file"),
-        ])
-    def do_list(self, opts):
-        self.cluster.parse_conf(opts.file)
-        self.cluster.get_list(opts)
+    def do_list(self, args):
+        self.cluster.get_list(args)
 
 
 def main():
