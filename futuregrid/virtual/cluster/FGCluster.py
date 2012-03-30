@@ -101,6 +101,7 @@ class Cluster(object):
     eucalyptus_cert = None
     novarc = None
     slurm = None
+    mutex = None
 
     # debug switch
     if_debug = False
@@ -117,6 +118,7 @@ class Cluster(object):
         '''
         super(Cluster, self).__init__()
         self.cloud_instances = CloudInstances()
+        self.mutex = threading.Lock() 
 
 # ---------------------------------------------------------------------
 # METHODS TO PRINT HELP MESSAGES
@@ -137,6 +139,11 @@ class Cluster(object):
         '''
 
         print message
+
+    def print_section(self, message):
+        self.msg('====================')
+        self.msg(message)
+        self.msg('====================')
 
     def debug(self, message):
         '''
@@ -380,7 +387,7 @@ class Cluster(object):
         else:
             return False
 
-    def installation(self, install=True):
+    def installation(self, instance, install=True):
         '''
         Checks if instances are ready to deploy and installs the
         softwares on the instance which is ready
@@ -404,123 +411,85 @@ class Cluster(object):
         '''
 
         # max retry
-        max_retry = 30
+        max_retry = 60
 
-        # ready list for instances who are ready to install
-        ready_instances = []
+        wait_count = 0
 
-        # waitting time list for instances
-        wait_instances = {}
+        ip_change = False
 
-        # dict indiates whether instance ip has changed
-        ip_change = {}
-
-        # init waitting time for all instanes to 0
-        # add instance to ready_instances
-        for instance in self.cloud_instances.get_list().values():
-            if type(instance) is dict:
-                wait_instances[instance['id']] = 0
-                ip_change[instance['id']] = False
-                ready_instances.append(instance)
 
         # check if ssh port of all VMs are alive for listening
         while True:
-            for instance in ready_instances:
-                # try to connect ssh port
-                if self.check_avaliable(instance):
-
-                    # install on instance which is ready
-                    if install:
-                        self.msg('Starting thread to install '
-                                 'on %s' % instance['ip'])
-                        process_thread = \
-                                threading.Thread(target=self.deploy_services,
-                                                 args=[instance])
-                        process_thread.start()
-                    ready_instances.remove(instance)
-
-                else:
-                    self.debug('ssh in %s is closed' % instance['ip'])
-                    self.msg('Checking %s availability...' % instance['ip'])
-                    self.msg('Trying %d (max try %d)'
-                             % (wait_instances[instance['id']], max_retry))
-                    # increase waitting time for instance
-                    wait_instances[instance['id']] += 1
-                    self.debug('%s waits %d' % (instance['id'],
-                                            wait_instances[instance['id']]))
-                     # if reaches limit
-                    if wait_instances[instance['id']] > max_retry:
-                        if not self.if_running(instance['id']) or \
-                            ip_change[instance['id']]:
-                            
-                            # get instance index
-                            instance_index = \
-                                self.cloud_instances.get_index(instance)
-                            # remove this instance from ready instance list
-                            ready_instances.remove(instance)
-                            self.msg('Instance %s creation failed'
-                                     % instance['id'])
-                            # delete this instance from cloud instance list
-                            self.cloud_instances.del_instance(instance)
-                                
-                            self.terminate_instance(instance['id'])
-                            # try to create a new one
-                            self.msg('Creating new instance')
-                            self.euca_run_instance(self.user,
-                                                    1,
-                                                    instance['image'],
-                                                    instance['type'],
-                                                    instance_index)
-                            self.debug('Getting free public IPs')
-                            # get free IP list
-                            ip_lists = self.euca_describe_addresses()
-                            time.sleep(2)
-    
-                            new_instance = \
-                                self.cloud_instances.get_by_id(
-                                                     instance_index)
-                            self.msg('\nAssociating IP with %s'
-                                        % new_instance['id'])
-                            new_ip = ip_lists[random.randint(0,
-                                                    len(ip_lists) - 1)]
-                            while not \
-                                self.euca_associate_address(new_instance,
-                                                            new_ip):
-                                self.msg('Error in associating IP %s '
-                                         'with instance %s, '
-                                         'trying again'
-                                         % (new_ip, new_instance['id']))
-                                time.sleep(1)
-                            wait_instances[new_instance['id']] = 0
-                            ip_change[new_instance['id']] = False
-                            ready_instances.append(new_instance)
-                        else:
-                            self.msg('\nTrying different IP address on %s'
+            if self.check_avaliable(instance):
+                if install:
+                    self.deploy_services(instance)
+                break;
+            else:
+                self.debug('ssh in %s is closed' % instance['ip'])
+                self.msg('Checking %s availability...' % instance['ip'])
+                self.msg('Trying %d (max try %d)' % (wait_count, max_retry))
+                wait_count += 1
+                if wait_count > max_retry:
+                    if not self.if_running(instance['id']) or ip_change:
+                        # get instance index
+                        instance_index = \
+                            self.cloud_instances.get_index(instance)
+                        self.msg('Instance %s creation failed'
                                  % instance['id'])
-                            # get free ip addresses
-                            ip_lists = self.euca_describe_addresses()
-                            # disassociate current one
-                            self.disassociate_address(instance['ip'])
-                            # associate a new random free ip
-                            self.debug('Associating new IP on %s'
-                                       % instance['id'])
-                            self.euca_associate_address(instance,
-                                                ip_lists[random.randint(0,
+                        # delete this instance from cloud instance list
+                        self.cloud_instances.del_instance(instance)
+
+                        self.terminate_instance(instance['id'])
+                        # try to create a new one
+                        self.msg('Creating new instance')
+                        self.euca_run_instance(self.user,
+                                               1,
+                                               instance['image'],
+                                               instance['type'],
+                                               instance_index)
+                        self.debug('Getting free public IPs')
+                        # get free IP list
+                        self.mutex.acquire()
+                        ip_lists = self.euca_describe_addresses()
+                        time.sleep(2)
+                        new_instance = \
+                            self.cloud_instances.get_by_id(
+                                                     instance_index)
+                        self.msg('\nAssociating IP with %s'
+                                 % new_instance['id'])
+                        new_ip = ip_lists[random.randint(0,
+                                                len(ip_lists) - 1)]
+                        while not \
+                            self.euca_associate_address(new_instance,
+                                                        new_ip):
+                            self.msg('Error in associating IP %s '
+                                     'with instance %s, '
+                                     'trying again'
+                                     % (new_ip, new_instance['id']))
+                        self.mutex.release()
+                        instance = new_instance
+                        wait_count = 0
+                        ip_change = False
+                    else:
+                        self.msg('\nTrying different IP address on %s'
+                                 % instance['id'])
+                        # get free ip addresses
+                        self.mutex.acquire()
+                        ip_lists = self.euca_describe_addresses()
+                        # disassociate current one
+                        self.disassociate_address(instance['ip'])
+                        # associate a new random free ip
+                        self.debug('Associating new IP on %s'
+                                   % instance['id'])
+                        self.euca_associate_address(instance,
+                                                    ip_lists[random.randint(0,
                                                             len(ip_lists)
                                                             - 1)])
-                            self.debug('New IP is %s' % instance['ip'])
-                            wait_instances[instance['id']] = 0          
-                            ip_change[instance['id']] = True              
-
-            # check if all vms are ready
-            if len(ready_instances) == 0:
-                # wait all threads are done
-                self.debug('Waitting all thread are done')
-                while threading.activeCount() > 1:
-                    time.sleep(1)
-                self.debug('All thread are done')
-                break
-
+                        self.mutex.release()
+                        self.debug('New IP is %s' % instance['ip'])
+                        wait_count = 0          
+                        ip_change = True
+                time.sleep(1)
 # ---------------------------------------------------------------------
 # METHODS TO DO RPCs
 # ---------------------------------------------------------------------
@@ -856,7 +825,11 @@ class Cluster(object):
 
         self.debug('Checking alive instance for deploying')
         # detect if VMs are ready for deploy
-        self.installation()
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                threading.Thread(target=self.installation, args=[instance, True]).start()
+        while threading.activeCount() > 1:
+            time.sleep(1)
 
         self.debug('Configuraing SLURM')
         # config SLURM system
@@ -1550,7 +1523,11 @@ class Cluster(object):
 
         # check ssh port but not install
         self.debug('Checking alive instance for deploying')
-        self.installation(False)
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                threading.Thread(target=self.installation, args=[instance, False]).start()
+        while threading.activeCount() > 1:
+            time.sleep(1)
         # cnfig SLURM but not generating munge-keys
         self.debug('Configuating SLURM')
         self.config_slurm(False)
