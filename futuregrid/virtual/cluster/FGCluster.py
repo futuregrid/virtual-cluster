@@ -404,7 +404,7 @@ class Cluster(object):
         '''
 
         # max retry
-        max_retry = 30
+        max_retry = 15
 
         # ready list for instances who are ready to install
         ready_instances = []
@@ -412,14 +412,15 @@ class Cluster(object):
         # waitting time list for instances
         wait_instances = {}
 
-        # ip change time count for instance
-        ip_change_count = {}
+        # dict indiates whether instance ip has changed
+        ip_change = {}
+
         # init waitting time for all instanes to 0
         # add instance to ready_instances
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 wait_instances[instance['id']] = 0
-                ip_change_count[instance['id']] = 0
+                ip_change[instance['id']] = False
                 ready_instances.append(instance)
 
         # check if ssh port of all VMs are alive for listening
@@ -449,10 +450,9 @@ class Cluster(object):
                                             wait_instances[instance['id']]))
                      # if reaches limit
                     if wait_instances[instance['id']] > max_retry:
-                        ip_change_count[instance['id']] += 1
-                        # if change IP does not help
-                        # then give up this intacne
-                        if ip_change_count[instance['id']] == 2:
+                        if not self.if_running(instance['id']) or \
+                            ip_change[instance['id']]:
+                            
                             # get instance index
                             instance_index = \
                                 self.cloud_instances.get_index(instance)
@@ -462,47 +462,37 @@ class Cluster(object):
                                      % instance['id'])
                             # delete this instance from cloud instance list
                             self.cloud_instances.del_instance(instance)
-                            # if no control node or only control node left
-                            if self.cloud_instances.get_cluster_size() == 1:
-                                self.msg('Create cluster failed, '
-                                         'please try again')
-                                for element in \
-                                    self.cloud_instances.get_list().values():
-                                    if type(element) is dict:
-                                        self.terminate_instance(element['id'])
-                                sys.exit()
-                            else:
-                                self.terminate_instance(instance['id'])
-                                # try to create a new one
-                                self.euca_run_instance(self.user,
-                                                       1,
-                                                       instance['image'],
-                                                       instance['type'],
-                                                       instance_index)
-                                self.debug('Getting free public IPs')
-                                # get free IP list
-                                ip_lists = self.euca_describe_addresses()
-                                time.sleep(2)
-
-                                new_instance = \
-                                    self.cloud_instances.get_by_id(
-                                                        instance_index)
-                                self.msg('\nAssociating IP with %s'
-                                         % new_instance['id'])
-                                new_ip = ip_lists[random.randint(0,
-                                                        len(ip_lists) - 1)]
-                                while not \
-                                    self.euca_associate_address(new_instance,
-                                                                new_ip):
-                                    self.msg('Error in associating IP %s '
-                                             'with instance %s, '
-                                             'trying again'
-                                             % (new_ip, new_instance['id']))
-                                    time.sleep(1)
-                                wait_instances[new_instance['id']] = 0
-                                ip_change_count[new_instance['id']] = 0
-                                ready_instances.append(new_instance)
-
+                                
+                            self.terminate_instance(instance['id'])
+                            # try to create a new one
+                            self.euca_run_instance(self.user,
+                                                    1,
+                                                    instance['image'],
+                                                    instance['type'],
+                                                    instance_index)
+                            self.debug('Getting free public IPs')
+                            # get free IP list
+                            ip_lists = self.euca_describe_addresses()
+                            time.sleep(2)
+    
+                            new_instance = \
+                                self.cloud_instances.get_by_id(
+                                                     instance_index)
+                            self.msg('\nAssociating IP with %s'
+                                        % new_instance['id'])
+                            new_ip = ip_lists[random.randint(0,
+                                                    len(ip_lists) - 1)]
+                            while not \
+                                self.euca_associate_address(new_instance,
+                                                            new_ip):
+                                self.msg('Error in associating IP %s '
+                                         'with instance %s, '
+                                         'trying again'
+                                         % (new_ip, new_instance['id']))
+                                time.sleep(1)
+                            wait_instances[new_instance['id']] = 0
+                            ip_change[new_instance['id']] = False
+                            ready_instances.append(new_instance)
                         else:
                             self.msg('\nTrying different IP address on %s'
                                  % instance['id'])
@@ -518,7 +508,8 @@ class Cluster(object):
                                                             len(ip_lists)
                                                             - 1)])
                             self.debug('New IP is %s' % instance['ip'])
-                            wait_instances[instance['id']] = 0
+                            wait_instances[instance['id']] = 0          
+                            ip_change[instance['id']] = True              
 
             # check if all vms are ready
             if len(ready_instances) == 0:
@@ -743,6 +734,7 @@ class Cluster(object):
         No returns
         '''
 
+        self.msg('Disaasociating %s' % current_ip)
         self.debug('euca-disassociate-address %s' % current_ip)
         os.system('euca-disassociate-address %s' % current_ip)
 
@@ -769,6 +761,16 @@ class Cluster(object):
             if free_ip.find('i-') < 0 and len(free_ip) > 0:
                 ip_list.append(free_ip.split('\t')[1])
         return ip_list
+
+    def if_running(self, instance_id):
+
+        result = self.get_command_result('euca-describe-instances').split('\n')
+        for i in result:
+            if i.find(instance_id) >= 0:
+                if i.find('running') >= 0:
+                    return True
+                else:
+                    return False
 
     def create_cluster(self, args):
         '''
@@ -837,7 +839,7 @@ class Cluster(object):
         # may lead to error, use sleep
         time.sleep(3)
 
-        self.msg('\nAssociating IPs')
+        self.msg('\nAssociating public IP addresses')
         for i in range(cluster_size):
             instance = self.cloud_instances.get_by_id(i)
             time.sleep(1)

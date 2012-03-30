@@ -283,7 +283,7 @@ class CloudInstances:
         instance['ip'] = instance_ip
         # instance key '0, 1, 2...'
         # can use index to get instance
-        if not index:
+        if index == None:
             self.cloud_instances[self.get_cluster_size()] = instance
         else:
             self.cloud_instances[index] = instance
@@ -301,10 +301,12 @@ class CloudInstances:
 
         No returns
         '''
+        print 'deleting ', instance['id']
         for key, element in self.cloud_instances.items():
             # if element is an instance
             if type(element) is dict:
                 if element['id'] == instance['id']:
+                    print 'delting index', key
                     del self.cloud_instances[key]
 
     def set_ip_by_id(self, instance_id, instance_ip):
