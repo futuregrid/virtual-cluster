@@ -427,7 +427,8 @@ class Cluster(object):
             else:
                 self.debug('ssh in %s is closed' % instance['ip'])
                 self.msg('Checking %s availability...' % instance['ip'])
-                self.msg('Trying %d (max try %d)' % (wait_count, max_retry))
+                self.msg('Instance trying %d (max try %d)'
+                         % (instance['id'], wait_count, max_retry))
                 wait_count += 1
                 if wait_count > max_retry:
                     if not self.if_running(instance['id']) or ip_change:
