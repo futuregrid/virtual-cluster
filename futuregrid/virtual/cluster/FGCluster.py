@@ -404,7 +404,7 @@ class Cluster(object):
         '''
 
         # max retry
-        max_retry = 15
+        max_retry = 30
 
         # ready list for instances who are ready to install
         ready_instances = []

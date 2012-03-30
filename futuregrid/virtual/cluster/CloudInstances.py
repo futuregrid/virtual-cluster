@@ -301,12 +301,11 @@ class CloudInstances:
 
         No returns
         '''
-        print 'deleting ', instance['id']
+
         for key, element in self.cloud_instances.items():
             # if element is an instance
             if type(element) is dict:
                 if element['id'] == instance['id']:
-                    print 'delting index', key
                     del self.cloud_instances[key]
 
     def set_ip_by_id(self, instance_id, instance_ip):
