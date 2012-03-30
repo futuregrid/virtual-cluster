@@ -423,7 +423,7 @@ class Cluster(object):
             if self.check_avaliable(instance):
                 if install:
                     self.deploy_services(instance)
-                break;
+                break
             else:
                 self.debug('ssh in %s is closed' % instance['ip'])
                 self.msg('Checking %s availability...' % instance['ip'])
@@ -825,9 +825,11 @@ class Cluster(object):
 
         self.debug('Checking alive instance for deploying')
         # detect if VMs are ready for deploy
+
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 threading.Thread(target=self.installation, args=[instance, True]).start()
+
         while threading.activeCount() > 1:
             time.sleep(1)
 
