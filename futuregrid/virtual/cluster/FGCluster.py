@@ -868,7 +868,7 @@ class Cluster(object):
         self.debug('Saving cloud instance into backup file')
         # save cloud instance
         self.cloud_instances.save_instances()
-        self.debug('Done creationg of cluster')
+        self.debug('Done creation of cluster')
 
     def clean_repo(self):
         '''
@@ -1695,10 +1695,14 @@ class Cluster(object):
                 else:
                     for index in range(self.cloud_instances.get_cluster_size(
                                                         cloud)):
-                        self.msg('Instance %s: IP -- %s, Image id -- %s, '
-                                 'Instance type -- %s'
-                                 % (cloud[index]['id'], cloud[index]['ip'],
-                                 cloud[index]['image'], cloud[index]['type']))
+                        if index == 0:
+                            node_type = 'control node'
+                        else:
+                            node_type = 'compute node'
+                        self.msg('%s:\t%s\t%s\t%s\t%s'
+                                 % (cloud[index]['id'], node_type,
+                                    cloud[index]['ip'], cloud[index]['image'],
+                                    cloud[index]['type']))
         else:
             if not self.cloud_instances.if_exist(args.name):
                 self.msg('Error in finding virtual cluster %s, not created.'
@@ -1720,12 +1724,16 @@ class Cluster(object):
                             self.cloud_instances.get_list()['type'],
                             self.cloud_instances.get_list()['size']))
             else:
-                for instance in self.cloud_instances.get_list().values():
-                    if type(instance) is dict:
-                        self.msg('Instance %s: IP -- %s, Image id -- %s, '
-                                 'Instance type -- %s'
-                                 % (instance['id'], instance['ip'],
-                                    instance['image'], instance['type']))
+                for index in range(self.cloud_instances.get_cluster_size()):
+                    cloud = self.cloud_instances.get_by_id(index)
+                    if index == 0:
+                        node_type = 'control node'
+                    else:
+                        node_type = 'compute node'
+                    self.msg('%s:\t%s\t%s\t%s\t%s'
+                             % (cloud['id'], node_type,
+                                cloud['ip'], cloud['image'],
+                                cloud['type']))
 
 # ---------------------------------------------------------------------
 # METHODS TO SHOW VIRTUAL CLUSTER LIST
