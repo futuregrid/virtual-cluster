@@ -465,6 +465,7 @@ class Cluster(object):
                                 
                             self.terminate_instance(instance['id'])
                             # try to create a new one
+                            self.msg('Creating new instance')
                             self.euca_run_instance(self.user,
                                                     1,
                                                     instance['image'],
