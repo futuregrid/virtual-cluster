@@ -116,7 +116,7 @@ class Cluster(object):
         '''
         super(Cluster, self).__init__()
         self.cloud_instances = CloudInstances()
-        self.mutex = threading.Lock() 
+        self.mutex = threading.Lock()
 
 # ---------------------------------------------------------------------
 # METHODS TO PRINT HELP MESSAGES
@@ -317,7 +317,7 @@ class Cluster(object):
                 sys.exit(1)
             else:
                 self.debug('Reading environment')
-                nova_key_dir = os.path.dirname(self.enrc)            
+                nova_key_dir = os.path.dirname(self.enrc)
                 if nova_key_dir.strip() == "":
                     nova_key_dir = "."
                 os.environ["NOVA_KEY_DIR"] = nova_key_dir
@@ -325,12 +325,13 @@ class Cluster(object):
                 with open(os.path.expanduser(self.enrc)) as enrc_content:
                     for line in enrc_content:
                         if re.search("^export ", line):
-                            line = line.split()[1]                    
+                            line = line.split()[1]
                             parts = line.split("=")
                             value = ""
                             for i in range(1, len(parts)):
                                 parts[i] = parts[i].strip()
-                                parts[i] = os.path.expanduser(os.path.expandvars(parts[i]))                    
+                                tempvar = os.path.expandvars(parts[i])
+                                parts[i] = os.path.expanduser(tempvar)
                                 value += parts[i] + "="
                                 value = value.rstrip("=")
                                 value = value.strip('"')
@@ -413,7 +414,6 @@ class Cluster(object):
 
         ip_change = False
 
-
         # check if ssh port of all VMs are alive for listening
         while True:
             if self.check_avaliable(instance):
@@ -425,8 +425,10 @@ class Cluster(object):
                 break
             else:
                 self.debug('ssh in %s is closed' % instance['ip'])
-                self.msg('Checking %s (%s) availability, trying %d (max try %d)'
-                         % (instance['id'], instance['ip'], wait_count, max_retry))
+                self.msg('Checking %s (%s) availability, '
+                         'trying %d (max try %d)'
+                         % (instance['id'], instance['ip'],
+                            wait_count, max_retry))
                 wait_count += 1
                 if wait_count > max_retry:
                     if not self.if_running(instance['id']) or ip_change:
@@ -486,7 +488,7 @@ class Cluster(object):
                                                             - 1)])
                         self.mutex.release()
                         self.debug('New IP is %s' % instance['ip'])
-                        wait_count = 0          
+                        wait_count = 0
                         ip_change = True
                 time.sleep(1)
 # ---------------------------------------------------------------------
@@ -647,8 +649,9 @@ class Cluster(object):
         # add instance to instance list
         for num in range(cluster_size):
             try:
-                self.debug('Adding instance %s' % instance_id_list[num])
-                self.cloud_instances.set_instance(instance_id=instance_id_list[num],
+                ip_addr = instance_id_list[num]
+                self.debug('Adding instance %s' % ip_addr)
+                self.cloud_instances.set_instance(instance_id=ip_addr,
                                                   image_id=image,
                                                   instance_type=instance_type,
                                                   index=index)
@@ -826,7 +829,8 @@ class Cluster(object):
 
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
-                threading.Thread(target=self.installation, args=[instance, 60, True]).start()
+                threading.Thread(target=self.installation,
+                                 args=[instance, 60, True]).start()
 
         while threading.activeCount() > 1:
             time.sleep(1)
@@ -1526,7 +1530,8 @@ class Cluster(object):
         self.debug('Checking alive instance for deploying')
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
-                threading.Thread(target=self.installation, args=[instance, 60, False]).start()
+                threading.Thread(target=self.installation,
+                                 args=[instance, 60, False]).start()
         while threading.activeCount() > 1:
             time.sleep(1)
         # cnfig SLURM but not generating munge-keys
