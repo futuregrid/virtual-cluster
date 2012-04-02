@@ -97,9 +97,6 @@ class Cluster(object):
     cloud_instances = None
     backup_file = None
     user = None
-    ec2_cert = None
-    ec2_private_key = None
-    eucalyptus_cert = None
     enrc = None
     slurm = None
     mutex = None
@@ -142,9 +139,9 @@ class Cluster(object):
         print message
 
     def print_section(self, message):
-        self.msg('\n====================')
+        self.msg('\n=========================')
         self.msg(message)
-        self.msg('====================')
+        self.msg('=========================')
 
     def debug(self, message):
         '''
@@ -337,7 +334,13 @@ class Cluster(object):
                                 value += parts[i] + "="
                                 value = value.rstrip("=")
                                 value = value.strip('"')
-                                value = value.strip("'") 
+                                value = value.strip("'")
+                                if parts[0] == 'EC2_CERT' or \
+                                    parts[0] == 'EC2_PRIVATE_KEY' or \
+                                    parts[0] == 'EUCALYPTUS_CERT':
+                                    if not os.path.exists(value):
+                                        self.msg('%s does not exist' % value)
+                                        sys.exit()
                                 os.environ[parts[0]] = value
 
             if not os.path.exists(os.path.expanduser(self.slurm)):
@@ -383,7 +386,7 @@ class Cluster(object):
         else:
             return False
 
-    def installation(self, instance, install=True):
+    def installation(self, instance, max_retry, install=True):
         '''
         Checks if instances are ready to deploy and installs the
         softwares on the instance which is ready
@@ -406,9 +409,6 @@ class Cluster(object):
         No returns
         '''
 
-        # max retry
-        max_retry = 60
-
         wait_count = 0
 
         ip_change = False
@@ -417,14 +417,16 @@ class Cluster(object):
         # check if ssh port of all VMs are alive for listening
         while True:
             if self.check_avaliable(instance):
+                self.mutex.acquire()
+                self.del_known_host(instance['ip'])
+                self.mutex.release()
                 if install:
                     self.deploy_services(instance)
                 break
             else:
                 self.debug('ssh in %s is closed' % instance['ip'])
-                self.msg('Checking %s availability...' % instance['ip'])
-                self.msg('Instance %s, trying %d (max try %d)'
-                         % (instance['id'], wait_count, max_retry))
+                self.msg('Checking %s (%s) availability, trying %d (max try %d)'
+                         % (instance['id'], instance['ip'], wait_count, max_retry))
                 wait_count += 1
                 if wait_count > max_retry:
                     if not self.if_running(instance['id']) or ip_change:
@@ -684,7 +686,6 @@ class Cluster(object):
         # delete host from known_host file in case man-in-middle-attack
         self.debug('Deleting %s from known host if it already existed'
                    % free_ip)
-        self.del_known_host(free_ip)
         return True
 
     def disassociate_address(self, current_ip):
@@ -825,7 +826,7 @@ class Cluster(object):
 
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
-                threading.Thread(target=self.installation, args=[instance, True]).start()
+                threading.Thread(target=self.installation, args=[instance, 60, True]).start()
 
         while threading.activeCount() > 1:
             time.sleep(1)
@@ -1358,12 +1359,13 @@ class Cluster(object):
         compute = self.cloud_instances.get_by_id(1)
         self.debug('Control node %s, compute node %s'
                    % (control, compute))
+
         # copy necessary files to instances, and source profile
         for instance in [control, compute]:
-            self.copyto(instance, self.ec2_cert)
-            self.copyto(instance, self.ec2_private_key)
-            self.copyto(instance, self.eucalyptus_cert)
-            self.copyto(instance, self.novarc)
+            self.copyto(instance, os.environ['EC2_CERT'])
+            self.copyto(instance, os.environ['EC2_PRIVATE_KEY'])
+            self.copyto(instance, os.environ['EUCALYPTUS_CERT'])
+            self.copyto(instance, self.enrc)
             self.execute(instance, 'cat novarc >> ~/.profile')
             self.execute(instance, 'source ~/.profile')
 
@@ -1524,7 +1526,7 @@ class Cluster(object):
         self.debug('Checking alive instance for deploying')
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
-                threading.Thread(target=self.installation, args=[instance, False]).start()
+                threading.Thread(target=self.installation, args=[instance, 60, False]).start()
         while threading.activeCount() > 1:
             time.sleep(1)
         # cnfig SLURM but not generating munge-keys
@@ -1558,7 +1560,6 @@ class Cluster(object):
         '''
 
         known_hosts = '~/.ssh/known_hosts'
-
 #        self.msg('Deleting host info from known_hosts')
 
         with open(os.path.expanduser(known_hosts)) as srcf:
@@ -1767,7 +1768,7 @@ def commandline_parser():
     parser = \
         argparse.ArgumentParser(description='Virtual'
                                 ' cluster management operations',
-                                version='0.1.8')
+                                version='0.2.0')
     parser.add_argument('--file', action='store',
                         help='Specify futuregrid configure file')
     parser.add_argument('--debug', action='store_true',
