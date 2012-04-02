@@ -38,7 +38,7 @@ where you like to install our tool.
     
 In order to make the installation process work smoothly, please make 
 sure that the computer you like to install our tool has already
-installed euca2ools (version 1.2) and Python (version 2.7). If you do
+installed euca2ools (version 1.2) and Python (version 2.7.2). If you do
 not have those tools or correct version installed. you may install 
 euca2ools (version 1.2) from 
 
