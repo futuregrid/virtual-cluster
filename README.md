@@ -5,7 +5,7 @@ System requirements
 ------------------
 
 * euca2ools: verison 1.2
-* python: version 2.7.2
+* python: version 2.7
 * virtualenv (no admin rights)
 
 Introduction
@@ -38,13 +38,13 @@ where you like to install our tool.
     
 In order to make the installation process work smoothly, please make 
 sure that the computer you like to install our tool has already
-installed euca2ools (version 1.2) and Python (version 2.7.2). If you do
+installed euca2ools (version 1.2) and Python (version 2.7). If you do
 not have those tools or correct version installed. you may install 
 euca2ools (version 1.2) from 
 
 * http://eucalyptussoftware.com/downloads/releases/
 
-and install python (version 2.7.2) from 
+and install python (version 2.7) from 
 
 * http://python.org
 
@@ -62,7 +62,7 @@ india futuregrid machines, just simply do:
     
 To activate python 2.7.2, simply do:
 
-    $ module load python/2.7.2
+    $ module load python/2.7
 
 Those commands will help you load tools with correct version you need
 to finish installation. So now you may proceed with following
