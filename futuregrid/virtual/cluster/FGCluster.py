@@ -256,23 +256,14 @@ class Cluster(object):
 
             configuration file format:
             [virtual-cluster]
-            username = PUT-YOUR-USER-NAME-HERE
             # Backup file for saving and loading virtual cluster(s)
             backup = ~/.futuregrid/virtual-cluster
             # Slurm configuration input file
             slurm = ~/.futuregrid/slurm.conf.in
             # userkey pem file
-            userkey = ~/%(username).pem
-            # userkey name
-            user = %(username)
-            # euca2ools certificate file
-            ec2_cert = ~/cert.pem
-            # euca2ools private file
-            ec2_private_key = ~/pk.pem
-            # nova certificate file
-            eucalyptus_cert = ~/cacert.pem
-            # nova environment file
-            novarc = ~/novarc
+            userkey = ~/PUT-YOUR-USER-NAME.pem
+            # environment file
+            enrc = ~/novarc
 
             Checks if all files specified in configuration
             file are present.If create-key is set to true,
@@ -385,7 +376,7 @@ class Cluster(object):
 
         cmd = "ssh -i %s ubuntu@%s uname" % (self.userkey, instance['ip'])
 
-        check_process = Popen(cmd, shell=True, stdout=PIPE)
+        check_process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         status = os.waitpid(check_process.pid, 0)[1]
         if status == 0:
             return True
@@ -793,7 +784,7 @@ class Cluster(object):
         cluster_size = int(args.number) + 1
         self.debug('Cluster size is (control node included): %d'
                    % cluster_size)
-        self.msg('\n...Creating virtual cluster......')
+        self.print_section('\nCreating virtual cluster')
         self.msg('cluster name    -- %s' % args.name)
         self.msg('numbe of nodes  -- %s' % cluster_size)
         self.msg('instance type   -- %s' % args.type)
@@ -1356,7 +1347,7 @@ class Cluster(object):
                      % args.name)
             sys.exit()
 
-        self.msg('\n...Saving virtual cluster......')
+        self.print_section('\nSaving virtual cluster')
         self.msg('Virtual cluster name -- %s' % args.name)
         self.msg('control node bucket  -- %s' % args.controlb)
         self.msg('control node name    -- %s' % args.controln)
@@ -1496,7 +1487,7 @@ class Cluster(object):
             sys.exit()
 
         cluster_size = int(cluster_size) + control_node_num
-        self.msg('\n...Restoring virtual cluster......')
+        self.print_section('\nRestoring virtual cluster')
         self.msg('cluster name      -- %s' % args.name)
         self.msg('number of nodes   -- %s' % cluster_size)
         self.msg('instance type     -- %s' % instance_type)
