@@ -62,7 +62,7 @@ india futuregrid machines, just simply do:
     
 To activate python 2.7.2, simply do:
 
-    $ module load python/2.7
+    $ module load python
 
 Those commands will help you load tools with correct version you need
 to finish installation. So now you may proceed with following
