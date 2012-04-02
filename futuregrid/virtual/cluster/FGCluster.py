@@ -70,6 +70,7 @@ import threading
 import ConfigParser
 import random
 import Queue
+import re
 
 #from CloudInstances import CloudInstances
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
