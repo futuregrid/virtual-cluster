@@ -5,7 +5,7 @@ System requirements
 ------------------
 
 * euca2ools: verison 1.2
-* python: version 2.7
+* python: version 2.7.2
 * virtualenv (no admin rights)
 
 Introduction
@@ -44,7 +44,7 @@ euca2ools (version 1.2) from
 
 * http://eucalyptussoftware.com/downloads/releases/
 
-and install python (version 2.7) from 
+and install python (version 2.7.2) from 
 
 * http://python.org
 
@@ -60,9 +60,9 @@ india futuregrid machines, just simply do:
     
     $ module load euca2ools
     
-To activate python 2.7, simply do:
+To activate python 2.7.2, simply do:
 
-    $ module load python
+    $ module load python/2.7.2
 
 Those commands will help you load tools with correct version you need
 to finish installation. So now you may proceed with following
@@ -165,8 +165,16 @@ private key name):
 
     $ euca-add-keypair youruserkey > youruserkey.pem
     $ chmod 0600 youruserkey.pem
+
+You can also use our tool to create a userkey for you, but you need 
+to specify the userkey name in confifuration file which is listed 
+below. The key can be created if you use --create-key argument before 
+any subcommands when you first run our tool. For more help, 
+
+    $ fg-cluster --help
     
-NOTE: For more information, you can refer to tutorial at: 
+NOTE: For more information about nova credentials, you can refer 
+to tutorial at: 
 
 * https://portal.futuregrid.org/tutorials/openstack
 
