@@ -142,7 +142,7 @@ class Cluster(object):
         print message
 
     def print_section(self, message):
-        self.msg('====================')
+        self.msg('\n====================')
         self.msg(message)
         self.msg('====================')
 
@@ -784,7 +784,7 @@ class Cluster(object):
         cluster_size = int(args.number) + 1
         self.debug('Cluster size is (control node included): %d'
                    % cluster_size)
-        self.print_section('\nCreating virtual cluster')
+        self.print_section('Creating virtual cluster')
         self.msg('cluster name    -- %s' % args.name)
         self.msg('numbe of nodes  -- %s' % cluster_size)
         self.msg('instance type   -- %s' % args.type)
@@ -1347,7 +1347,7 @@ class Cluster(object):
                      % args.name)
             sys.exit()
 
-        self.print_section('\nSaving virtual cluster')
+        self.print_section('Saving virtual cluster')
         self.msg('Virtual cluster name -- %s' % args.name)
         self.msg('control node bucket  -- %s' % args.controlb)
         self.msg('control node name    -- %s' % args.controln)
@@ -1487,7 +1487,7 @@ class Cluster(object):
             sys.exit()
 
         cluster_size = int(cluster_size) + control_node_num
-        self.print_section('\nRestoring virtual cluster')
+        self.print_section('Restoring virtual cluster')
         self.msg('cluster name      -- %s' % args.name)
         self.msg('number of nodes   -- %s' % cluster_size)
         self.msg('instance type     -- %s' % instance_type)
