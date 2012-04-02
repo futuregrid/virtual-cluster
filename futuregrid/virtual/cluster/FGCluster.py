@@ -99,7 +99,7 @@ class Cluster(object):
     ec2_cert = None
     ec2_private_key = None
     eucalyptus_cert = None
-    novarc = None
+    enrc = None
     slurm = None
     mutex = None
 
@@ -301,18 +301,9 @@ class Cluster(object):
             self.debug('Backup file %s' % self.backup_file)
             self.userkey = config.get('virtual-cluster', 'userkey')
             self.debug('Userkey %s' % self.userkey)
-            self.user = config.get('virtual-cluster', 'user')
-            self.debug('User %s' % self.user)
-            self.ec2_cert = config.get('virtual-cluster', 'ec2_cert')
-            self.debug('EC2_CERT %s' % self.ec2_cert)
-            self.ec2_private_key = config.get('virtual-cluster',
-                    'ec2_private_key')
-            self.debug('EC2_PRIVATE_KEY %s' % self.ec2_private_key)
-            self.eucalyptus_cert = config.get('virtual-cluster',
-                    'eucalyptus_cert')
-            self.debug('EUCALYPTUS_CERT %s' % self.eucalyptus_cert)
-            self.novarc = config.get('virtual-cluster', 'novarc')
-            self.debug('novarc %s' % self.novarc)
+            self.user = os.path.splitext(self.userkey.split('/')[-1])[0]
+            self.enrc = config.get('virtual-cluster', 'enrc')
+            self.debug('enrc %s' % self.enrc)
             self.slurm = config.get('virtual-cluster', 'slurm')
             self.debug('SLURM configuration input file %s' % self.slurm)
 
@@ -332,18 +323,31 @@ class Cluster(object):
                 else:
                     self.msg('ERROR: You must have userkey file')
                     sys.exit(1)
-            if not os.path.exists(os.path.expanduser(self.ec2_cert)):
-                self.msg('ERROR: You must have cert.pem file')
-                sys.exit(1)
-            if not os.path.exists(os.path.expanduser(self.ec2_private_key)):
-                self.msg('ERROR: You must have pk.pem file')
-                sys.exit(1)
-            if not os.path.exists(os.path.expanduser(self.eucalyptus_cert)):
-                self.msg('ERROR: You must have cacert.pem file')
-                sys.exit(1)
-            if not os.path.exists(os.path.expanduser(self.novarc)):
+            if not os.path.exists(os.path.expanduser(self.enrc)):
                 self.msg('ERROR: You must have novarc file')
                 sys.exit(1)
+            else:
+                self.debug('Reading environment')
+                nova_key_dir = os.path.dirname(self.enrc)            
+                if nova_key_dir.strip() == "":
+                    nova_key_dir = "."
+                os.environ["NOVA_KEY_DIR"] = nova_key_dir
+
+                with open(os.path.expanduser(self.enrc)) as enrc_content:
+                    for line in enrc_content:
+                        if re.search("^export ", line):
+                            line = line.split()[1]                    
+                            parts = line.split("=")
+                            value = ""
+                            for i in range(1, len(parts)):
+                                parts[i] = parts[i].strip()
+                                parts[i] = os.path.expanduser(os.path.expandvars(parts[i]))                    
+                                value += parts[i] + "="
+                                value = value.rstrip("=")
+                                value = value.strip('"')
+                                value = value.strip("'") 
+                                os.environ[parts[0]] = value
+
             if not os.path.exists(os.path.expanduser(self.slurm)):
                 self.msg('ERROR: You must have slurm.conf.in file')
                 sys.exit(1)
