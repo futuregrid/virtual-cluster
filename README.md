@@ -197,7 +197,7 @@ It has the following format:
     # Slurm configuration input file
     slurm = ~/.futuregrid/slurm.conf.in
     # userkey pem file
-    userkey = ~/%(username).pem
+    userkey = ~/PUT-YOUR-USER-NAME.pem
     # environment file
     enrc = ~/novarc
 
