@@ -60,7 +60,7 @@ india futuregrid machines, just simply do:
     
     $ module load euca2ools
     
-To activate python 2.7.2, simply do:
+To activate python 2.7, simply do:
 
     $ module load python
 
