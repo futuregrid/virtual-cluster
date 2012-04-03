@@ -79,6 +79,7 @@ from ConfigParser import NoOptionError
 from ConfigParser import NoSectionError
 import re
 
+
 class Cluster(object):
     """
     Class Cluster
@@ -103,7 +104,7 @@ class Cluster(object):
     enrc = None
     slurm = None
     mutex = None
-    
+
     ec2_conn = None
 
     # debug switch
@@ -265,7 +266,7 @@ class Cluster(object):
                 sys.exit(1)
             else:
                 self.debug('Reading environment')
-                nova_key_dir = os.path.dirname(self.enrc)            
+                nova_key_dir = os.path.dirname(self.enrc)
                 if nova_key_dir.strip() == "":
                     nova_key_dir = "."
                 os.environ["NOVA_KEY_DIR"] = nova_key_dir
@@ -273,16 +274,17 @@ class Cluster(object):
                 with open(os.path.expanduser(self.enrc)) as enrc_content:
                     for line in enrc_content:
                         if re.search("^export ", line):
-                            line = line.split()[1]                    
+                            line = line.split()[1]
                             parts = line.split("=")
                             value = ""
                             for i in range(1, len(parts)):
                                 parts[i] = parts[i].strip()
-                                parts[i] = os.path.expanduser(os.path.expandvars(parts[i]))                    
+                                tempvalue = os.path.expandvars(parts[i])
+                                parts[i] = os.path.expanduser(tempvalue)
                                 value += parts[i] + "="
                                 value = value.rstrip("=")
                                 value = value.strip('"')
-                                value = value.strip("'") 
+                                value = value.strip("'")
                                 os.environ[parts[0]] = value
 
             if not os.path.exists(os.path.expanduser(self.slurm)):
@@ -330,6 +332,7 @@ class Cluster(object):
 
         self.debug(command)
         os.system(command)
+
     def get_command_result(self, command):
         '''
         Gets command output
@@ -474,34 +477,49 @@ class Cluster(object):
                             wait_count, max_retry))
                 wait_count += 1
                 if wait_count > max_retry:
-                    reserved_instance = self.get_instance_from_reservation(instance['id'])
+                    reserved_instance = \
+                        self.get_instance_from_reservation(instance['id'])
                     if not reserved_instance.state == 'running' or ip_change:
-                        instance_index = self.cloud_instances.get_index(instance)
-                        self.msg('ERROR: Instance %s creation failed' % instance['id'])
+                        instance_index = \
+                            self.cloud_instances.get_index(instance)
+                        self.msg('ERROR: Instance %s creation failed'
+                                 % instance['id'])
                         # delete this instance from cloud instance list
                         self.cloud_instances.del_instance(instance)
                         self.terminate_instance(instance)
                         self.msg('Creating new instance')
                         self.mutex.acquire()
-                        reservation = self.run_instances(instance['image'], 1, instance['type'])
+                        reservation = self.run_instances(instance['image'],
+                                                         1,
+                                                         instance['type'])
                         nr_instance = reservation.instances[0]
-                        self.cloud_instances.set_instance(instance_id=nr_instance.id,
-                                                          image_id=nr_instance.image_id,
-                                                          instance_type=nr_instance.instance_type,
-                                                          index=instance_index)
+                        arg1 = nr_instance.id
+                        arg2 = nr_instance.image_id
+                        arg3 = nr_instance.instance_type
+                        arg4 = instance_index
+                        self.cloud_instances.set_instance(instance_id=arg1,
+                                                          image_id=arg2,
+                                                          instance_type=arg3,
+                                                          index=arg4)
                         ip_list = self.get_free_ip()
-                        free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
-                        self.associate_public_ip(nr_instance.id, free_public_ip)
+                        free_public_ip = ip_list[random.randint(0,
+                                                                len(ip_list)
+                                                                - 1)]
+                        self.associate_public_ip(nr_instance.id,
+                                                 free_public_ip)
                         nr_instance.update()
                         self.mutex.release()
-                        instance_new = self.cloud_instances.get_by_id(instance_index)
+                        instance_new = \
+                            self.cloud_instances.get_by_id(instance_index)
                         instance = instance_new
-                        self.msg('New instance id -- %s, ip -- %s' % (instance_new['id'], instance_new['ip']))
+                        self.msg('New instance id -- %s, ip -- %s'
+                                 % (instance_new['id'], instance_new['ip']))
                         wait_count = 0
                         ip_change = False
 
                     else:
-                        self.msg('\nTrying different IP address on %s' % instance['id'])
+                        self.msg('\nTrying different IP address on %s'
+                                 % instance['id'])
                         self.debug('Associating new IP on %s' % instance['id'])
                         self.mutex.acquire()
                         self.change_public_ip(instance['id'], instance['ip'])
@@ -583,7 +601,6 @@ class Cluster(object):
                                  % (instance['id'], instance['ip'],
                                     instance['image'], instance['type']))
 
-
     def ec2_connect(self, cloud):
 
         if cloud not in ('nova', 'eucalyptus'):
@@ -594,16 +611,21 @@ class Cluster(object):
             path = "/services/Cloud"
         elif cloud.strip() == 'eucalyptus':
             path = "/services/Eucalyptus"
-            
+
         endpoint = os.getenv('EC2_URL').lstrip("http://").split(":")[0]
-        try:  
-            region = boto.ec2.regioninfo.RegionInfo(name=cloud, endpoint=endpoint)
+        try:
+            region = boto.ec2.regioninfo.RegionInfo(name=cloud,
+                                                    endpoint=endpoint)
         except:
             self.msg('ERROR: error in getting region information')
             sys.exit()
-        
+
         try:
-            self.ec2_conn = EC2Connection(os.getenv("EC2_ACCESS_KEY"), os.getenv("EC2_SECRET_KEY"), is_secure=False, region=region, port=8773, path=path)
+            self.ec2_conn = EC2Connection(os.getenv("EC2_ACCESS_KEY"),
+                                          os.getenv("EC2_SECRET_KEY"),
+                                          is_secure=False,
+                                          region=region,
+                                          port=8773, path=path)
         except:
             self.msg('ERROR: error in connecting to EC2')
             sys.exit()
@@ -891,7 +913,8 @@ class Cluster(object):
         return ip_list
 
     def get_instance_from_reservation(self, instance_id):
-        return self.ec2_conn.get_all_instances(instance_ids=[instance_id])[0].instances[0]
+        r_in = self.ec2_conn.get_all_instances(instance_ids=[instance_id])
+        return r_in[0].instances[0]
 
     def associate_public_ip(self, instance_id, address_public_ip):
         while True:
@@ -902,14 +925,14 @@ class Cluster(object):
             except:
 #                self.msg('ERROR: error in associating % with %, trying again'
 #                         % (instance_id, address_public_ip))
-                self.msg('ERROR: Associating ip %s with instance %s failed, trying again'
-                         % (address_public_ip, instance_id))
+                self.msg('ERROR: Associating ip %s with instance %s failed, '
+                         'trying again' % (address_public_ip, instance_id))
         self.msg('ADDRESS: %s %s' % (address_public_ip, instance_id))
         self.cloud_instances.set_ip_by_id(instance_id, address_public_ip)
         self.del_known_host(address_public_ip)
 
     def change_public_ip(self, instance_id, address_public_ip):
-        
+
         ip_list = self.get_free_ip()
         free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
         self.ec2_conn.disassociate_address(address_public_ip)
@@ -928,7 +951,7 @@ class Cluster(object):
             self.ec2_conn.close()
             sys.exit()
 
-    def create_cluster(self,args):
+    def create_cluster(self, args):
 
         self.debug('Checking if %s is existed' % args.name)
         if self.cloud_instances.if_exist(args.name):
@@ -951,7 +974,8 @@ class Cluster(object):
         try:
             image = self.ec2_conn.get_image(args.image)
             if not image.state == "available":
-                self.msg('Image %s is not availabe right now, please try again later' % args.image)
+                self.msg('Image %s is not availabe right now, '
+                         'please try again later' % args.image)
                 self.ec2_conn.close()
                 sys.exit()
         except:
@@ -976,13 +1000,14 @@ class Cluster(object):
         self.msg('Associating public IPs')
         ip_index = 0
         for instance in reservation.instances:
-            self.cloud_instances.set_instance(instance.id, instance.image_id, instance.instance_type)
+            self.cloud_instances.set_instance(instance.id,
+                                              instance.image_id,
+                                              instance.instance_type)
             free_public_ip = self.get_free_ip()[ip_index]
             ip_index += 1
             self.associate_public_ip(instance.id, free_public_ip)
             instance.update()
-        
-        
+
         self.debug('Creating IU ubunto repo source list')
         # choose repo, by defalt, using IU ubuntu repo
         self.define_repo()
@@ -1010,7 +1035,6 @@ class Cluster(object):
             self.del_known_host(instance['ip'])
         except:
             self.msg('ERROR: terminat instance %s failed' % instance['id'])
-        
 
     def shut_down(self, args):
         '''

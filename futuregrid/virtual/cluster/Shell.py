@@ -62,7 +62,7 @@ class Shell(Cmd):
             from futuregrid.virtual.cluster.FGCluster import Cluster
 #            from FGCluster import Cluster
             self.cluster = Cluster()
-        
+
         if not opts.file:
             self.cluster.parse_conf()
         else:
