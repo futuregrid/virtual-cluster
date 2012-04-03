@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 #import argparse
-
 #import os
 import pprint
 import optparse
@@ -9,9 +8,6 @@ from cmd2 import Cmd
 from cmd2 import make_option
 from cmd2 import options
 #from cmd2 import Cmd2TestCase
-
-from futuregrid.virtual.cluster.FGCluster import Cluster
-#from FGCluster import Cluster
 
 import unittest
 import sys
@@ -41,14 +37,36 @@ class Shell(Cmd):
     """
 
     def preloop(self):
-        self.cluster = Cluster()
         print self.logo
 
     def postloop(self):
         print "BYE FORM GREGOR"
 
-    def do_config(self, filename):
-        self.cluster.parse_conf(filename)
+    @options([
+        make_option('-f', '--file', type="string",
+                    help="cluster name"),
+        make_option('-i', '--interface', type="string",
+                    help="interface"),
+        ])
+    def do_config(self, args, opts):
+        if not opts.interface == 'boto' and \
+            not opts.interface == 'euca2ools':
+            print 'Please specify interface (boto or euca2ools)'
+            sys.exit()
+        if opts.interface == 'boto':
+            from futuregrid.virtual.cluster.FGCluster_boto import Cluster
+#            from FGCluster_boto import Cluster
+            self.cluster = Cluster()
+            self.cluster.ec2_connect('nova')
+        elif opts.interface == 'euca2ools':
+            from futuregrid.virtual.cluster.FGCluster import Cluster
+#            from FGCluster import Cluster
+            self.cluster = Cluster()
+        
+        if not opts.file:
+            self.cluster.parse_conf()
+        else:
+            self.cluster.parse_conf()
 
     def do_debug(self, debug=True):
         print "to do debug"
@@ -114,8 +132,6 @@ def main():
                       action='store_true',
                       default=False,
                       help='Run unit test suite')
-    parser.add_option("-f", "--file", dest="filename",
-                  help="write report to FILE", metavar="FILE")
     (callopts, callargs) = parser.parse_args()
     if callopts.unittests:
         sys.argv = [sys.argv[0]]  # the --test argument upsets unittest.main()

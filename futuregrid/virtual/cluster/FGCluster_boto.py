@@ -72,8 +72,8 @@ import random
 import boto.ec2
 
 from boto.ec2.connection import EC2Connection
-from CloudInstances import CloudInstances
-#from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+#from CloudInstances import CloudInstances
+from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 from subprocess import Popen, PIPE
 from ConfigParser import NoOptionError
 from ConfigParser import NoSectionError
@@ -424,7 +424,7 @@ class Cluster(object):
 
         cmd = "ssh -i %s ubuntu@%s uname" % (self.userkey, instance['ip'])
 
-        check_process = Popen(cmd, shell=True, stdout=PIPE) #, stderr=PIPE
+        check_process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         status = os.waitpid(check_process.pid, 0)[1]
         if status == 0:
             return True
