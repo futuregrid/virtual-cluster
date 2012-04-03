@@ -155,11 +155,8 @@ look for a file called 'username'-nova.zip. If you do not have a
 portal and HPC account please create one.  The credential zip file
 (username-nova.zip)contains the user keys and rc file .Unzip this
 file in your hom e directory. The novarc file contains the necessary
-environment variables. Add nova environment variables to your .bashrc:
+environment variables.
 
-    $ cat novarc >> .bashrc
-    $ source .bashrc
-    
 Create your private key by (Recommended: Use your user name as your
 private key name):
 
