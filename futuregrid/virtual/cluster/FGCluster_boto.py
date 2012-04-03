@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-FGCluster.py (python)
+FGCluster_boto.py (python)
 -------------------------
 
 Operations for managing virtual clusters
@@ -85,22 +85,24 @@ class Cluster(object):
     -------------
     Methods to
         run virtual cluster
-        checkpoint virtual cluster
-        restore virtual cluster
         terminate virtual cluster
         show status of virtual cluster(s)
         list virtual clusters
+        ****
+        TODO
+        ****
+        checkpoint virtual cluster
+        restore virtual cluster
+        ****
     """
 
     userkey = None
     cloud_instances = None
     backup_file = None
     user = None
-    ec2_cert = None
-    ec2_private_key = None
-    eucalyptus_cert = None
     enrc = None
     slurm = None
+    mutex = None
     
     ec2_conn = None
 
@@ -119,6 +121,7 @@ class Cluster(object):
         '''
         super(Cluster, self).__init__()
         self.cloud_instances = CloudInstances()
+        self.mutex = threading.Lock()
 
 # ---------------------------------------------------------------------
 # METHODS TO PRINT HELP MESSAGES
@@ -209,23 +212,14 @@ class Cluster(object):
 
             configuration file format:
             [virtual-cluster]
-            username = PUT-YOUR-USER-NAME-HERE
             # Backup file for saving and loading virtual cluster(s)
             backup = ~/.futuregrid/virtual-cluster
             # Slurm configuration input file
             slurm = ~/.futuregrid/slurm.conf.in
             # userkey pem file
-            userkey = ~/%(username).pem
-            # userkey name
-            user = %(username)
-            # euca2ools certificate file
-            ec2_cert = ~/cert.pem
-            # euca2ools private file
-            ec2_private_key = ~/pk.pem
-            # nova certificate file
-            eucalyptus_cert = ~/cacert.pem
-            # nova environment file
-            novarc = ~/novarc
+            userkey = ~/PUT-YOUR-USER-NAME.pem
+            # environment file
+            enrc = ~/novarc
 
             Checks if all files specified in configuration
             file are present.If create-key is set to true,
@@ -255,6 +249,7 @@ class Cluster(object):
             self.debug('Backup file %s' % self.backup_file)
             self.userkey = config.get('virtual-cluster', 'userkey')
             self.debug('Userkey %s' % self.userkey)
+            self.user = os.path.splitext(self.userkey.split('/')[-1])[0]
             self.enrc = config.get('virtual-cluster', 'enrc')
             self.debug('enrc %s' % self.enrc)
             self.slurm = config.get('virtual-cluster', 'slurm')
@@ -263,17 +258,6 @@ class Cluster(object):
             # checking if all file are present
             self.debug('Checking if all file are present')
             if not os.path.exists(os.path.expanduser(self.userkey)):
-#                if self.if_create_key:
-#                    # create key for user
-##                    self.add_keypair(self.user)
-#                    if self.if_keypair_exits(self.user):
-#                        self.msg('\nYou have userkey %s.pem, please correct'
-#                                 ' its location in configuration file'
-#                                 % self.user)
-#                        sys.exit()
-#                    else:
-#                        self.add_keypair(self.user, self.userkey)
-#                else:
                 self.msg('ERROR: You must have userkey file')
                 sys.exit(1)
             if not os.path.exists(os.path.expanduser(self.enrc)):
@@ -329,8 +313,6 @@ class Cluster(object):
             self.msg('\nError in reading configuration file!'
                      ' Correct python version?')
             sys.exit()
-    
-        self.user = os.path.splitext(self.userkey.split('/')[-1])[0]
 
 # ---------------------------------------------------------------------
 # METHOD TO RUN COMMANDS
@@ -442,20 +424,21 @@ class Cluster(object):
 
         cmd = "ssh -i %s ubuntu@%s uname" % (self.userkey, instance['ip'])
 
-        check_process = Popen(cmd, shell=True, stdout=PIPE)
+        check_process = Popen(cmd, shell=True, stdout=PIPE) #, stderr=PIPE
         status = os.waitpid(check_process.pid, 0)[1]
         if status == 0:
             return True
         else:
             return False
 
-    def installation(self, install=True):
+    def installation(self, instance, max_retry, install=True):
         '''
         Checks if instances are ready to deploy and installs the
         softwares on the instance which is ready
 
         Parameters:
             install -- indicates if need to the installation
+            max_retry -- max try times
             default: true
 
         Logic:
@@ -472,86 +455,60 @@ class Cluster(object):
         No returns
         '''
 
-        # max retry
-        max_retry = 20
+        wait_count = 0
 
-        # ready list for instances who are ready to install
-        ready_instances = []
-
-        # waitting time list for instances
-        wait_instances = {}
-
-        # init waitting time for all instanes to 0
-        # add instance to ready_instances
-        for instance in self.cloud_instances.get_list().values():
-            if type(instance) is dict:
-                wait_instances[instance['id']] = 0
-                ready_instances.append(instance)
-
+        ip_change = False
         # check if ssh port of all VMs are alive for listening
         while True:
-            for instance in ready_instances:
-                # try to connect ssh port
-                if self.check_avaliable(instance):
-
-                    # install on instance which is ready
-                    if install:
-                        self.msg('Starting thread to install '
-                                 'on %s' % instance['ip'])
-                        process_thread = \
-                                threading.Thread(target=self.deploy_services,
-                                                 args=[instance])
-                        process_thread.start()
-                    ready_instances.remove(instance)
-
-                else:
-                    self.debug('ssh in %s is closed' % instance['ip'])
-                    self.msg('Checking %s availability...' % instance['ip'])
-                    self.msg('Trying %d (max try %d)'
-                             % (wait_instances[instance['id']], max_retry))
-                    # increase waitting time for instance
-                    wait_instances[instance['id']] += 1
-                    self.debug('%s waits %d' % (instance['id'],
-                                            wait_instances[instance['id']]))
-                    # if reaches limit
-                    if wait_instances[instance['id']] > max_retry:
-                        reserved_instance = self.get_instance_from_reservation(instance['id'])
-                        if reserved_instance.state == 'running':
-                            self.msg('\nTrying different IP address on %s' % instance['id'])
-                            self.debug('Associating new IP on %s' % instance['id'])
-                            self.change_public_ip(instance['id'], instance['ip'])
-                            wait_instances[instance['id']] = 0
-                        else:
-                            instance_index = self.cloud_instances.get_index(instance)
-                            # remove this instance from ready instance list
-                            ready_instances.remove(instance)
-                            self.msg('ERROR: Instance %s creation failed' % instance['id'])
-                            # delete this instance from cloud instance list
-                            self.cloud_instances.del_instance(instance)
-                            self.terminate_instance(instance)
-                            self.msg('Creating new instance')
-                            reservation = self.run_instances(instance['image'], 1, instance['type'])
-                            nr_instance = reservation.instances[0]
-                            self.cloud_instances.set_instance(instance_id=nr_instance.id,
-                                                              image_id=nr_instance.image_id,
-                                                              instance_type=nr_instance.instance_type,
-                                                              index=instance_index)
-                            ip_list = self.get_free_ip()
-                            free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
-                            self.associate_public_ip(nr_instance.id, free_public_ip)
-                            nr_instance.update()
-                            ready_instances.append(self.cloud_instances.get_by_id(instance_index))
-                            wait_instances[nr_instance.id] = 0
-                            self.msg('New instance id -- %s, ip -- %s' % (nr_instance.id, free_public_ip))
-
-            # check if all vms are ready
-            if len(ready_instances) == 0:
-                # wait all threads are done
-                self.debug('Waitting all thread are done')
-                while threading.activeCount() > 1:
-                    sleep(1)
-                self.debug('All thread are done')
+            if self.check_avaliable(instance):
+                self.mutex.acquire()
+                self.del_known_host(instance['ip'])
+                self.mutex.release()
+                if install:
+                    self.deploy_services(instance)
                 break
+            else:
+                self.msg('Checking %s (%s) availability, '
+                         'trying %d (max try %d)'
+                         % (instance['id'], instance['ip'],
+                            wait_count, max_retry))
+                wait_count += 1
+                if wait_count > max_retry:
+                    reserved_instance = self.get_instance_from_reservation(instance['id'])
+                    if not reserved_instance.state == 'running' or ip_change:
+                        instance_index = self.cloud_instances.get_index(instance)
+                        self.msg('ERROR: Instance %s creation failed' % instance['id'])
+                        # delete this instance from cloud instance list
+                        self.cloud_instances.del_instance(instance)
+                        self.terminate_instance(instance)
+                        self.msg('Creating new instance')
+                        self.mutex.acquire()
+                        reservation = self.run_instances(instance['image'], 1, instance['type'])
+                        nr_instance = reservation.instances[0]
+                        self.cloud_instances.set_instance(instance_id=nr_instance.id,
+                                                          image_id=nr_instance.image_id,
+                                                          instance_type=nr_instance.instance_type,
+                                                          index=instance_index)
+                        ip_list = self.get_free_ip()
+                        free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
+                        self.associate_public_ip(nr_instance.id, free_public_ip)
+                        nr_instance.update()
+                        self.mutex.release()
+                        instance_new = self.cloud_instances.get_by_id(instance_index)
+                        instance = instance_new
+                        self.msg('New instance id -- %s, ip -- %s' % (instance_new['id'], instance_new['ip']))
+                        wait_count = 0
+                        ip_change = False
+
+                    else:
+                        self.msg('\nTrying different IP address on %s' % instance['id'])
+                        self.debug('Associating new IP on %s' % instance['id'])
+                        self.mutex.acquire()
+                        self.change_public_ip(instance['id'], instance['ip'])
+                        self.mutex.release()
+                        wait_count = 0
+                        ip_change = True
+                sleep(1)
 
     def show_status(self, args):
         '''
@@ -1029,7 +986,14 @@ class Cluster(object):
         self.debug('Creating IU ubunto repo source list')
         # choose repo, by defalt, using IU ubuntu repo
         self.define_repo()
-        self.installation()
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                threading.Thread(target=self.installation,
+                                 args=[instance, 60, True]).start()
+
+        while threading.activeCount() > 1:
+            sleep(1)
+
         self.config_slurm()
 
         self.debug('Cleaning up')
@@ -1098,9 +1062,12 @@ class Cluster(object):
             self.cloud_instances.save_instances()
 
     def checkpoint_cluster(self, args):
-        print ''
+        self.msg('Checkpoint not implemented')
+        sys.exit()
+
     def restore_cluster(self, args):
-        print ''
+        self.msg('Restore not implemented')
+        sys.exit()
 
     @classmethod
     def del_known_host(cls, ip_addr):
@@ -1153,7 +1120,7 @@ def commandline_parser():
     parser = \
         argparse.ArgumentParser(description='Virtual'
                                 ' cluster management operations',
-                                version='0.1.8')
+                                version='0.2.0')
     parser.add_argument('--file', action='store',
                         help='Specify futuregrid configure file')
     parser.add_argument('--debug', action='store_true',
@@ -1162,8 +1129,8 @@ def commandline_parser():
                         help='using default software repository')
     parser.add_argument('--create-key', action='store_true',
                         help='create userkey')
-    parser.add_argument('--cloud', action='store',
-                        required=True, help='cloud')
+#    parser.add_argument('--cloud', action='store',
+#                        required=True, help='cloud')
     subparsers = parser.add_subparsers(help='commands')
 
     # status command
@@ -1239,7 +1206,7 @@ def commandline_parser():
         virtual_cluster.parse_conf(args.file)
     else:
         virtual_cluster.parse_conf()
-    virtual_cluster.ec2_connect(args.cloud)
+    virtual_cluster.ec2_connect('nova')
     args.func(args)
 
 if __name__ == '__main__':
