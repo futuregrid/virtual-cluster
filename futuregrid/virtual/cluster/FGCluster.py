@@ -71,7 +71,9 @@ import ConfigParser
 import random
 import Queue
 import re
+import boto.ec2
 
+from boto.ec2.connection import EC2Connection
 #from CloudInstances import CloudInstances
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 from subprocess import Popen, PIPE
@@ -100,6 +102,8 @@ class Cluster(object):
     enrc = None
     slurm = None
     mutex = None
+    interface = None
+    ec2_conn = None
 
     # debug switch
     if_debug = False
@@ -107,6 +111,7 @@ class Cluster(object):
     if_default = False
     # if true, create userkey key
     if_create_key = False
+
     # repo file name
     sources_list = 'sources.list'
 
@@ -161,6 +166,30 @@ class Cluster(object):
         if self.if_debug:
             print message
 
+# ---------------------------------------------------------------------
+# METHODS TO SET PROGRAM FLAGS
+# ---------------------------------------------------------------------
+    def set_interface(self, interface):
+        '''
+        Set interface the program to use
+
+        Parameter:
+            interface -- interface (boto or euca2ools)
+
+        command line argument --interface will
+        overwrite the configure in configuration file
+
+        No returns
+        '''
+
+        if interface:
+            self.interface = interface
+        if self.interface not in ('euca2ools', 'boto'):
+            self.msg('Interface should be boto or euca2ools')
+            sys.exit()
+        if self.interface == 'boto':
+            self.ec2_connect()
+
     def set_flag(self, args):
         '''
         Sets control flags
@@ -180,6 +209,9 @@ class Cluster(object):
                     if_create_key: default is false
                                    true to create key for users
                                    false not to create
+                    if_boto: default is false
+                             true to use boto interface
+                             false to use euca2ools
 
         Logic:
             Sets control flags
@@ -191,6 +223,9 @@ class Cluster(object):
         self.if_default = args.default_repository
         self.if_create_key = args.create_key
 
+# ---------------------------------------------------------------------
+# METHODS ABOUT KEYPAIRS
+# ---------------------------------------------------------------------
     def if_keypair_exits(self, name):
         '''
         Checks if key is already created
@@ -295,6 +330,7 @@ class Cluster(object):
             self.debug('enrc %s' % self.enrc)
             self.slurm = config.get('virtual-cluster', 'slurm')
             self.debug('SLURM configuration input file %s' % self.slurm)
+            self.interface = config.get('virtual-cluster', 'interface')
 
             # checking if all file are present
             self.debug('Checking if all file are present')
@@ -372,11 +408,22 @@ class Cluster(object):
             self.msg('\nError in reading configuration file!'
                      ' Correct python version?')
             sys.exit()
+
 # ---------------------------------------------------------------------
-# METHOD TO DETECT OPEN PORT
+# METHOD TO INSTALL
 # ---------------------------------------------------------------------
 
     def check_avaliable(self, instance):
+        '''
+        Check if instance is available
+
+        Parameters:
+            instance -- instance dictionary
+
+        Return:
+            True -- if instance is available
+            False -- if instance is unavailable
+        '''
 
         cmd = "ssh -i %s ubuntu@%s uname" % (self.userkey, instance['ip'])
 
@@ -387,12 +434,74 @@ class Cluster(object):
         else:
             return False
 
+    def euca_start_new_instance(self, instance, instance_index):
+        '''
+        terminate current instance and start new instance
+
+        Parameter:
+            instance -- old instance
+        Return:
+            new instance
+        '''
+        # try to create a new one
+        self.msg('Creating new instance')
+        self.euca_run_instance(self.user, 1, instance['image'],
+                               instance['type'], instance_index)
+        self.debug('Getting free public IPs')
+        # get free IP list
+        ip_lists = self.euca_describe_addresses()
+        time.sleep(2)
+        new_instance = self.cloud_instances.get_by_id(instance_index)
+        self.msg('\nAssociating IP with %s' % new_instance['id'])
+        new_ip = ip_lists[random.randint(0, len(ip_lists) - 1)]
+        while not self.euca_associate_address(new_instance, new_ip):
+            self.msg('Error in associating IP %s with instance %s, '
+                     'trying again' % (new_ip, new_instance['id']))
+        return new_instance
+
+    def boto_start_new_instance(self, instance, instance_index):
+        reservation = self.run_instances(instance['image'],
+                                         1,
+                                         instance['type'])
+        new_instance = reservation.instances[0]
+        arg1 = new_instance.id
+        arg2 = new_instance.image_id
+        arg3 = new_instance.instance_type
+        self.cloud_instances.set_instance(instance_id=arg1,
+                                          image_id=arg2,
+                                          instance_type=arg3,
+                                          index=instance_index)
+        ip_list = self.boto_describe_addresses()
+        free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
+        self.boto_associate_address(new_instance.id, free_public_ip)
+        new_instance.update()
+        return self.cloud_instances.get_by_id(instance_index)
+
+    def euca_change_ip(self, instance):
+        ip_lists = self.euca_describe_addresses()
+        # disassociate current one
+        self.disassociate_address(instance['ip'])
+        # associate a new random free ip
+        self.debug('Associating new IP on %s' % instance['id'])
+        self.euca_associate_address(instance, ip_lists[random.randint(0,
+                                            len(ip_lists) - 1)])
+
+    def boto_change_ip(self, instance):
+
+        ip_list = self.boto_describe_addresses()
+        free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
+        self.ec2_conn.disassociate_address(instance['ip'])
+        self.get_instance_from_reservation(instance['id']).update()
+        self.boto_associate_address(instance['id'], free_public_ip)
+
     def installation(self, instance, max_retry, install=True):
         '''
         Checks if instances are ready to deploy and installs the
         softwares on the instance which is ready
 
         Parameters:
+            instance -- instance dictionary
+            max_retry -- max number of try for checking instance
             install -- indicates if need to the installation
             default: true
 
@@ -433,42 +542,19 @@ class Cluster(object):
                 if wait_count > max_retry:
                     if not self.if_running(instance['id']) or ip_change:
                         # get instance index
-                        instance_index = \
-                            self.cloud_instances.get_index(instance)
-                        self.msg('Instance %s creation failed'
-                                 % instance['id'])
+                        instance_index = self.cloud_instances.get_index(instance)
+                        self.msg('Instance %s creation failed' % instance['id'])
                         # delete this instance from cloud instance list
                         self.cloud_instances.del_instance(instance)
-
                         self.terminate_instance(instance['id'])
-                        # try to create a new one
-                        self.msg('Creating new instance')
-                        self.euca_run_instance(self.user,
-                                               1,
-                                               instance['image'],
-                                               instance['type'],
-                                               instance_index)
-                        self.debug('Getting free public IPs')
-                        # get free IP list
                         self.mutex.acquire()
-                        ip_lists = self.euca_describe_addresses()
-                        time.sleep(2)
-                        new_instance = \
-                            self.cloud_instances.get_by_id(
-                                                     instance_index)
-                        self.msg('\nAssociating IP with %s'
-                                 % new_instance['id'])
-                        new_ip = ip_lists[random.randint(0,
-                                                len(ip_lists) - 1)]
-                        while not \
-                            self.euca_associate_address(new_instance,
-                                                        new_ip):
-                            self.msg('Error in associating IP %s '
-                                     'with instance %s, '
-                                     'trying again'
-                                     % (new_ip, new_instance['id']))
+                        if self.interface == 'euca2ools':
+                            instance = self.euca_start_new_instance(instance,
+                                                                    instance_index)
+                        elif self.interface == 'boto':
+                            instance = self.boto_start_new_instance(instance,
+                                                                    instance_index)
                         self.mutex.release()
-                        instance = new_instance
                         wait_count = 0
                         ip_change = False
                     else:
@@ -476,21 +562,16 @@ class Cluster(object):
                                  % instance['id'])
                         # get free ip addresses
                         self.mutex.acquire()
-                        ip_lists = self.euca_describe_addresses()
-                        # disassociate current one
-                        self.disassociate_address(instance['ip'])
-                        # associate a new random free ip
-                        self.debug('Associating new IP on %s'
-                                   % instance['id'])
-                        self.euca_associate_address(instance,
-                                                    ip_lists[random.randint(0,
-                                                            len(ip_lists)
-                                                            - 1)])
+                        if self.interface == 'euca2ools':
+                            self.euca_change_ip(instance)
+                        elif self.interface == 'boto':
+                            self.boto_change_ip(instance)
                         self.mutex.release()
                         self.debug('New IP is %s' % instance['ip'])
                         wait_count = 0
                         ip_change = True
                 time.sleep(1)
+
 # ---------------------------------------------------------------------
 # METHODS TO DO RPCs
 # ---------------------------------------------------------------------
@@ -501,9 +582,6 @@ class Cluster(object):
 
         Parameters:
             command -- shell command
-
-        Logic:
-            Gets result of command
 
         Return:
             Command output
@@ -518,9 +596,6 @@ class Cluster(object):
         Parameters:
             instance -- cloud instance
             command -- shell command
-
-        Logic:
-            Executes a command on the remote host
 
         No returns
         '''
@@ -538,9 +613,6 @@ class Cluster(object):
             instance -- cloud instance
             filename -- the name of file to copy
 
-        Logic:
-            Copies the named file to the home directory of remote host
-
         No returns
         '''
 
@@ -556,9 +628,6 @@ class Cluster(object):
         Parameters:
             instance -- cloud instance
 
-        Logic:
-            Executes software update on a remote host
-
         No returns
         '''
 
@@ -573,9 +642,6 @@ class Cluster(object):
             instance -- cloud instance
             packagenames -- software names
 
-        Logic:
-            Installs a software on a remote host
-
         No returns
         '''
 
@@ -585,6 +651,92 @@ class Cluster(object):
 # ---------------------------------------------------------------------
 # METHODS TO CREATE A VIRTUAL CLUSTER
 # ---------------------------------------------------------------------
+
+    def ec2_connect(self):
+        '''
+        create connection
+        '''
+#        if cloud not in ('nova', 'eucalyptus'):
+#            self.msg('ERROR: supports nova, eucalyptus')
+#            sys.exit()
+#
+#        if cloud.strip() == 'nova':
+#            path = "/services/Cloud"
+#        elif cloud.strip() == 'eucalyptus':
+#            path = "/services/Eucalyptus"
+        cloud = 'nova'
+        path = "/services/Cloud"
+
+        endpoint = os.getenv('EC2_URL').lstrip("http://").split(":")[0]
+        try:
+            region = boto.ec2.regioninfo.RegionInfo(name=cloud,
+                                                    endpoint=endpoint)
+        except:
+            self.msg('ERROR: error in getting region information')
+            sys.exit()
+
+        try:
+            self.ec2_conn = EC2Connection(os.getenv("EC2_ACCESS_KEY"),
+                                          os.getenv("EC2_SECRET_KEY"),
+                                          is_secure=False,
+                                          region=region,
+                                          port=8773, path=path)
+        except:
+            self.msg('ERROR: error in connecting to EC2')
+            sys.exit()
+
+    def boto_describe_addresses(self):
+        '''
+        get all free ip addresses using boto
+        '''
+
+        ip_list = []
+        for address in self.ec2_conn.get_all_addresses(addresses=None, filters=None):
+            address_public_ip = address.public_ip
+            address_instance_id = address.instance_id
+            if not address_instance_id:
+                ip_list.append(address_public_ip)
+        return ip_list
+
+    def get_instance_from_reservation(self, instance_id):
+        '''
+        get instance from reservation
+        '''
+
+        r_in = self.ec2_conn.get_all_instances(instance_ids=[instance_id])
+        return r_in[0].instances[0]
+
+    def boto_associate_address(self, instance_id, address_public_ip):
+        '''
+        associate ip address using boto
+        '''
+
+        while True:
+            try:
+                time.sleep(2)
+                self.ec2_conn.associate_address(instance_id, address_public_ip)
+                break
+            except:
+                self.msg('ERROR: Associating ip %s with instance %s failed, '
+                         'trying again' % (address_public_ip, instance_id))
+        self.msg('ADDRESS: %s %s' % (address_public_ip, instance_id))
+        self.cloud_instances.set_ip_by_id(instance_id, address_public_ip)
+
+    def boto_run_instances(self, image, cluster_size, instance_type):
+        '''
+        run instance usign boto
+        '''
+
+        try:
+            return self.ec2_conn.run_instances(image_id=image,
+                                               min_count=cluster_size,
+                                               max_count=cluster_size,
+                                               key_name=self.user,
+                                               instance_type=instance_type)
+        except:
+            self.msg('ERROR: Error in lunching instances, please try again')
+            self.ec2_conn.close()
+            sys.exit()
 
     def euca_run_instance(
         self,
@@ -734,6 +886,9 @@ class Cluster(object):
         return ip_list
 
     def if_running(self, instance_id):
+        '''
+        Check if instance is running
+        '''
 
         result = self.get_command_result('euca-describe-instances').split('\n')
         for i in result:
@@ -800,25 +955,37 @@ class Cluster(object):
 
         self.debug('Creating cluster')
         # run instances given parameters
-        self.euca_run_instance(self.user, cluster_size, args.image,
-                               args.type)
-        self.debug('Getting free public IPs')
-        # get free IP list
-        ip_lists = self.euca_describe_addresses()
+        if self.interface == 'euca2ools':
+            self.euca_run_instance(self.user, cluster_size, args.image,
+                                   args.type)
+            self.debug('Getting free public IPs')
+            # get free IP list
+            ip_lists = self.euca_describe_addresses()
 
-        # immediatly associate ip after run instance
-        # may lead to error, use sleep
-        time.sleep(3)
+            # immediatly associate ip after run instance
+            # may lead to error, use sleep
+            time.sleep(3)
 
-        self.msg('\nAssociating public IP addresses')
-        for i in range(cluster_size):
-            instance = self.cloud_instances.get_by_id(i)
-            time.sleep(1)
-            while not self.euca_associate_address(instance, ip_lists[i]):
-                self.msg('Error in associating IP %s with instance %s, '
-                     'trying again'
-                     % (ip_lists[i], instance['id']))
+            self.msg('\nAssociating public IP addresses')
+            for i in range(cluster_size):
+                instance = self.cloud_instances.get_by_id(i)
                 time.sleep(1)
+                while not self.euca_associate_address(instance, ip_lists[i]):
+                    self.msg('Error in associating IP %s with instance %s, '
+                             'trying again' % (ip_lists[i], instance['id']))
+                time.sleep(1)
+        elif self.interface == 'boto':
+            reservation = self.boto_run_instances(args.image, cluster_size, args.type)
+            self.msg('Associating public IPs')
+            ip_index = 0
+            for instance in reservation.instances:
+                self.cloud_instances.set_instance(instance.id,
+                                                  instance.image_id,
+                                                  instance.instance_type)
+                free_public_ip = self.boto_describe_addresses()[ip_index]
+                ip_index += 1
+                self.boto_associate_address(instance.id, free_public_ip)
+                instance.update()
 
         self.debug('Creating IU ubunto repo source list')
         # choose repo, by defalt, using IU ubuntu repo
@@ -830,7 +997,7 @@ class Cluster(object):
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 threading.Thread(target=self.installation,
-                                 args=[instance, 60, True]).start()
+                                 args=[instance, 5, True]).start()
 
         while threading.activeCount() > 1:
             time.sleep(1)
@@ -1335,6 +1502,9 @@ class Cluster(object):
 
         No returns
         '''
+        if self.interface == 'boto':
+            self.msg('UNIMPLEMENTED')
+            sys.exit()
 
         self.debug('Checking if %s is existed' % args.name)
         # check if cluter is existed
@@ -1459,6 +1629,9 @@ class Cluster(object):
 
         No returns
         '''
+        if self.interface == 'boto':
+            self.msg('UNIMPLEMENTED')
+            sys.exit()
 
         control_node_num = 1
 
@@ -1581,7 +1754,14 @@ class Cluster(object):
         '''terminate instance given instance id'''
 
         self.msg('Terminating instance %s' % instance_id)
-        os.system('euca-terminate-instances %s' % instance_id)
+        if self.interface == 'euca2ools':
+            os.system('euca-terminate-instances %s' % instance_id)
+        elif self.interface == 'boto':
+            try:
+                self.ec2_conn.terminate_instances([instance_id])
+            except:
+                self.msg('ERROR: terminat instance %s failed' % instance_id)
+            
 
     def shut_down(self, args):
         '''
@@ -1782,6 +1962,8 @@ def commandline_parser():
                         help='using default software repository')
     parser.add_argument('--create-key', action='store_true',
                         help='create userkey')
+    parser.add_argument('--interface', action='store',
+                        help='choose interface to use')
     subparsers = parser.add_subparsers(help='commands')
 
     # status command
@@ -1849,8 +2031,6 @@ def commandline_parser():
 
     args = parser.parse_args()
 
-    # set flags
-    virtual_cluster.set_flag(args)
     # parse config file, if config file is not specified,
     # then use default file which is ~/.futuregrid/futuregrid.cfg
     if args.file:
@@ -1858,6 +2038,10 @@ def commandline_parser():
     else:
         virtual_cluster.parse_conf()
 
+    # set flags
+    virtual_cluster.set_flag(args)
+    # choose interface
+    virtual_cluster.set_interface(args.interface)
     args.func(args)
 
 if __name__ == '__main__':
