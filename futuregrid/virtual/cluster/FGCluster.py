@@ -74,8 +74,8 @@ import re
 import boto.ec2
 
 from boto.ec2.connection import EC2Connection
-#from CloudInstances import CloudInstances
-from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+from CloudInstances import CloudInstances
+#from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 from subprocess import Popen, PIPE
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
@@ -997,7 +997,7 @@ class Cluster(object):
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 threading.Thread(target=self.installation,
-                                 args=[instance, 5, True]).start()
+                                 args=[instance, 60, True]).start()
 
         while threading.activeCount() > 1:
             time.sleep(1)
