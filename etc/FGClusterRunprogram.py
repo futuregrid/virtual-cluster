@@ -11,7 +11,6 @@ import argparse
 
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 
-
 class FgRunProg:
     '''run MPI program on a virtual cluster'''
 
@@ -56,7 +55,8 @@ class FgRunProg:
         config = ConfigParser.ConfigParser()
 
         config.read([os.path.expanduser('~/.futuregrid/futuregrid.cfg'),
-                    file_name])
+                         'futuregrid.cfg',
+                         os.path.expanduser(file_name)])
 
         # default location ~/.ssh/futuregrid.cfg
 
@@ -68,16 +68,20 @@ class FgRunProg:
     def run_program(self, args):
         '''copy program to each node, compile it and run'''
 
-        self.parse_conf(args.file)
+        if args.file:
+            self.parse_conf(args.file)
+        else:
+            self.parse_conf()
         if not self.cloud_instances.if_exist(args.name):
             self.msg('Error in locating virtual cluster %s, not created'
                       % args.name)
             sys.exit()
         self.cloud_instances.get_cloud_instances_by_name(args.name)
 
-        for instance in self.cloud_instances.get_list()[1:]:
-            self.copyto(instance, args.prog)
-            self.execute(instance,
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                self.copyto(instance, args.prog)
+                self.execute(instance,
                      "mpicc %s -o %s" % (args.prog,
                                         args.prog.split('.')[0]))
 
