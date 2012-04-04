@@ -203,7 +203,9 @@ It has the following format:
 You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurrence
 within the file with the name that you use to associate your key. The
 file is to be placed at ~/.futuregrid/futuregrid.cfg or concatenated
-to an already existing futuregrid.cfg file.
+to an already existing futuregrid.cfg file. In order to use different 
+interface (euca2ools/boto) to run this tool, you can change interface 
+parameter in the configuration file to achieve that.
 
 NOTE: Please make sure all the files are placed under the location as
 you specified in configuration file. You can also find an example of
