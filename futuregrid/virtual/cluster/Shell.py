@@ -8,7 +8,8 @@ from cmd2 import Cmd
 from cmd2 import make_option
 from cmd2 import options
 #from cmd2 import Cmd2TestCase
-
+from futuregrid.virtual.cluster.FGCluster import Cluster
+#from FGCluster import Cluster
 import unittest
 import sys
 
@@ -37,6 +38,7 @@ class Shell(Cmd):
     """
 
     def preloop(self):
+        self.cluster = Cluster()
         print self.logo
 
     def postloop(self):
@@ -46,27 +48,15 @@ class Shell(Cmd):
         make_option('-f', '--file', type="string",
                     help="cluster name"),
         make_option('-i', '--interface', type="string",
-                    help="interface"),
+                    help="interface")
         ])
     def do_config(self, args, opts):
-        if not opts.interface == 'boto' and \
-            not opts.interface == 'euca2ools':
-            print 'Please specify interface (boto or euca2ools)'
-            sys.exit()
-        if opts.interface == 'boto':
-            from futuregrid.virtual.cluster.FGCluster_boto import Cluster
-#            from FGCluster_boto import Cluster
-            self.cluster = Cluster()
-            self.cluster.ec2_connect('nova')
-        elif opts.interface == 'euca2ools':
-            from futuregrid.virtual.cluster.FGCluster import Cluster
-#            from FGCluster import Cluster
-            self.cluster = Cluster()
 
         if not opts.file:
             self.cluster.parse_conf()
         else:
             self.cluster.parse_conf()
+        self.cluster.set_interface(opts.interface)
 
     def do_debug(self, debug=True):
         print "to do debug"
