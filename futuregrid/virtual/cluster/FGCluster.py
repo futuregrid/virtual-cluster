@@ -542,18 +542,22 @@ class Cluster(object):
                 if wait_count > max_retry:
                     if not self.if_running(instance['id']) or ip_change:
                         # get instance index
-                        instance_index = self.cloud_instances.get_index(instance)
-                        self.msg('Instance %s creation failed' % instance['id'])
+                        instance_index = \
+                            self.cloud_instances.get_index(instance)
+                        self.msg('Instance %s creation failed'
+                                 % instance['id'])
                         # delete this instance from cloud instance list
                         self.cloud_instances.del_instance(instance)
                         self.terminate_instance(instance['id'])
                         self.mutex.acquire()
                         if self.interface == 'euca2ools':
-                            instance = self.euca_start_new_instance(instance,
-                                                                    instance_index)
+                            instance = \
+                                self.euca_start_new_instance(instance,
+                                                             instance_index)
                         elif self.interface == 'boto':
-                            instance = self.boto_start_new_instance(instance,
-                                                                    instance_index)
+                            instance = \
+                                self.boto_start_new_instance(instance,
+                                                             instance_index)
                         self.mutex.release()
                         wait_count = 0
                         ip_change = False
@@ -691,7 +695,8 @@ class Cluster(object):
         '''
 
         ip_list = []
-        for address in self.ec2_conn.get_all_addresses(addresses=None, filters=None):
+        for address in \
+            self.ec2_conn.get_all_addresses(addresses=None, filters=None):
             address_public_ip = address.public_ip
             address_instance_id = address.instance_id
             if not address_instance_id:
@@ -975,7 +980,8 @@ class Cluster(object):
                              'trying again' % (ip_lists[i], instance['id']))
                 time.sleep(1)
         elif self.interface == 'boto':
-            reservation = self.boto_run_instances(args.image, cluster_size, args.type)
+            reservation = \
+                self.boto_run_instances(args.image, cluster_size, args.type)
             self.msg('Associating public IPs')
             ip_index = 0
             for instance in reservation.instances:
@@ -1761,7 +1767,6 @@ class Cluster(object):
                 self.ec2_conn.terminate_instances([instance_id])
             except:
                 self.msg('ERROR: terminat instance %s failed' % instance_id)
-            
 
     def shut_down(self, args):
         '''
