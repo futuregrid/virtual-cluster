@@ -144,6 +144,10 @@ class Cluster(object):
         print message
 
     def print_section(self, message):
+        '''
+        Prints section header
+        '''
+
         self.msg('\n=========================')
         self.msg(message)
         self.msg('=========================')
@@ -436,10 +440,11 @@ class Cluster(object):
 
     def euca_start_new_instance(self, instance, instance_index):
         '''
-        terminate current instance and start new instance
+        Starts new instance given old instance info using euca2ools
 
         Parameter:
             instance -- old instance
+            instance_index -- instance index
         Return:
             new instance
         '''
@@ -460,9 +465,19 @@ class Cluster(object):
         return new_instance
 
     def boto_start_new_instance(self, instance, instance_index):
-        reservation = self.run_instances(instance['image'],
-                                         1,
-                                         instance['type'])
+        '''
+        Starts new instance given old instance info using euca2ools
+
+        Parameter:
+            instance -- old instance
+            instance_index -- instance index
+        Return:
+            new instance
+        '''
+
+        reservation = self.boto_run_instances(instance['image'],
+                                              1,
+                                              instance['type'])
         new_instance = reservation.instances[0]
         arg1 = new_instance.id
         arg2 = new_instance.image_id
@@ -478,6 +493,11 @@ class Cluster(object):
         return self.cloud_instances.get_by_id(instance_index)
 
     def euca_change_ip(self, instance):
+        '''
+        Changes public IP address given instance using euca2ools
+        No returns
+        '''
+
         ip_lists = self.euca_describe_addresses()
         # disassociate current one
         self.disassociate_address(instance['ip'])
@@ -487,7 +507,10 @@ class Cluster(object):
                                             len(ip_lists) - 1)])
 
     def boto_change_ip(self, instance):
-
+        '''
+        Changes public IP address given instance using boto
+        No returns
+        '''
         ip_list = self.boto_describe_addresses()
         free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
         self.ec2_conn.disassociate_address(instance['ip'])
