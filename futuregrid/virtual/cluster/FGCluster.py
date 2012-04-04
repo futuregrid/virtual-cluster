@@ -719,7 +719,7 @@ class Cluster(object):
 
         ip_list = []
         for address in \
-            self.ec2_conn.get_all_addresses(addresses=None, filters=None):
+            self.ec2_conn.get_all_addresses(addresses=None):
             address_public_ip = address.public_ip
             address_instance_id = address.instance_id
             if not address_instance_id:
