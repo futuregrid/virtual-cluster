@@ -394,13 +394,25 @@ on the cluster you created using SLURM system, you can
     $ ssh -i <your-userkey-pem-file> ubuntu@<instance-ip>
     $ mpicc hellowrld.c -o helloworld 
 
-### Step 3: Login to control node, run:
+### Step 3: run MPI program, you need to login into control node
 
-    $ ssh -i <yout-userkey-pem-file> ubuntu@<control-node-ip>
+Using salloc command
+--------------------
+
     $ salloc -N 2 mpirun helloworld
 
 where -N is the number of computation nodes you want to run with. And 
 should not be larger than the actual number of computation nodes
+
+Using sbatch command
+--------------------
+
+    $ sbatch helloworld.sh
+
+You can find example helloworld.sh at
+
+* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.sh
+
 
 Execution result:
 
@@ -409,7 +421,6 @@ Execution result:
     Hello world from processor i-000023c8, rank 0 out of 2 processors
     Hello world from processor i-000023c9, rank 1 out of 2 processors
     salloc: Relinquishing job allocation 2
-
     
 Using FGClusterRunprogram
 ---------------------------
