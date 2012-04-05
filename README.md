@@ -396,16 +396,14 @@ on the cluster you created using SLURM system, you can
 
 ### Step 3: run MPI program, you need to login into control node
 
-Using salloc command
---------------------
+Option 1: Using salloc command:
 
     $ salloc -N 2 mpirun helloworld
 
 where -N is the number of computation nodes you want to run with. And 
 should not be larger than the actual number of computation nodes
 
-Using sbatch command
---------------------
+Option 2: Using sbatch command by submitting a job script:
 
     $ sbatch helloworld.sh
 
