@@ -74,8 +74,8 @@ import re
 import boto.ec2
 
 from boto.ec2.connection import EC2Connection
-#from CloudInstances import CloudInstances
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+#from CloudInstances import CloudInstances
 from subprocess import Popen, PIPE
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
@@ -103,7 +103,9 @@ class Cluster(object):
     slurm = None
     mutex = None
     interface = None
+    cloud = None
     ec2_conn = None
+    user_login = None
 
     # debug switch
     if_debug = False
@@ -192,7 +194,30 @@ class Cluster(object):
             self.msg('Interface should be boto or euca2ools')
             sys.exit()
         if self.interface == 'boto':
-            self.ec2_connect()
+            self.ec2_connect(self.cloud)
+
+    def set_cloud(self, cloud):
+        '''
+        Set cloud
+
+        Parameter:
+            cloud -- cloud (nova or eucalyptus)
+
+        command line argument --cloud will
+        overwrite the configure in configuration file
+
+        No returns
+        '''
+
+        if cloud:
+            self.cloud = cloud
+        if self.cloud not in ('nova', 'eucalyptus'):
+            self.msg('Cloud should be boto or euca2ools')
+            sys.exit()
+        if self.cloud == 'nova':
+            self.user_login = 'ubuntu'
+        elif self.cloud == 'eucalyptus':
+            self.user_login = 'root'
 
     def set_flag(self, args):
         '''
@@ -335,6 +360,7 @@ class Cluster(object):
             self.slurm = config.get('virtual-cluster', 'slurm')
             self.debug('SLURM configuration input file %s' % self.slurm)
             self.interface = config.get('virtual-cluster', 'interface')
+            self.cloud = config.get('virtual-cluster', 'cloud')
 
             # checking if all file are present
             self.debug('Checking if all file are present')
@@ -357,11 +383,13 @@ class Cluster(object):
                 sys.exit(1)
             else:
                 self.debug('Reading environment')
-                nova_key_dir = os.path.dirname(self.enrc)
-                if nova_key_dir.strip() == "":
-                    nova_key_dir = "."
-                os.environ["NOVA_KEY_DIR"] = nova_key_dir
-
+                key_dir = os.path.dirname(self.enrc)
+                if key_dir.strip() == "":
+                    key_dir = "."
+                if self.cloud == 'nova':
+                    os.environ["NOVA_KEY_DIR"] = key_dir
+                elif self.cloud =='eucalyptus':
+                    os.environ['EUCA_KEY_DIR'] = key_dir
                 with open(os.path.expanduser(self.enrc)) as enrc_content:
                     for line in enrc_content:
                         if re.search("^export ", line):
@@ -389,6 +417,7 @@ class Cluster(object):
                 sys.exit(1)
 
             self.debug('Checking backup file')
+            self.backup_file += self.cloud
             if not self.cloud_instances.set_backup_file(self.backup_file):
                 self.msg('\nBackup file is corrupted, or you are using an old'
                         ' version of this tool. Please delete this backup file'
@@ -429,7 +458,9 @@ class Cluster(object):
             False -- if instance is unavailable
         '''
 
-        cmd = "ssh -i %s ubuntu@%s uname" % (self.userkey, instance['ip'])
+        cmd = "ssh -i %s %s@%s uname" % (self.userkey,
+                                         self.user_login,
+                                         instance['ip'])
 
         check_process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         status = os.waitpid(check_process.pid, 0)[1]
@@ -548,6 +579,9 @@ class Cluster(object):
 
         # check if ssh port of all VMs are alive for listening
         while True:
+            while self.if_status(instance['id'], 'pending'):
+                self.msg('Instance %s is pending' % instance['id'])
+                time.sleep(5)
             if self.check_avaliable(instance):
                 self.mutex.acquire()
                 self.del_known_host(instance['ip'])
@@ -555,15 +589,19 @@ class Cluster(object):
                 if install:
                     self.deploy_services(instance)
                 break
-            else:
+            elif self.cloud == 'nova':
                 self.debug('ssh in %s is closed' % instance['ip'])
                 self.msg('Checking %s (%s) availability, '
                          'trying %d (max try %d)'
                          % (instance['id'], instance['ip'],
                             wait_count, max_retry))
+
                 wait_count += 1
                 if wait_count > max_retry:
-                    if not self.if_running(instance['id']) or ip_change:
+                    if self.if_status(instance['id'], 'shutdown') or \
+                        self.if_status(instance['id'], 'terminate') or \
+                        self.if_status(instance['id'], 'terminated') or \
+                        ip_change:
                         # get instance index
                         instance_index = \
                             self.cloud_instances.get_index(instance)
@@ -584,7 +622,7 @@ class Cluster(object):
                         self.mutex.release()
                         wait_count = 0
                         ip_change = False
-                    else:
+                    elif self.if_status(instance['id'], 'running'):
                         self.msg('\nTrying different IP address on %s'
                                  % instance['id'])
                         # get free ip addresses
@@ -629,8 +667,10 @@ class Cluster(object):
 
         self.debug("ssh -i %s ubuntu@%s '%s'" % (self.userkey,
                   instance['ip'], command))
-        os.system("ssh -i %s ubuntu@%s '%s'" % (self.userkey,
-                  instance['ip'], command))
+        os.system("ssh -i %s %s@%s '%s'" % (self.userkey,
+                                            self.user_login,
+                                            instance['ip'],
+                                            command))
 
     def copyto(self, instance, filename):
         '''
@@ -645,8 +685,10 @@ class Cluster(object):
 
         self.debug('scp -i %s %s ubuntu@%s:~/' % (self.userkey,
                   filename, instance['ip']))
-        os.system('scp -i %s %s ubuntu@%s:~/' % (self.userkey,
-                  filename, instance['ip']))
+        os.system('scp -i %s %s %s@%s:~/' % (self.userkey,
+                                             filename,
+                                             self.user_login,
+                                             instance['ip']))
 
     def update(self, instance):
         '''
@@ -679,20 +721,14 @@ class Cluster(object):
 # METHODS TO CREATE A VIRTUAL CLUSTER
 # ---------------------------------------------------------------------
 
-    def ec2_connect(self):
+    def ec2_connect(self, cloud):
         '''
         create connection
         '''
-#        if cloud not in ('nova', 'eucalyptus'):
-#            self.msg('ERROR: supports nova, eucalyptus')
-#            sys.exit()
-#
-#        if cloud.strip() == 'nova':
-#            path = "/services/Cloud"
-#        elif cloud.strip() == 'eucalyptus':
-#            path = "/services/Eucalyptus"
-        cloud = 'nova'
-        path = "/services/Cloud"
+        if cloud.strip() == 'nova':
+            path = "/services/Cloud"
+        elif cloud.strip() == 'eucalyptus':
+            path = "/services/Eucalyptus"
 
         endpoint = os.getenv('EC2_URL').lstrip("http://").split(":")[0]
         try:
@@ -913,18 +949,27 @@ class Cluster(object):
                 ip_list.append(free_ip.split('\t')[1])
         return ip_list
 
-    def if_running(self, instance_id):
+    def if_status(self, instance_id, status):
         '''
         Check if instance is running
         '''
 
         result = self.get_command_result('euca-describe-instances').split('\n')
+
         for i in result:
             if i.find(instance_id) >= 0:
-                if i.find('running') >= 0:
+                if i.find(status) >= 0:
                     return True
                 else:
                     return False
+    def euca_get_ip(self, instance_id):
+        '''
+        Get instance public given instance id
+        '''
+        result = self.get_command_result('euca-describe-instances').split('\n')
+        for i in result:
+            if i.find(instance_id) >= 0 and i.find('pending') >= 0:
+                return i.split('\t')[3]
 
     def create_cluster(self, args):
         '''
@@ -986,35 +1031,43 @@ class Cluster(object):
         if self.interface == 'euca2ools':
             self.euca_run_instance(self.user, cluster_size, args.image,
                                    args.type)
-            self.debug('Getting free public IPs')
-            # get free IP list
-            ip_lists = self.euca_describe_addresses()
-
             # immediatly associate ip after run instance
             # may lead to error, use sleep
             time.sleep(3)
+    
+            if self.cloud == 'nova':
+                self.debug('Getting free public IPs')
+                # get free IP list
+                ip_lists = self.euca_describe_addresses()
 
-            self.msg('\nAssociating public IP addresses')
-            for i in range(cluster_size):
-                instance = self.cloud_instances.get_by_id(i)
-                time.sleep(1)
-                while not self.euca_associate_address(instance, ip_lists[i]):
-                    self.msg('Error in associating IP %s with instance %s, '
-                             'trying again' % (ip_lists[i], instance['id']))
-                time.sleep(1)
+                self.msg('\nAssociating public IP addresses')
+                for i in range(cluster_size):
+                    instance = self.cloud_instances.get_by_id(i)
+                    time.sleep(1)
+                    while not self.euca_associate_address(instance, ip_lists[i]):
+                        self.msg('Error in associating IP %s with instance %s, '
+                                 'trying again' % (ip_lists[i], instance['id']))
+            # eucalyptus no need to associate ip
+            if self.cloud == 'eucalyptus':
+                for i in range(cluster_size):
+                    instance = self.cloud_instances.get_by_id(i)
+                    time.sleep(1)
+                    self.cloud_instances.set_ip_by_id(instance['id'],
+                                                      self.euca_get_ip(instance['id']))
+
         elif self.interface == 'boto':
             reservation = \
                 self.boto_run_instances(args.image, cluster_size, args.type)
             self.msg('Associating public IPs')
             ip_index = 0
             for instance in reservation.instances:
+                instance.update()
                 self.cloud_instances.set_instance(instance.id,
                                                   instance.image_id,
                                                   instance.instance_type)
                 free_public_ip = self.boto_describe_addresses()[ip_index]
                 ip_index += 1
                 self.boto_associate_address(instance.id, free_public_ip)
-                instance.update()
 
         self.debug('Creating IU ubunto repo source list')
         # choose repo, by defalt, using IU ubuntu repo
@@ -1127,9 +1180,10 @@ class Cluster(object):
             self.debug('Opening %s for writting munge-key' % munge_key_file)
             munge_key = open(munge_key_file, 'w')
             print >> munge_key, \
-                self.get_command_result("ssh -i %s ubuntu@%s"
+                self.get_command_result("ssh -i %s %s@%s"
                                         " 'sudo cat /etc/munge/munge.key'"
                                          % (self.userkey,
+                                            self.user_login,
                                         self.cloud_instances.get_by_id(0)['ip'
                                         ]))
             munge_key.close()
@@ -1181,7 +1235,7 @@ class Cluster(object):
         No returns
         '''
 
-         # copy slurm.conf
+        # copy slurm.conf
         self.msg('\nCopying slurm.conf to node %s' % instance['id'])
         self.copyto(instance, slurm_conf_file)
         self.execute(instance, 'sudo cp slurm.conf /etc/slurm-llnl')
@@ -1311,49 +1365,68 @@ class Cluster(object):
         '''
 
         if kernel_id == None:
-            self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
+            self.debug("ssh -i %s %s@%s '. ~/.profile;"
                        " sudo euca-bundle-vol -c ${EC2_CERT}"
                        " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                        " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                        " -p %s -s 1024 -d /mnt/'"
-                       % (self.userkey, instance_ip, instance_name))
-            return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
+                       % (self.userkey,
+                          self.user_login,
+                          instance_ip,
+                          instance_name))
+            return self.get_command_result("ssh -i %s %s@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/'"
-                             % (self.userkey, instance_ip,
+                             % (self.userkey,
+                                self.user_login,
+                                instance_ip,
                                 instance_name))
         elif ramdisk_id == None:
-            self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
+            self.debug("ssh -i %s %s@%s '. ~/.profile;"
                        " sudo euca-bundle-vol -c ${EC2_CERT}"
                        " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                        " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                        " -p %s -s 1024 -d /mnt/ --kernel %s'"
-                       % (self.userkey, instance_ip, instance_name,
+                       % (self.userkey,
+                          self.user_login,
+                          instance_ip,
+                          instance_name,
                           kernel_id))
-            return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
+            return self.get_command_result("ssh -i %s %s@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/ --kernel %s'"
-                             % (self.userkey, instance_ip, instance_name,
+                             % (self.userkey,
+                                self.user_login,
+                                instance_ip,
+                                instance_name,
                             kernel_id))
         else:
-            self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
+            self.debug("ssh -i %s %s@%s '. ~/.profile;"
                        " sudo euca-bundle-vol -c ${EC2_CERT}"
                        " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                        " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                        " -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
-                       % (self.userkey, instance_ip, instance_name,
-                          kernel_id, ramdisk_id))
-            return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
+                       % (self.userkey,
+                          self.user_login,
+                          instance_ip,
+                          instance_name,
+                          kernel_id,
+                          ramdisk_id))
+            return self.get_command_result("ssh -i %s %s@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
                             " -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
-                             % (self.userkey, instance_ip, instance_name,
-                            kernel_id, ramdisk_id))
+                             % (self.userkey,
+                                self.user_login,
+                                instance_ip,
+                                instance_name,
+                                kernel_id,
+                                ramdisk_id))
 
     def upload_bundle(
         self,
@@ -1375,14 +1448,20 @@ class Cluster(object):
         No returns
         '''
 
-        self.debug("ssh -i %s ubuntu@%s '. ~/.profile;"
+        self.debug("ssh -i %s %s@%s '. ~/.profile;"
                    " euca-upload-bundle -b %s -m %s'"
-                   % (self.userkey, instance_ip, bucket_name,
+                   % (self.userkey,
+                      self.user_login,
+                      instance_ip,
+                      bucket_name,
                       manifest))
-        return self.get_command_result("ssh -i %s ubuntu@%s '. ~/.profile;"
+        return self.get_command_result("ssh -i %s %s@%s '. ~/.profile;"
                         " euca-upload-bundle -b %s -m %s'"
-                         % (self.userkey, instance_ip, bucket_name,
-                        manifest))
+                         % (self.userkey,
+                            self.user_login,
+                            instance_ip,
+                            bucket_name,
+                            manifest))
 
     def describe_images(self, image_id):
         '''
@@ -1534,6 +1613,9 @@ class Cluster(object):
         if self.interface == 'boto':
             self.msg('UNIMPLEMENTED')
             sys.exit()
+        if self.cloud == 'eucalyptus':
+            self.msg('bugs')
+            sys.exit()
 
         self.debug('Checking if %s is existed' % args.name)
         # check if cluter is existed
@@ -1569,7 +1651,8 @@ class Cluster(object):
             self.copyto(instance, os.environ['EC2_PRIVATE_KEY'])
             self.copyto(instance, os.environ['EUCALYPTUS_CERT'])
             self.copyto(instance, self.enrc)
-            self.execute(instance, 'cat novarc >> ~/.profile')
+            self.execute(instance, 'cat %s >> ~/.profile'
+                         % self.enrc.split('/')[-1])
             self.execute(instance, 'source ~/.profile')
 
         save_queue = Queue.Queue()
@@ -1661,7 +1744,10 @@ class Cluster(object):
         if self.interface == 'boto':
             self.msg('UNIMPLEMENTED')
             sys.exit()
-
+        if self.cloud == 'eucalyptus':
+            self.msg('bugs')
+            sys.exit()
+        
         control_node_num = 1
 
         # only restore cluster which is saved
@@ -1715,7 +1801,7 @@ class Cluster(object):
         self.debug('Getting free IP list')
         ip_lists = self.euca_describe_addresses()
 
-        time.sleep(3)
+        time.sleep(5)
 
         self.msg('\nAssociating IPs')
         for i in range(cluster_size):
@@ -1992,6 +2078,8 @@ def commandline_parser():
                         help='create userkey')
     parser.add_argument('--interface', action='store',
                         help='choose interface to use')
+    parser.add_argument('--cloud', action='store',
+                        help='choose cloud')
     subparsers = parser.add_subparsers(help='commands')
 
     # status command
@@ -2069,6 +2157,7 @@ def commandline_parser():
     # set flags
     virtual_cluster.set_flag(args)
     # choose interface
+    virtual_cluster.set_cloud(args.cloud)
     virtual_cluster.set_interface(args.interface)
     args.func(args)
 
