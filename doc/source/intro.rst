@@ -34,22 +34,22 @@ Installation
 We assume that yo do not have super user priviledges on the computer
 where you like to install our tool.
 
-### Step 0: Prerequisites (not using india.futuregrid.org machines):
+* Step 0: Prerequisites (not using india.futuregrid.org machines):
     
-In order to make the installation process work smoothly, please make 
-sure that the computer you like to install our tool has already
-installed euca2ools (version 1.2) and Python (version 2.7). If you do
-not have those tools or correct version installed. you may install 
-euca2ools (version 1.2) from 
+  In order to make the installation process work smoothly, please make 
+  sure that the computer you like to install our tool has already
+  installed euca2ools (version 1.2) and Python (version 2.7). If you do
+  not have those tools or correct version installed. you may install 
+  euca2ools (version 1.2) from 
+  
+  * http://eucalyptussoftware.com/downloads/releases/
 
-* http://eucalyptussoftware.com/downloads/releases/
+  and install python (version 2.7) from 
 
-and install python (version 2.7) from 
+  * http://python.org
 
-* http://python.org
-
-After you check all the tools with version are correctly installed,
-you may proceed with following steps to start installation.
+  After you check all the tools with version are correctly installed,
+  you may proceed with following steps to start installation.
 
 
 	* **Step 0:** Prerequisites (using india.futuregrid.org machines):
