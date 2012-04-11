@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+'''Virtual cluster shell'''
 
 #import argparse
 #import os
@@ -15,6 +16,7 @@ import sys
 
 
 class Shell(Cmd):
+    '''Virtual cluster shell command'''
     #multilineCommands = ['None']
     #Cmd.shortcuts.update({'&': 'speak'})
     #maxrepeats = 3
@@ -51,7 +53,7 @@ class Shell(Cmd):
                     help="interface")
         ])
     def do_config(self, args, opts):
-
+        '''config - add the configuration from a file'''
         if not opts.file:
             self.cluster.parse_conf()
         else:

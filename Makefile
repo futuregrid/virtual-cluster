@@ -1,4 +1,3 @@
-
 ######################################################################
 # GIT INTERFACES
 ######################################################################
@@ -28,7 +27,6 @@ pip:
 force:
 	make -f Makefile pip
 	sudo pip install -U dist/*.tar.gz
-
 
 install:
 	sudo pip install dist/*.tar.gz
@@ -73,3 +71,22 @@ clean:
 	find . -name "*.pyc" -exec rm {} \;  
 	rm -rf build dist *.egg-info *~ #*
 
+######################################################################
+# pypi
+######################################################################
+
+pip-register:
+	python setup.py register
+
+upload:
+	make -f Makefile pip
+	python setup.py sdist upload
+
+#############################################################################
+# SPHINX DOC
+###############################################################################
+
+sphinx:
+	cd doc; make examples
+	cd doc; make html
+	cd doc; make epub

@@ -1,7 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 '''
+FGCluster command
+'''
+
+"""
 FGCluster.py (python)
 -------------------------
 
@@ -60,7 +63,7 @@ usage:
     status of all virtual clusters recorded
 
     list: list virtual clusters
-'''
+"""
 
 import argparse
 import sys
