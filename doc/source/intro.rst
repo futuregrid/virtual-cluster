@@ -72,7 +72,7 @@ installation steps.
 
 Since you do not have super user priviledges, you need virtualenv in
 order to finish the installtion. You may download virtualenv.py by
-following command:
+following command::
 
     $ wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
     
@@ -166,12 +166,14 @@ private key name)::
 You can also use our tool to create a userkey for you, but you need 
 to specify the userkey name in confifuration file which is listed 
 below. The key can be created if you use --create-key argument before 
-any subcommands when you first run our tool. For more help, 
+any subcommands when you first run our tool. For more help see also::
 
     $ fg-cluster --help
     
+However, this documentation is much more comprehensive than the help message.
+
 NOTE: For more information about nova credentials, you can refer 
-to tutorial at: 
+to tutorial at:: 
 
 * https://portal.futuregrid.org/tutorials/openstack
 
@@ -230,17 +232,17 @@ parameters (command example is given below)::
 
 Parameters:
 
-* -f: Futuregrid configuration file named futuregrid.cfg.
-* -n: Number of computation nodes. This number of computation nodes does not include control node, so the
+-f: Futuregrid configuration file named futuregrid.cfg.
+-n: Number of computation nodes. This number of computation nodes does not include control node, so the
 actual number for virtual cluster nodes is the number of computations node plus one control node.
-* -s: Instance type. Instance type includes: m1.tiny, m1.small and m1.large.
-* -i: Image id. You can obtain image id by following command:
+-s: Instance type. Instance type includes: m1.tiny, m1.small and m1.large.
+-i: Image id. You can obtain image id by following command::
 
         $ euca-describe-images
         
-* -a: cluster name. The virtual cluster name which uniquely identifies your cluster.
+-a: cluster name. The virtual cluster name which uniquely identifies your cluster.
 
-For example:
+For example::
 
     $ fg-cluster -f futuregrid.cfg run -n 2 -t m1.small -i ami-0000001d -a mycluster1
 
@@ -292,7 +294,7 @@ Restore a virtual cluster
 
 Run following command will restore a virtual cluster state including
 installed softwares, unfinished jobs which was saved before, so that
-you can continue your work from that saved point.
+you can continue your work from that saved point::
 
     $ fg-cluster -f <config-file> restore -a <cluster-name>
 
