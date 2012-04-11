@@ -34,7 +34,7 @@ Installation
 We assume that yo do not have super user priviledges on the computer
 where you like to install our tool.
 
-* Step 0: Prerequisites (not using india.futuregrid.org machines):
+* **Step 0:** Prerequisites (not using india.futuregrid.org machines):
     
   In order to make the installation process work smoothly, please make 
   sure that the computer you like to install our tool has already
@@ -52,65 +52,65 @@ where you like to install our tool.
   you may proceed with following steps to start installation.
 
 
-	* **Step 0:** Prerequisites (using india.futuregrid.org machines):
-
-		india.futuregrid.org has installed every tools you may need to finish this
-		installation, so to activate euca2ools (version 1.2) after you login into
-		india futuregrid machines, just simply do::
+* **Step 0: Prerequisites (using india.futuregrid.org machines):**
+	
+	india.futuregrid.org has installed every tools you may need to finish this
+	installation, so to activate euca2ools (version 1.2) after you login into
+	india futuregrid machines, just simply do::
     
-			$ module load euca2ools
+		$ module load euca2ools
     
-		To activate python 2.7, simply do::
+	To activate python 2.7, simply do::
 
-			$ module load python
+		$ module load python
 		
-		Those commands will help you load tools with correct version you need
-		to finish installation. So now you may proceed with following
-		installation steps.
+	Those commands will help you load tools with correct version you need
+	to finish installation. So now you may proceed with following
+	installation steps.
 
-### Step 1: Download virtualenv
+* **Step 1: Download virtualenv**
+	
+	Since you do not have super user priviledges, you need virtualenv in
+	order to finish the installtion. You may download virtualenv.py by
+	following command::
 
-Since you do not have super user priviledges, you need virtualenv in
-order to finish the installtion. You may download virtualenv.py by
-following command::
+	    $ wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
+ 
+* **Step 2: Install virtualenv**
+	
+	After you downloaded virtualenv, you can install it by following
+	command::
 
-    $ wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
+	    $ python virtualenv.py --system-site-packages ENV
+	  
+* **Step 3: Activate virtualenv**
+
+	After installation of virtualenv, you can activate virtualenv by
+	following command::
+
+	    $ source ENV/bin/activate
     
-### Step 2: Install virtualenv
+* **Step 4: install the virtual cluster with pip**
 
-After you downloaded virtualenv, you can install it by following
-command::
+	Once virtualenv is activated, you can use pip to install our tool by
+	following command::
 
-    $ python virtualenv.py --system-site-packages ENV
-    
-### Step 3: Activate virtualenv
+	    $ ENV/bin/pip install futuregrid.virtual.cluster
 
-After installation of virtualenv, you can activate virtualenv by
-following command::
+	If you already had our tool installed, and you want to upgrade to
+	newest version, you can do it by following command::
 
-    $ source ENV/bin/activate
-    
-### Step 4: install the virtual cluster with pip
-
-Once virtualenv is activated, you can use pip to install our tool by
-following command::
-
-    $ ENV/bin/pip install futuregrid.virtual.cluster
-
-If you already had our tool installed, and you want to upgrade to
-newest version, you can do it by following command::
-
-	$ ENV/bin/pip install --upgrade futuregrid.virtual.cluster
-
-NOTE: For more information about virtualenv, you may see documentation
-of virtualenv on
-
-* http://www.virtualenv.org/en/latest/index.html
+		$ ENV/bin/pip install --upgrade futuregrid.virtual.cluster
+	
+	.. note: For more information about virtualenv, you may see documentation of virtualenv at
+	
+		* http://www.virtualenv.org/en/latest/index.html
 
 FutureGrid Specific Instalation
 -------------------------------
 
-### Install without admin rights on india futuregrid
+Install without admin rights on india futuregrid
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Go to the futuregrid portal 
 
