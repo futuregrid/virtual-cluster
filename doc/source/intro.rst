@@ -428,20 +428,21 @@ on the cluster you created using SLURM system, you can conduct the following ste
 	    Hello world from processor i-000023c9, rank 1 out of 2 processors
 	    salloc: Relinquishing job allocation 2
     
-Using FGClusterRunprogram
+Using fg-cluster tool
 ---------------------------
 
-A program which could help you to run a simple MPI program can be found at 
-
-* https://github.com/futuregrid/virtual-cluster/blob/master/etc/FGClusterRunprogram.py
+A much simpler way to run a MPI program is to use our tool
 
 So you can simply run command::
 
-    # python FGClusterRunprogram.py -f futuregrid.cfg -p helloworld.c -n 2 -a mycluster1
+    # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name>
+
+For example:
+
+    # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1
 
 Parameters
 
-  -f	Futuregrid configuration file
   -p 	Program source code file
   -n 	Number of computaion nodes you want to run with. 
   -a 	Name of virtual cluster you want to run program on
