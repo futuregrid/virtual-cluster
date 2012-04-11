@@ -233,8 +233,7 @@ parameters (command example is given below)::
 Parameters:
 
   -f 	Futuregrid configuration file named futuregrid.cfg.
-  -n 	Number of computation nodes. This number of computation nodes does not include control node, so the
-actual number for virtual cluster nodes is the number of computations node plus one control node.
+  -n 	Number of computation nodes. This number of computation nodes does not include control node, so the actual number for virtual cluster nodes is the number of computations node plus one control node.
   -s 	Instance type. Instance type includes: m1.tiny, m1.small and m1.large.
   -i 	Image id. You can obtain image id by following command::
 
