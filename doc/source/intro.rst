@@ -234,15 +234,15 @@ Parameters:
 
 	-f 	Futuregrid configuration file named futuregrid.cfg.
 	-n 	Number of computation nodes. 
-		This number of computation nodes does 
-		not include the control node, so the actual number for virtual cluster.
-		nodes is the number of computations node plus one control node.
 	-s 	Instance type. 
 		Instance type includes: m1.tiny, m1.small and m1.large.
 	-i 	Image id. You can obtain image with a commandline tool such as ``euca-describe-images``.
-        
 	-a 	Cluster name. 
 		The virtual cluster name which uniquely identifies your cluster.
+
+Please note that the number of computation nodes does not include the control node, so the actual number for virtual cluster.
+nodes is the number of computations node plus one control node.
+
 
 For example::
 
@@ -446,9 +446,8 @@ Parameters
   -n 	Number of computaion nodes you want to run with. 
   -a 	Name of virtual cluster you want to run program on
 
-.. note: Make sure that the number you input is no larger than the acutal number of computaion node you created.
-
-.. note: The virtual cluster name should be a name of cluster which is currently running
+Make sure that the number you input is no larger than the acutal number of computaion node you created. 
+The virtual cluster name should be a name of cluster which is currently running.
 
 
 FOR DEVELOPERS ONLY
