@@ -439,12 +439,11 @@ So you can simply run command::
 
     # python FGClusterRunprogram.py -f futuregrid.cfg -p helloworld.c -n 2 -a mycluster1
 
-Parameters:
+Parameters
 
   -f	Futuregrid configuration file
   -p 	Program source code file
-  -n 	Number of computaion nodes you want to run with. Make sure that the number you input is no larger 
-than the acutal number of computaion node you created.
+  -n 	Number of computaion nodes you want to run with. Make sure that the number you input is no larger than the acutal number of computaion node you created.
   -a 	Name of virtual cluster you want to run program on
 
 
