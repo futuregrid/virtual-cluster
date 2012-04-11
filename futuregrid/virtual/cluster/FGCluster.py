@@ -417,7 +417,7 @@ class Cluster(object):
                 sys.exit(1)
 
             self.debug('Checking backup file')
-            self.backup_file += self.cloud
+            self.backup_file += '.' + self.cloud
             if not self.cloud_instances.set_backup_file(self.backup_file):
                 self.msg('\nBackup file is corrupted, or you are using an old'
                         ' version of this tool. Please delete this backup file'
@@ -664,9 +664,6 @@ class Cluster(object):
 
         No returns
         '''
-
-        self.debug("ssh -i %s ubuntu@%s '%s'" % (self.userkey,
-                  instance['ip'], command))
         os.system("ssh -i %s %s@%s '%s'" % (self.userkey,
                                             self.user_login,
                                             instance['ip'],
@@ -682,9 +679,6 @@ class Cluster(object):
 
         No returns
         '''
-
-        self.debug('scp -i %s %s ubuntu@%s:~/' % (self.userkey,
-                  filename, instance['ip']))
         os.system('scp -i %s %s %s@%s:~/' % (self.userkey,
                                              filename,
                                              self.user_login,
@@ -1256,6 +1250,7 @@ class Cluster(object):
         # start slurm and munge daemon
         self.msg('\nStarting slurm on node %s' % instance['id'])
         self.execute(instance, 'sudo /etc/init.d/slurm-llnl start')
+        self.msg('\nSrarting munge on node %s' % instance['id'])
         self.execute(instance, 'sudo /etc/init.d/munge start')
 
     def define_repo(self):
@@ -2045,6 +2040,43 @@ class Cluster(object):
                         self.cloud_instances.get_cluster_size(cloud) - 1,
                         cloud['status']))
 
+# ---------------------------------------------------------------------
+# METHODS TO RUN MPI PROGRAM
+# ---------------------------------------------------------------------
+    def run_program(self, args):
+
+        if self.cloud_instances.if_exist(args.name):
+            self.debug('Getting cloud instance %s' % args.name)
+            self.cloud_instances.get_cloud_instances_by_name(args.name)
+            self.debug('Checking cloud status')
+            # check if cloud instance is terminated
+            if self.cloud_instances.if_status(self.cloud_instances.DOWN):
+                self.msg('\nERROR: Cluster %s already down?'
+                          % args.name)
+                sys.exit()
+        else:
+            self.msg('\nError in finding virtual cluster %s, not created?'
+                     % args.name)
+            sys.exit()
+
+        program_name = args.program.split('.')[0]
+        for instance in self.cloud_instances.get_list().values():
+            if type(instance) is dict:
+                threading.Thread(target=self.copy_compile_prog,
+                                 args=[instance, args.program]).start()
+
+        while threading.activeCount() > 1:
+            time.sleep(1)
+
+        self.msg('\nRunning program %s\n' % program_name)
+        # run program on control node
+        self.execute(self.cloud_instances.get_by_id(0),
+                     "salloc -N %d mpirun %s"
+                     % (int(args.number), program_name))
+
+    def copy_compile_prog(self, instance, prog):
+        self.copyto(instance, prog)
+        self.execute(instance, "mpicc %s -o %s" % (prog, prog.split('.')[0]))
 ######################################################################
 # MAIN
 ######################################################################
@@ -2145,6 +2177,19 @@ def commandline_parser():
                                 help='Virtual cluster name')
     restore_parser.set_defaults(func=virtual_cluster.restore_cluster)
 
+    #mpirun command
+    run_program_parser = subparsers.add_parser('mpirun',
+            help='Run a simple MPI program')
+    run_program_parser.add_argument('-a', '--name', action='store',
+                                   required=True,
+                                   help='Virtual cluster name')
+    run_program_parser.add_argument('-p', '--program', action='store',
+                                   required=True,
+                                   help='Program source file')
+    run_program_parser.add_argument('-n', '--number', action='store',
+                                   required=True,
+                                   help='Number of compute nodes to use')
+    run_program_parser.set_defaults(func=virtual_cluster.run_program)
     args = parser.parse_args()
 
     # parse config file, if config file is not specified,
@@ -2163,3 +2208,4 @@ def commandline_parser():
 
 if __name__ == '__main__':
     commandline_parser()
+
