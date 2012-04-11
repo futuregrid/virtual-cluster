@@ -443,12 +443,12 @@ Parameters
 
   -f	Futuregrid configuration file
   -p 	Program source code file
-  -n 	Number of computaion nodes you want to run with. Make sure that the number you input is no larger than the acutal number of computaion node you created.
+  -n 	Number of computaion nodes you want to run with. 
   -a 	Name of virtual cluster you want to run program on
 
+.. note: Make sure that the number you input is no larger than the acutal number of computaion node you created.
 
-Note: Virtual cluster name should be a name of cluster which is
-currently running
+.. note: The virtual cluster name should be a name of cluster which is currently running
 
 
 FOR DEVELOPERS ONLY
