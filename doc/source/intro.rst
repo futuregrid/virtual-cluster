@@ -22,7 +22,9 @@ Managment operations include:
 * Save currently running virtual cluster(s)
 * Restore saved virtual cluster(s) 
 * Show status of virtual cluster(s) 
+* List brief information of all created clusters
 * Terminate virtual cluster(s)
+* Run a simple MPI program
 
 
 HOW TO INSTALL
