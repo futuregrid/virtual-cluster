@@ -461,13 +461,13 @@ computer.
 
 * **Step 1: You can pull source code from github by**
 
-	This is done by::
+	::
 
-    git clone git@github.com:futuregrid/virtual-cluster.git
+	    git clone git@github.com:futuregrid/virtual-cluster.git
 
 * **Step 2: Create tar file for installation**
 
-	This is dine by::
+	::
 	
 	    make pip
     
@@ -475,7 +475,7 @@ computer.
 
 * **Step 3: Install**
 
-	This is done by::
+	::
 	
 	    sudo pip install --upgrade dist/*.tar.gz
 
