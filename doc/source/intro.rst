@@ -52,21 +52,21 @@ After you check all the tools with version are correctly installed,
 you may proceed with following steps to start installation.
 
 
-### Step 0: Prerequisites (using india.futuregrid.org machines):
+	* **Step 0:** Prerequisites (using india.futuregrid.org machines):
 
-india.futuregrid.org has installed every tools you may need to finish this
-installation, so to activate euca2ools (version 1.2) after you login into
-india futuregrid machines, just simply do::
+		india.futuregrid.org has installed every tools you may need to finish this
+		installation, so to activate euca2ools (version 1.2) after you login into
+		india futuregrid machines, just simply do::
     
-    $ module load euca2ools
+			$ module load euca2ools
     
-To activate python 2.7, simply do::
+		To activate python 2.7, simply do::
 
-    $ module load python
-
-Those commands will help you load tools with correct version you need
-to finish installation. So now you may proceed with following
-installation steps.
+			$ module load python
+		
+		Those commands will help you load tools with correct version you need
+		to finish installation. So now you may proceed with following
+		installation steps.
 
 ### Step 1: Download virtualenv
 
