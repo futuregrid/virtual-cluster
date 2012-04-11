@@ -261,7 +261,7 @@ Save a virtual cluster
 
 Run following command will save a currently running virtual cluster into one
 control image and compute image for later resotre. (Installed softwares and 
-unfinished jobs will also be saved)
+unfinished jobs will also be saved)::
 
     $ fg-cluster -f <config-file> checkpoint -c <control-node-bucket> -t <control-node-name> -m <compute-bucket> -e  <compute-name> -a <cluster-name>
 
@@ -389,16 +389,19 @@ You may use this for test purpose.
 We assume that you are using helloworld.c from above link. So in order to run this MPI program 
 on the cluster you created using SLURM system, you can
 
-### Step 1: Copy helloworld.c to HOME directory on each node in virtual cluster::
+Step 1: Copy helloworld.c to HOME directory on each node in virtual cluster::
+---------------------------------------------------------------------------------
 
     $ scp -i <your-userkey-pem-file> helloworld.c ubuntu@<instance-ip>:~/
 
-### Step 2: Login to instances, complie helloworld.c on each node, run::
+Step 2: Login to instances, complie helloworld.c on each node, run::
+--------------------------------------------------------------------
 
     $ ssh -i <your-userkey-pem-file> ubuntu@<instance-ip>
     $ mpicc hellowrld.c -o helloworld 
 
-### Step 3: run MPI program, you need to login into control node
+Step 3: run MPI program, you need to login into control node
+------------------------------------------------------------
 
 Option 1: Using salloc command::
 
@@ -457,17 +460,20 @@ Generating the Distribution
 Assume that you have git correctly installed and configured on your
 computer.
 
-### Step 1: You can pull source code from github by::
+Step 1: You can pull source code from github by::
+-------------------------------------------------
 
     git clone git@github.com:futuregrid/virtual-cluster.git
 
-### Step 2: Create tar file for installation::
+Step 2: Create tar file for installation::
+------------------------------------------
 
     make pip
     
 This creates the tar file that you can install via pip in ./dist
 
-### Step 3: Install::
+Step 3: Install::
+-----------------
 
     sudo pip install --upgrade dist/*.tar.gz
 
