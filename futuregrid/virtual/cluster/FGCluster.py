@@ -391,7 +391,7 @@ class Cluster(object):
                     key_dir = "."
                 if self.cloud == 'nova':
                     os.environ["NOVA_KEY_DIR"] = key_dir
-                elif self.cloud =='eucalyptus':
+                elif self.cloud == 'eucalyptus':
                     os.environ['EUCA_KEY_DIR'] = key_dir
                 with open(os.path.expanduser(self.enrc)) as enrc_content:
                     for line in enrc_content:
@@ -959,6 +959,7 @@ class Cluster(object):
                     return True
                 else:
                     return False
+
     def euca_get_ip(self, instance_id):
         '''
         Get instance public given instance id
@@ -1031,7 +1032,7 @@ class Cluster(object):
             # immediatly associate ip after run instance
             # may lead to error, use sleep
             time.sleep(3)
-    
+
             if self.cloud == 'nova':
                 self.debug('Getting free public IPs')
                 # get free IP list
@@ -1041,20 +1042,25 @@ class Cluster(object):
                 for i in range(cluster_size):
                     instance = self.cloud_instances.get_by_id(i)
                     time.sleep(1)
-                    while not self.euca_associate_address(instance, ip_lists[i]):
-                        self.msg('Error in associating IP %s with instance %s, '
-                                 'trying again' % (ip_lists[i], instance['id']))
+                    while not self.euca_associate_address(instance,
+                                                          ip_lists[i]):
+                        self.msg('Error in associating IP %s with '
+                                 'instance %s, '
+                                 'trying again' % (ip_lists[i],
+                                                   instance['id']))
             # eucalyptus no need to associate ip
             if self.cloud == 'eucalyptus':
                 for i in range(cluster_size):
                     instance = self.cloud_instances.get_by_id(i)
                     time.sleep(1)
                     self.cloud_instances.set_ip_by_id(instance['id'],
-                                                      self.euca_get_ip(instance['id']))
+                                        self.euca_get_ip(instance['id']))
 
         elif self.interface == 'boto':
             reservation = \
-                self.boto_run_instances(args.image, cluster_size, args.type)
+                self.boto_run_instances(args.image,
+                                        cluster_size,
+                                        args.type)
             self.msg('Associating public IPs')
             ip_index = 0
             for instance in reservation.instances:
@@ -1745,7 +1751,7 @@ class Cluster(object):
         if self.cloud == 'eucalyptus':
             self.msg('bugs')
             sys.exit()
-        
+
         control_node_num = 1
 
         # only restore cluster which is saved
@@ -2211,4 +2217,3 @@ def commandline_parser():
 
 if __name__ == '__main__':
     commandline_parser()
-
