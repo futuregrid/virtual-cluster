@@ -391,13 +391,13 @@ on the cluster you created using SLURM system, you can conduct the following ste
 
 * **Step 1: Copy helloworld.c to HOME directory on each node in virtual cluster**
 
-	This is done by::
+	::
 
-    $ scp -i <your-userkey-pem-file> helloworld.c ubuntu@<instance-ip>:~/
+	    $ scp -i <your-userkey-pem-file> helloworld.c ubuntu@<instance-ip>:~/
 
 * **Step 2: Login to instances, complie helloworld.c on each node, run**
 
-	This is done by::
+	::
 	
 	    $ ssh -i <your-userkey-pem-file> ubuntu@<instance-ip>
 	    $ mpicc hellowrld.c -o helloworld 
