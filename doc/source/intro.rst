@@ -437,7 +437,7 @@ So you can simply run command::
 
     # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name>
 
-For example:
+For example::
 
     # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1
 
