@@ -52,7 +52,7 @@ where you like to install our tool.
   you may proceed with following steps to start installation.
 
 
-* **Step 0: Prerequisites (using india.futuregrid.org machines):**
+* **Step 1: Prerequisites (using india.futuregrid.org machines):**
 	
 	india.futuregrid.org has installed every tools you may need to finish this
 	installation, so to activate euca2ools (version 1.2) after you login into
@@ -68,7 +68,7 @@ where you like to install our tool.
 	to finish installation. So now you may proceed with following
 	installation steps.
 
-* **Step 1: Download virtualenv**
+* **Step 2: Download virtualenv**
 	
 	Since you do not have super user priviledges, you need virtualenv in
 	order to finish the installtion. You may download virtualenv.py by
@@ -76,21 +76,21 @@ where you like to install our tool.
 
 	    $ wget https://raw.github.com/pypa/virtualenv/master/virtualenv.py
  
-* **Step 2: Install virtualenv**
+* **Step 3: Install virtualenv**
 	
 	After you downloaded virtualenv, you can install it by following
 	command::
 
 	    $ python virtualenv.py --system-site-packages ENV
 	  
-* **Step 3: Activate virtualenv**
+* **Step 4: Activate virtualenv**
 
 	After installation of virtualenv, you can activate virtualenv by
 	following command::
 
 	    $ source ENV/bin/activate
     
-* **Step 4: install the virtual cluster with pip**
+* **Step 5: install the virtual cluster with pip**
 
 	Once virtualenv is activated, you can use pip to install our tool by
 	following command::
@@ -387,45 +387,46 @@ A simple MPI version of helloworld can be found at:
 You may use this for test purpose.
 
 We assume that you are using helloworld.c from above link. So in order to run this MPI program 
-on the cluster you created using SLURM system, you can
+on the cluster you created using SLURM system, you can conduct the following steps.
 
-Step 1: Copy helloworld.c to HOME directory on each node in virtual cluster::
----------------------------------------------------------------------------------
+* **Step 1: Copy helloworld.c to HOME directory on each node in virtual cluster**
+
+	This is done by::
 
     $ scp -i <your-userkey-pem-file> helloworld.c ubuntu@<instance-ip>:~/
 
-Step 2: Login to instances, complie helloworld.c on each node, run::
---------------------------------------------------------------------
+* **Step 2: Login to instances, complie helloworld.c on each node, run**
 
-    $ ssh -i <your-userkey-pem-file> ubuntu@<instance-ip>
-    $ mpicc hellowrld.c -o helloworld 
+	This is done by::
+	
+	    $ ssh -i <your-userkey-pem-file> ubuntu@<instance-ip>
+	    $ mpicc hellowrld.c -o helloworld 
 
-Step 3: run MPI program, you need to login into control node
-------------------------------------------------------------
+* **Step 3: run MPI program, you need to login into control node**
 
-Option 1: Using salloc command::
+	Option 1: Using salloc command::
+	
+	    $ salloc -N 2 mpirun helloworld
 
-    $ salloc -N 2 mpirun helloworld
+	where -N is the number of computation nodes you want to run with. And 
+	should not be larger than the actual number of computation nodes
 
-where -N is the number of computation nodes you want to run with. And 
-should not be larger than the actual number of computation nodes
+	Option 2: Using sbatch command by submitting a job script::
 
-Option 2: Using sbatch command by submitting a job script::
+	    $ sbatch helloworld.sh
 
-    $ sbatch helloworld.sh
+	You can find example helloworld.sh at
 
-You can find example helloworld.sh at
+	* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.sh
 
-* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.sh
+	
+	Execution result::
 
-
-Execution result::
-
-    Running program helloworld
-    salloc: Granted job allocation 2
-    Hello world from processor i-000023c8, rank 0 out of 2 processors
-    Hello world from processor i-000023c9, rank 1 out of 2 processors
-    salloc: Relinquishing job allocation 2
+	    Running program helloworld
+	    salloc: Granted job allocation 2
+	    Hello world from processor i-000023c8, rank 0 out of 2 processors
+	    Hello world from processor i-000023c9, rank 1 out of 2 processors
+	    salloc: Relinquishing job allocation 2
     
 Using FGClusterRunprogram
 ---------------------------
@@ -460,21 +461,24 @@ Generating the Distribution
 Assume that you have git correctly installed and configured on your
 computer.
 
-Step 1: You can pull source code from github by::
--------------------------------------------------
+* **Step 1: You can pull source code from github by**
+
+	This is done by::
 
     git clone git@github.com:futuregrid/virtual-cluster.git
 
-Step 2: Create tar file for installation::
-------------------------------------------
+* **Step 2: Create tar file for installation**
 
-    make pip
+	This is dine by::
+	
+	    make pip
     
-This creates the tar file that you can install via pip in ./dist
+	This creates the tar file that you can install via pip in ./dist
 
-Step 3: Install::
------------------
+* **Step 3: Install**
 
-    sudo pip install --upgrade dist/*.tar.gz
+	This is done by::
+	
+	    sudo pip install --upgrade dist/*.tar.gz
 
-This wil install the files by default into /usr/local/bin/fg-cluster  
+	This wil install the files by default into /usr/local/bin/fg-cluster  
