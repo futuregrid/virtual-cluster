@@ -6,7 +6,7 @@ System requirements
 
 * euca2ools: verison 1.2
 * python: version 2.7
-* virtualenv (no admin rights)
+* virtualenv (optional, if you do not have sudo rights)
 
 Introduction
 ------------
