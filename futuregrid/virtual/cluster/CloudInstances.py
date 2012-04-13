@@ -84,7 +84,8 @@ class CloudInstances:
                         if not 'id' in element or \
                             not 'image' in element or \
                             not 'type' in element or \
-                            not 'ip' in element:
+                            not 'ip' in element or \
+                            not 'private_ip' in element:
                             return False
         except (KeyError, TypeError):
             return False
@@ -261,6 +262,7 @@ class CloudInstances:
                      image_id,
                      instance_type,
                      instance_ip='',
+                     instance_private_ip='',
                      index=None):
         '''
         Sets attributes of a given instance
@@ -285,6 +287,7 @@ class CloudInstances:
         instance['image'] = image_id
         instance['type'] = instance_type
         instance['ip'] = instance_ip
+        instance['private_ip'] = instance_private_ip
         # instance key '0, 1, 2...'
         # can use index to get instance
         if index == None:
@@ -312,7 +315,7 @@ class CloudInstances:
                 if element['id'] == instance['id']:
                     del self.cloud_instances[key]
 
-    def set_ip_by_id(self, instance_id, instance_ip):
+    def set_ip_by_id(self, instance_id, instance_ip, instance_private_ip):
         '''
         Sets IP by given instance id
 
@@ -333,6 +336,7 @@ class CloudInstances:
             if type(element) is dict:
                 if element['id'] == instance_id:
                     element['ip'] = instance_ip
+                    element['private_ip'] = instance_private_ip
 
     def clear(self):
         '''
