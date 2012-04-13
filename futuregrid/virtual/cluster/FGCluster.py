@@ -1825,14 +1825,23 @@ class Cluster(object):
 
         self.msg('\nAssociating IPs')
         for i in range(cluster_size):
-            time.sleep(1)
             self.debug('Getting cloud from index %d' % i)
             instance = self.cloud_instances.get_by_id(i)
-            while not self.euca_associate_address(instance, ip_lists[i]):
-                self.msg('Error in associating IP %s with instance %s, '
-                     'trying again'
-                     % (ip_lists[i], instance['id']))
-                time.sleep(1)
+            time.sleep(1)
+            if self.cloud == 'nova':
+                while not self.euca_associate_address(instance, ip_lists[i]):
+                    self.msg('Error in associating IP %s with instance %s, '
+                         'trying again'
+                         % (ip_lists[i], instance['id']))
+                    time.sleep(1)
+            elif self.cloud == 'eucalyptus':
+                addresses = self.euca_get_ip(instance['id'])
+                public_ip_address = addresses['public']
+                private_ip_address = addresses['private']
+                self.msg('ADDRESS %s' % public_ip_address)
+                self.cloud_instances.set_ip_by_id(instance['id'],
+                                                  public_ip_address,
+                                                  private_ip_address)
 
         # check ssh port but not install
         self.debug('Checking alive instance for deploying')
