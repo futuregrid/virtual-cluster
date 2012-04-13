@@ -2088,7 +2088,9 @@ class Cluster(object):
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 threading.Thread(target=self.copy_compile_prog,
-                                 args=[instance, program_name]).start()
+                                 args=[instance,
+                                       args.program,
+                                       program_name]).start()
 
         while threading.activeCount() > 1:
             time.sleep(1)
@@ -2099,9 +2101,9 @@ class Cluster(object):
                      "salloc -N %d mpirun %s"
                      % (int(args.number), program_name))
 
-    def copy_compile_prog(self, instance, prog):
+    def copy_compile_prog(self, instance, prog, prog_name):
         self.copyto(instance, prog)
-        self.execute(instance, "mpicc %s.c -o %s" % (prog, prog))
+        self.execute(instance, "mpicc %s.c -o %s" % (prog_name, prog_name))
 ######################################################################
 # MAIN
 ######################################################################
