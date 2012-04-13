@@ -2084,11 +2084,11 @@ class Cluster(object):
                      % args.name)
             sys.exit()
 
-        program_name = args.program.split('.')[0]
+        program_name = args.program.split('/')[-1].split('.')[0]
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 threading.Thread(target=self.copy_compile_prog,
-                                 args=[instance, args.program]).start()
+                                 args=[instance, program_name]).start()
 
         while threading.activeCount() > 1:
             time.sleep(1)
@@ -2101,7 +2101,7 @@ class Cluster(object):
 
     def copy_compile_prog(self, instance, prog):
         self.copyto(instance, prog)
-        self.execute(instance, "mpicc %s -o %s" % (prog, prog.split('.')[0]))
+        self.execute(instance, "mpicc %s.c -o %s" % (prog, prog))
 ######################################################################
 # MAIN
 ######################################################################
