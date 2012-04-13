@@ -1,10 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-'''
-FGCluster command
-'''
 
-"""
+'''
 FGCluster.py (python)
 -------------------------
 
@@ -63,7 +60,7 @@ usage:
     status of all virtual clusters recorded
 
     list: list virtual clusters
-"""
+'''
 
 import argparse
 import sys
@@ -391,7 +388,7 @@ class Cluster(object):
                     key_dir = "."
                 if self.cloud == 'nova':
                     os.environ["NOVA_KEY_DIR"] = key_dir
-                elif self.cloud == 'eucalyptus':
+                elif self.cloud =='eucalyptus':
                     os.environ['EUCA_KEY_DIR'] = key_dir
                 with open(os.path.expanduser(self.enrc)) as enrc_content:
                     for line in enrc_content:
@@ -582,9 +579,6 @@ class Cluster(object):
 
         # check if ssh port of all VMs are alive for listening
         while True:
-            while self.if_status(instance['id'], 'pending'):
-                self.msg('Instance %s is pending' % instance['id'])
-                time.sleep(5)
             if self.check_avaliable(instance):
                 self.mutex.acquire()
                 self.del_known_host(instance['ip'])
@@ -638,7 +632,10 @@ class Cluster(object):
                         self.debug('New IP is %s' % instance['ip'])
                         wait_count = 0
                         ip_change = True
-                time.sleep(1)
+                time.sleep(3)
+            elif self.cloud == 'eucalyptus':
+                self.msg('Checking %s (%s) availability' % (instance['id'], instance['ip']))
+                time.sleep(3)
 
 # ---------------------------------------------------------------------
 # METHODS TO DO RPCs
@@ -767,7 +764,7 @@ class Cluster(object):
         r_in = self.ec2_conn.get_all_instances(instance_ids=[instance_id])
         return r_in[0].instances[0]
 
-    def boto_associate_address(self, instance_id, address_public_ip):
+    def boto_associate_address(self, instance_id, address_public_ip, address_private_ip):
         '''
         associate ip address using boto
         '''
@@ -781,7 +778,7 @@ class Cluster(object):
                 self.msg('ERROR: Associating ip %s with instance %s failed, '
                          'trying again' % (address_public_ip, instance_id))
         self.msg('ADDRESS: %s %s' % (address_public_ip, instance_id))
-        self.cloud_instances.set_ip_by_id(instance_id, address_public_ip)
+        self.cloud_instances.set_ip_by_id(instance_id, address_public_ip, address_private_ip)
 
     def boto_run_instances(self, image, cluster_size, instance_type):
         '''
@@ -898,7 +895,8 @@ class Cluster(object):
             return False
         # set ip using instance id
         self.msg('ADDRESS %s instance %s' % (free_ip, instance['id']))
-        self.cloud_instances.set_ip_by_id(instance['id'], free_ip)
+        private_ip = self.euca_get_ip(instance['id'])['private']
+        self.cloud_instances.set_ip_by_id(instance['id'], free_ip, private_ip)
         # delete host from known_host file in case man-in-middle-attack
         self.debug('Deleting %s from known host if it already existed'
                    % free_ip)
@@ -959,15 +957,14 @@ class Cluster(object):
                     return True
                 else:
                     return False
-
     def euca_get_ip(self, instance_id):
         '''
         Get instance public given instance id
         '''
         result = self.get_command_result('euca-describe-instances').split('\n')
         for i in result:
-            if i.find(instance_id) >= 0 and i.find('pending') >= 0:
-                return i.split('\t')[3]
+            if i.find(instance_id) >= 0:
+                return {'public':i.split('\t')[3], 'private':i.split('\t')[4]}
 
     def create_cluster(self, args):
         '''
@@ -1029,48 +1026,52 @@ class Cluster(object):
         if self.interface == 'euca2ools':
             self.euca_run_instance(self.user, cluster_size, args.image,
                                    args.type)
-            # immediatly associate ip after run instance
-            # may lead to error, use sleep
-            time.sleep(3)
 
-            if self.cloud == 'nova':
-                self.debug('Getting free public IPs')
-                # get free IP list
-                ip_lists = self.euca_describe_addresses()
+            time.sleep(5)
 
-                self.msg('\nAssociating public IP addresses')
-                for i in range(cluster_size):
-                    instance = self.cloud_instances.get_by_id(i)
-                    time.sleep(1)
-                    while not self.euca_associate_address(instance,
-                                                          ip_lists[i]):
-                        self.msg('Error in associating IP %s with '
-                                 'instance %s, '
-                                 'trying again' % (ip_lists[i],
-                                                   instance['id']))
-            # eucalyptus no need to associate ip
-            if self.cloud == 'eucalyptus':
-                for i in range(cluster_size):
-                    instance = self.cloud_instances.get_by_id(i)
-                    time.sleep(1)
+            self.msg('\nAssociating public IP addresses')
+            ip_lists = self.euca_describe_addresses()
+            for i in range(cluster_size):
+                instance = self.cloud_instances.get_by_id(i)
+                time.sleep(1)
+                if self.cloud == 'nova':
+                    while not self.euca_associate_address(instance, ip_lists[i]):
+                        self.msg('Error in associating IP %s with instance %s, '
+                                 'trying again' % (ip_lists[i], instance['id']))
+                elif self.cloud == 'eucalyptus':
+                    addresses = self.euca_get_ip(instance['id'])
+                    public_ip_address = addresses['public']
+                    private_ip_address = addresses['private']
+                    self.msg('ADDRESS %s' % public_ip_address)
                     self.cloud_instances.set_ip_by_id(instance['id'],
-                                        self.euca_get_ip(instance['id']))
+                                                      public_ip_address,
+                                                      private_ip_address)
 
         elif self.interface == 'boto':
             reservation = \
-                self.boto_run_instances(args.image,
-                                        cluster_size,
-                                        args.type)
-            self.msg('Associating public IPs')
+                self.boto_run_instances(args.image, cluster_size, args.type)
+
+            time.sleep(5)
+
+            self.msg('\nAssociating public IP addresses')
             ip_index = 0
+            ip_lists = self.boto_describe_addresses()
             for instance in reservation.instances:
+                time.sleep(1)
                 instance.update()
                 self.cloud_instances.set_instance(instance.id,
                                                   instance.image_id,
                                                   instance.instance_type)
-                free_public_ip = self.boto_describe_addresses()[ip_index]
-                ip_index += 1
-                self.boto_associate_address(instance.id, free_public_ip)
+                if self.cloud == 'nova':
+                    ip_index += 1
+                    self.boto_associate_address(instance.id,
+                                                ip_lists[ip_index],
+                                                instance.private_dns_name)
+                elif self.cloud == 'eucalyptus':
+                    print instance.public_dns_name
+                    self.cloud_instances.set_ip_by_id(instance.id,
+                                                      instance.public_dns_name,
+                                                      instance.private_dns_name)
 
         self.debug('Creating IU ubunto repo source list')
         # choose repo, by defalt, using IU ubuntu repo
@@ -1137,6 +1138,7 @@ class Cluster(object):
 
         slurm_conf_file = 'slurm.conf'
         munge_key_file = 'munge.key'
+        hosts = 'hosts'
 
         self.debug('Opening %s' % self.slurm)
         self.msg('\nConfiguring slurm.conf')
@@ -1145,11 +1147,13 @@ class Cluster(object):
         srcf.close()
 
         self.debug('Getting control machie id')
-        # set control machine
+        #set control machine
         controlMachine = self.cloud_instances.get_by_id(0)['id']
+        ControlAddr = self.cloud_instances.get_by_id(0)['private_ip']
         output = ''.join(input_content) % vars()
 
         self.msg('\nControl node %s' % controlMachine)
+        self.msg('\nControl node private IP%s' % ControlAddr)
 
         self.debug('Writting into %s' % slurm_conf_file)
         # write control machine into slurm.conf file
@@ -1165,11 +1169,11 @@ class Cluster(object):
                 if type(instance) is dict:
                     if not instance['id'] == controlMachine:
                         self.debug('Adding instance %s' % instance['id'])
-                        conf.write('NodeName=%s Procs=1 State=UNKNOWN\n'
-                                   % instance['id'])
+                        conf.write('NodeName=%s Procs=1 NodeAddr=%s State=UNKNOWN\n'
+                                   % (instance['id'], instance['private_ip']))
                         conf.write('PartitionName=debug Nodes=%s Default=YES'
-                        ' MaxTime=INFINITE State=UP\n'
-                                    % instance['id'])
+                                   ' MaxTime=INFINITE State=UP\n'
+                                   % instance['id'])
         conf.close()
 
         # if needs to create munge key
@@ -1190,6 +1194,18 @@ class Cluster(object):
                                         self.cloud_instances.get_by_id(0)['ip'
                                         ]))
             munge_key.close()
+
+        # if cloud is eucalyptus, need to change hostname
+        if self.cloud == 'eucalyptus':
+            # copy SLURM conf file to every node
+            for instance in self.cloud_instances.get_list().values():
+                if type(instance) is dict:
+                    with open(hosts, 'w') as host_file:
+                        host_file.write('127.0.0.1 %s' % instance['id'])
+                    host_file.close()
+                    self.execute(instance, 'hostname %s' % instance['id'])
+                    self.copyto(instance, hosts)
+                    self.execute(instance, 'cp %s /etc/' % hosts)
 
         # copy SLURM conf file to every node
         for instance in self.cloud_instances.get_list().values():
@@ -1751,7 +1767,7 @@ class Cluster(object):
         if self.cloud == 'eucalyptus':
             self.msg('bugs')
             sys.exit()
-
+        
         control_node_num = 1
 
         # only restore cluster which is saved
@@ -2217,3 +2233,4 @@ def commandline_parser():
 
 if __name__ == '__main__':
     commandline_parser()
+
