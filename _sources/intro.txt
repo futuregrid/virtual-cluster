@@ -11,6 +11,8 @@ System requirements
 Code Repository
 ---------------
 
+Our code and web page is maintained in github
+
 * Source: https://github.com/futuregrid/virtual-cluster
 * Documentation: http://futuregrid.github.com/virtual-cluster
 
