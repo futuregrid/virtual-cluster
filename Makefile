@@ -95,8 +95,6 @@ sphinx:
 ###############################################################################
 
 gh-pages: sphinx
-	make clean
-	git commit -m "checking in changes to Makefile"
 	rm -rf /tmp/html/
 	cp -r  doc/build/html/ /tmp/html
 	git checkout gh-pages
