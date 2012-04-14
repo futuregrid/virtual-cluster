@@ -96,4 +96,4 @@ sphinx:
 
 gh-pages:
 	git checkout gh-pages
-	make doc
+	make
