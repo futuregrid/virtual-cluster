@@ -97,4 +97,3 @@ sphinx:
 gh-pages:
 	git checkout gh-pages
 	make doc
-	git checkout master
