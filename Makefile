@@ -94,8 +94,7 @@ sphinx:
 # PUBLISH GIT HUB PAGES
 ###############################################################################
 
-gh-pages: 
-#sphinx
+gh-pages: sphinx
 	rm -rf /tmp/doc/build/html/
 	cp -r  doc/build/html/ /tmp
 	git checkout gh-pages
