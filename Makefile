@@ -94,7 +94,7 @@ sphinx:
 # PUBLISH GIT HUB PAGES
 ###############################################################################
 
-pages:
+gh-pages:
 	git checkout gh-pages
 	make doc
 	git checkout master
