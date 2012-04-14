@@ -95,11 +95,13 @@ sphinx:
 ###############################################################################
 
 gh-pages: sphinx
+	make clean
+	git commit -m "checking in changes to Makefile"
 	rm -rf /tmp/html/
 	cp -r  doc/build/html/ /tmp/html
 	git checkout gh-pages
 	cp -r /tmp/html/* .
-	git commit -a "updating the github pages" 
+	git commit -m "updating the github pages" 
 	git push
 	git checkout master
 	rm -rf /tmp/html/
