@@ -1,4 +1,4 @@
-doc:
+all:
 	cd /tmp
 	rm -rf /tmp/vc
 	mkdir -p /tmp/vc
