@@ -98,6 +98,8 @@ gh-pages: sphinx
 	rm -rf /tmp/doc/build/html/
 	cp -r  doc/build/html/ /tmp
 	git checkout gh-pages
-
-#cp -r /tmp/doc/build/html/* . ; git commit -a "updating the github pages" git push; git checkout master
-#	rm -rf /tmp/doc/build/html/
+	cp -r /tmp/doc/build/html/* .
+	git commit -a "updating the github pages" 
+	git push
+	git checkout master
+	rm -rf /tmp/doc/build/html/
