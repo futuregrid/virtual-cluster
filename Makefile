@@ -8,3 +8,4 @@ doc:
 	git commit -a _sources
 	git commit -a _static
 	git push
+	git checkout master
