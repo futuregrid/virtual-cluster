@@ -8,6 +8,12 @@ System requirements
 * python: version 2.7
 * virtualenv (optional, if you do not have sudo rights)
 
+Code Repository
+---------------
+
+* Source: https://github.com/futuregrid/virtual-cluster
+* Documentation: http://futuregrid.github.com/virtual-cluster
+
 Introduction
 ------------
 
