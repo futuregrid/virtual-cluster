@@ -206,11 +206,13 @@ It has the following format::
     # Slurm configuration input file
     slurm = ~/.futuregrid/slurm.conf.in
     # userkey pem file
-    userkey = ~/PUT-YOUR-USER-NAME.pem
+    userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
     # environment file
     enrc = ~/novarc
     # program interface
     interface = euca2ools
+    # cloud to use
+    cloud = nova
 
 You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurrence
 within the file with the name that you use to associate your key. The
@@ -467,8 +469,17 @@ FOR DEVELOPERS ONLY
 Generating the Distribution
 ---------------------------
 
-Assume that you have git correctly installed and configured on your
-computer.
+Assume that you have git correctly installed, configured on your
+computer. And you also added your ssh public key on github. So you
+can proceed with step 1.
+
+If you use machines on indiana futuregrid, you can load git by
+
+	::
+
+	    module load git
+
+And added ssh public key on github.
 
 * **Step 1: You can pull source code from github by**
 
