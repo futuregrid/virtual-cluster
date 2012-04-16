@@ -10,6 +10,9 @@ import sys, os
 
 version = '0.2.0'
 
+# due to a bug we are not including VERION.py yet
+# execfile('VERSION.py)
+
 classifiers = """\
 Intended Audience :: Developers
 Intended Audience :: Education
