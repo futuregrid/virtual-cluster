@@ -1,0 +1,29 @@
+Metadata-Version: 1.0
+Name: futuregrid.virtual.cluster
+Version: 0.2.0dev
+Summary: FutureGrid: Creating a SLURM virtual Cluster via euca2tools
+Home-page: https://github.com/futuregrid/virtual-cluster
+Author: Gregor von Laszewski, Xiuwen Yang
+Author-email: laszewski@gmail.com
+License: Apache 2.0
+Description: This project creates a virtual cluster with the help of euca
+        tools. The cluster uses SLURM as resource manager. A simple MPI
+        program is included to test the functionality. of teh virtual cluster.
+        
+Keywords: FutureGrid OpenStack virtual cluster
+Platform: UNKNOWN
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Science/Research
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python
+Classifier: Topic :: Database
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: System :: Clustering
+Classifier: Topic :: System :: Distributed Computing

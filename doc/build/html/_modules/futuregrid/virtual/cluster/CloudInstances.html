@@ -1,0 +1,647 @@
+
+<!-- This layout has been taken from http://globus.org/provision/ -->
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>futuregrid.virtual.cluster.CloudInstances &mdash; Cloud Metrics 2.1.3 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2.1.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="Cloud Metrics 2.1.3 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" />
+ 
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-11111']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+
+  </head>
+  <body>
+
+<div style="background-image:url('_static/header_bg.png');background-color: black; text-align: left; padding: 10px 10px 15px 35px">
+<a href="../../../../index.html"><img src="../../../../_static/logo_rain.png" border="0" alt="FutureGrid Rain"/></a>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">Rain Home</a>|&nbsp;</li>
+        <li><a href="../../../../whatis.html">What is FutureGrid Rain?</a>|&nbsp;</li>
+        <li><a href="../../../../quickstart.html">Rain Quickstart</a>|&nbsp;</li>
+        <li><a href="../../../../documentation.html">Rain Documentation </a>|&nbsp;</li>
+        <li><a href="../../../../download.html">Download</a>|&nbsp;</li>
+        <li><a href="../../../../support.html">Support</a>|&nbsp;</li>
+        <li><a href="https://portal.futuregrid.org/">FutureGrid Home</a>|&nbsp;</li>
+
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+<body style="background-image:url('_static/header_bg.png');background-color: grey;">
+</body>
+
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for futuregrid.virtual.cluster.CloudInstances</h1><div class="highlight"><pre>
+<span class="c">#! /usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">CloudInstances.py (python)</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">More ....</span>
+<span class="sd">-------------------------</span>
+
+<span class="sd">Operations on clusters based on backup file</span>
+
+<span class="sd">Backup file is the file which stores information of</span>
+<span class="sd">a list of virtual clusters</span>
+
+<span class="sd">Backup file format</span>
+<span class="sd">-------------------------</span>
+<span class="sd">[{cluster1}, {cluster2}, {cluster3}, {}]</span>
+
+<span class="sd">Each cluster is a dictionary, it has the following format:</span>
+<span class="sd">{&#39;name&#39;:&#39;cluster1&#39;, &#39;status&#39;:&#39;run&#39;, &#39;0&#39;:&#39;{}&#39;, &#39;1&#39;:&#39;{}&#39;, ...}</span>
+<span class="sd">The first two keys are name, and status, the rest are instances.</span>
+<span class="sd">Name represents the name of virtual cluster and status represents</span>
+<span class="sd">the status of cluster. Key &#39;0&#39;, &#39;1&#39;, ... represent instances, each</span>
+<span class="sd">instance is associated with a number which can be used to refer to.</span>
+<span class="sd">Instance key starts at 0.</span>
+
+<span class="sd">Each instance is a dictionary, it has the following format:</span>
+<span class="sd">{&#39;id&#39;:&#39;&#39;, &#39;image&#39;:&#39;&#39;, &#39;type&#39;:&#39;&#39;, &#39;ip&#39;:&#39;&#39;}</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<div class="viewcode-block" id="CloudInstances"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances">[docs]</a><span class="k">class</span> <span class="nc">CloudInstances</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Class CloudInstances</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">cloud_instances</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">backup_file</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">RUN</span> <span class="o">=</span> <span class="s">&#39;run&#39;</span>
+    <span class="n">SAVED</span> <span class="o">=</span> <span class="s">&#39;saved&#39;</span>
+    <span class="n">DOWN</span> <span class="o">=</span> <span class="s">&#39;terminated&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">return</span>
+
+<div class="viewcode-block" id="CloudInstances.set_backup_file"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.set_backup_file">[docs]</a>    <span class="k">def</span> <span class="nf">set_backup_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets backup file for reading and writing</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            filename -- backup file name</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Checks if the backup file has the correct format by</span>
+<span class="sd">            checking if all keys are present in each dictionary.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            true  -- If can not find backup file, so the file has not</span>
+<span class="sd">                     been created.</span>
+<span class="sd">            false -- If file exists, but can not find all the keys</span>
+<span class="sd">                     which are needed.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span> <span class="o">=</span> <span class="n">filename</span>
+
+        <span class="c"># check if file is old version or corrupted</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+            <span class="n">cloud_list</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">src_file</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">cloud</span> <span class="ow">in</span> <span class="n">cloud_list</span><span class="p">:</span>
+                <span class="c"># check basic info</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;name&#39;</span> <span class="ow">in</span> <span class="n">cloud</span> <span class="ow">or</span> \
+                    <span class="ow">not</span> <span class="s">&#39;status&#39;</span> <span class="ow">in</span> <span class="n">cloud</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+                <span class="c"># if is an instance, check all the keys</span>
+                <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">cloud</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">element</span> <span class="ow">or</span> \
+                            <span class="ow">not</span> <span class="s">&#39;image&#39;</span> <span class="ow">in</span> <span class="n">element</span> <span class="ow">or</span> \
+                            <span class="ow">not</span> <span class="s">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">element</span> <span class="ow">or</span> \
+                            <span class="ow">not</span> <span class="s">&#39;ip&#39;</span> <span class="ow">in</span> <span class="n">element</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.set_cloud_instances_by_name"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.set_cloud_instances_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">set_cloud_instances_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets a new cloud instance</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            name -- virtual cluster name</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Granted this cluster is new and about to be created,</span>
+<span class="sd">            sets cluster name to name, and sets status to run.</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="c"># if create cluster, set status to RUN</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">RUN</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.get_cloud_instances_by_name"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.get_cloud_instances_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_cloud_instances_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets cloud instance list by cluster name</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            name -- virtual cluster name</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Granted we check cluster existence every time before</span>
+<span class="sd">            each operation (create, save, restore, terminate, ...)</span>
+<span class="sd">            so here no need to check if backup file is existed</span>
+
+<span class="sd">            Opens backup file for reading, loads cluster lists,</span>
+<span class="sd">            find cluster instances list given cluster name, then</span>
+<span class="sd">            sets cloud_instances to the cluster loaded</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># return cluster by given name</span>
+        <span class="c"># using key &#39;name&#39;</span>
+        <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">cloud_list</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">src_file</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cloud</span> <span class="ow">in</span> <span class="n">cloud_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cloud</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span> <span class="o">=</span> <span class="n">cloud</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.checkpoint_cloud_instances"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.checkpoint_cloud_instances">[docs]</a>    <span class="k">def</span> <span class="nf">checkpoint_cloud_instances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                   <span class="n">cluster_name</span><span class="p">,</span>
+                                   <span class="n">control_node_id</span><span class="p">,</span>
+                                   <span class="n">compute_node_id</span><span class="p">,</span>
+                                   <span class="n">instance_type</span><span class="p">,</span>
+                                   <span class="n">cluster_size</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets cluster saving information after actually saves it</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            cluster_name -- virtual cluster name</span>
+<span class="sd">            control_node_id -- control node image id</span>
+<span class="sd">            compute_node_id -- compute node image id</span>
+<span class="sd">            instance_type -- instance type</span>
+<span class="sd">            cluster_size -- size of cluster (control node not included)</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Sets all possible values that could be used to restore cluster</span>
+<span class="sd">            in the future before saves it into backup file</span>
+
+<span class="sd">            Sets cluster status to SAVED</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># if save cluster, set basic info in backupfile</span>
+        <span class="c"># resotre this cluster based on this info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cluster_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;control&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">control_node_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;compute&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_node_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">instance_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cluster_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SAVED</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.get_all_cloud_instances"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.get_all_cloud_instances">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_cloud_instances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets all cloud instances lists</span>
+
+<span class="sd">        No parameters</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Loads all cloud instances from backup file.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            cloud_list -- if file exists, return all the cloud lists</span>
+<span class="sd">                          saved</span>
+<span class="sd">            [] -- if file does not exist</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+            <span class="n">cloud_list</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">src_file</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">cloud_list</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.get_cluster_size"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.get_cluster_size">[docs]</a>    <span class="k">def</span> <span class="nf">get_cluster_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cluster</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets virtual cluster size</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            cluster -- virtual cluster name</span>
+<span class="sd">            default: None</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Default cloud instance is the dictionary self.cloud_instances,</span>
+<span class="sd">            if cluster is specified, then returns the size of cluster given</span>
+<span class="sd">            name.</span>
+
+<span class="sd">            Given cluster_instance has the format of:</span>
+<span class="sd">            {&#39;name&#39;:&#39;&#39;, &#39;status&#39;:&#39;&#39;, &#39;0&#39;:&#39;&#39;, &#39;1&#39;:&#39;&#39;,...}</span>
+<span class="sd">            The size of cluster is the length of this dictionary subtracts</span>
+<span class="sd">            length of name and status which is 2</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            length of self.cloud_instances -- if cluster is set to default</span>
+<span class="sd">            length of cluster -- if cluster is set to any other clusters</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c"># get cluster size</span>
+        <span class="c"># not include name and status fileds</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cluster</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.get_list"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.get_list">[docs]</a>    <span class="k">def</span> <span class="nf">get_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets cloud instances list</span>
+
+<span class="sd">        No parameters</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            cloud instances list -- self.cloud_instances</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.get_index"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.get_index">[docs]</a>    <span class="k">def</span> <span class="nf">get_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets instance key from cloud instance list</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            instance -- an instance dictionary</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Finds the instance matches the id</span>
+<span class="sd">            then return the key</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            key -- instance index</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c"># if element is an instance</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">element</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">instance</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="n">key</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.set_instance"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.set_instance">[docs]</a>    <span class="k">def</span> <span class="nf">set_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                     <span class="n">instance_id</span><span class="p">,</span>
+                     <span class="n">image_id</span><span class="p">,</span>
+                     <span class="n">instance_type</span><span class="p">,</span>
+                     <span class="n">instance_ip</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                     <span class="n">index</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets attributes of a given instance</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            instance_id -- instance id</span>
+<span class="sd">            image_id -- image id</span>
+<span class="sd">            instance_type -- instance type</span>
+<span class="sd">            instance_ip -- public IP associated with instance</span>
+<span class="sd">            default: &#39;&#39;</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Set id, image, type, IP for one instance</span>
+<span class="sd">            Using current cluster size as key</span>
+<span class="sd">            So first instance has key 0, second has key 1 ...</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">instance</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">instance</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">instance_id</span>
+        <span class="n">instance</span><span class="p">[</span><span class="s">&#39;image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">image_id</span>
+        <span class="n">instance</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">instance_type</span>
+        <span class="n">instance</span><span class="p">[</span><span class="s">&#39;ip&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">instance_ip</span>
+        <span class="c"># instance key &#39;0, 1, 2...&#39;</span>
+        <span class="c"># can use index to get instance</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_cluster_size</span><span class="p">()]</span> <span class="o">=</span> <span class="n">instance</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">instance</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.del_instance"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.del_instance">[docs]</a>    <span class="k">def</span> <span class="nf">del_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Deletes an instance from cloud instance list</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            instance -- an instance dictionary</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Find the instance matches id then delete</span>
+<span class="sd">            the instance using key</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c"># if element is an instance</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">element</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">instance</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]:</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.set_ip_by_id"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.set_ip_by_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_ip_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance_id</span><span class="p">,</span> <span class="n">instance_ip</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets IP by given instance id</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            instance_id -- instance id</span>
+<span class="sd">            instance_ip -- public IP associated with instance</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Loop all values in cloud_instances, given an instance</span>
+<span class="sd">            is a dictionary, if current element is a dictionary,</span>
+<span class="sd">            check key &#39;id&#39;, and then set &#39;ip&#39; if key &#39;id&#39; matches</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="c"># if element is an instance</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">element</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">instance_id</span><span class="p">:</span>
+                    <span class="n">element</span><span class="p">[</span><span class="s">&#39;ip&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">instance_ip</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.clear"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Clears cloud instances list</span>
+
+<span class="sd">        No parameters</span>
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span> <span class="o">=</span> <span class="p">{}</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.get_by_id"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.get_by_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cloud_id</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets instance by index</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            cloud_id -- instance index, which is also the key for instance</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Given that we use current size of cluster as key, so we can use</span>
+<span class="sd">            this index to get one specific instance</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            Instance dictionary -- an instance which has the format of</span>
+<span class="sd">                                   {&#39;id&#39;:&#39;&#39;, &#39;image&#39;:&#39;&#39;, &#39;type&#39;:&#39;&#39;, &#39;ip&#39;:&#39;&#39;}</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="n">cloud_id</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.save_instances"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.save_instances">[docs]</a>    <span class="k">def</span> <span class="nf">save_instances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Writes current cloud instances list into backup file</span>
+
+<span class="sd">        No parameters</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Opens backup file to save cloud_instance</span>
+<span class="sd">            If file does not exist, then creates backup file, dumps</span>
+<span class="sd">            cloud_instances into the file</span>
+<span class="sd">            If file exists, then loads the content from the file,</span>
+<span class="sd">            combine all cloud instance into list, dump this list into</span>
+<span class="sd">            file. So the list has the format of [{cluster1},{cluster2},{}]</span>
+<span class="sd">            (may need to change it to dictionary)</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># open file for reading</span>
+            <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+            <span class="n">instance_list</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">src_file</span><span class="p">)</span>
+            <span class="c"># combine existing clusters and current cluster into list</span>
+            <span class="n">instance_list</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">)</span>
+            <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;w&quot;</span><span class="p">)</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">instance_list</span><span class="p">,</span> <span class="n">src_file</span><span class="p">)</span>
+            <span class="n">src_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="c"># if cannot find this file, then create the file</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span>
+                                  <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">)[</span><span class="mi">0</span><span class="p">])):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span>
+                            <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;w&quot;</span><span class="p">)</span>
+            <span class="c"># directly save cluster into backup file</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">],</span> <span class="n">src_file</span><span class="p">)</span>
+            <span class="n">src_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.if_exist"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.if_exist">[docs]</a>    <span class="k">def</span> <span class="nf">if_exist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Checks if a given cluster name exists</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            name -- cluster name</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Given all clusters stored in backup file is a list, so loop</span>
+<span class="sd">            this list, and check key &#39;name&#39; in each cluster dictionary</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            true -- if find a cluster matches the cluster name given as</span>
+<span class="sd">                    parameter</span>
+<span class="sd">            false -- if 1) file does not exist</span>
+<span class="sd">                        2) Cannot find a cluster matches the cluster</span>
+<span class="sd">                           name given as parameter after checking</span>
+<span class="sd">                           all clusters saved in the backup file</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+            <span class="n">cloud_list</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">src_file</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">cloud</span> <span class="ow">in</span> <span class="n">cloud_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cloud</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.del_by_name"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.del_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">del_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Deletes cloud instances list from backup file given name</span>
+
+<span class="sd">        Parameter:</span>
+<span class="sd">            name -- cluster name</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Loads content from backup file, given content is list, then</span>
+<span class="sd">            delete the cluster which matches name using remove, then</span>
+<span class="sd">            dump the new content into backup file</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">cloud_list</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">src_file</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cloud</span> <span class="ow">in</span> <span class="n">cloud_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cloud</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                <span class="c"># remove cluster if game matches</span>
+                <span class="n">cloud_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">cloud</span><span class="p">)</span>
+                <span class="n">src_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backup_file</span><span class="p">),</span> <span class="s">&quot;w&quot;</span><span class="p">)</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">cloud_list</span><span class="p">,</span> <span class="n">src_file</span><span class="p">)</span>
+                <span class="n">src_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.set_status"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.set_status">[docs]</a>    <span class="k">def</span> <span class="nf">set_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets status of virtual cluster</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            status -- cluster status (run, saved, terminated)</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Sets the status in cloud instance list</span>
+
+<span class="sd">        No returns</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.if_status"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.if_status">[docs]</a>    <span class="k">def</span> <span class="nf">if_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Checks status of virtual cluster</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            status -- cluster status (run, saved, terminated)</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            checks if status in cluster instance list matches</span>
+<span class="sd">            status given as parameter</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            true -- if status of cluster instance list matches</span>
+<span class="sd">                    the status given as parameter</span>
+<span class="sd">            false -- if status of cluster instance list does</span>
+<span class="sd">                     not match the status given as parameter</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">status</span>
+</div>
+<div class="viewcode-block" id="CloudInstances.get_status"><a class="viewcode-back" href="../../../../modules.html#futuregrid.virtual.cluster.CloudInstances.CloudInstances.get_status">[docs]</a>    <span class="k">def</span> <span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets cluster status</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            status -- cluster status (run, saved, terminated)</span>
+
+<span class="sd">        Logic:</span>
+<span class="sd">            Get the value of key &#39;status&#39;</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            Returns the value of status</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_instances</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">Rain Home</a>|&nbsp;</li>
+        <li><a href="../../../../whatis.html">What is FutureGrid Rain?</a>|&nbsp;</li>
+        <li><a href="../../../../quickstart.html">Rain Quickstart</a>|&nbsp;</li>
+        <li><a href="../../../../documentation.html">Rain Documentation </a>|&nbsp;</li>
+        <li><a href="../../../../download.html">Download</a>|&nbsp;</li>
+        <li><a href="../../../../support.html">Support</a>|&nbsp;</li>
+        <li><a href="https://portal.futuregrid.org/">FutureGrid Home</a>|&nbsp;</li>
+
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Gregor von Laszewski, Fugang Wang, Hyungro Lee, Javier Diaz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

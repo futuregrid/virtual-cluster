@@ -1,0 +1,14 @@
+setup.cfg
+setup.py
+./futuregrid/__init__.py
+./futuregrid/virtual/__init__.py
+./futuregrid/virtual/cluster/CloudInstances.py
+./futuregrid/virtual/cluster/FGCluster.py
+./futuregrid/virtual/cluster/Shell.py
+./futuregrid/virtual/cluster/__init__.py
+futuregrid.virtual.cluster.egg-info/PKG-INFO
+futuregrid.virtual.cluster.egg-info/SOURCES.txt
+futuregrid.virtual.cluster.egg-info/dependency_links.txt
+futuregrid.virtual.cluster.egg-info/entry_points.txt
+futuregrid.virtual.cluster.egg-info/requires.txt
+futuregrid.virtual.cluster.egg-info/top_level.txt
