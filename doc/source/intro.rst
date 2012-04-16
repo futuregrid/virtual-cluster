@@ -223,7 +223,7 @@ interface or cloud parameter in the configuration file to achieve that.
 
 If you want to use a different configuration file instead of changing 
 one configuration file back and forth, you can use argument --file 
-before you specify each subcommand you would like to run.
+before you specify each subcommand you would like to run.::
 
     $ fg-cluster --file <configuration-file> <subcommands>
 
