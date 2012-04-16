@@ -50,7 +50,9 @@ class Shell(Cmd):
         make_option('-f', '--file', type="string",
                     help="cluster name"),
         make_option('-i', '--interface', type="string",
-                    help="interface")
+                    help="interface"),
+        make_option('-c', '--cloud', type="string",
+                    help="cloud name (nova/eucalyptus)")
         ])
     def do_config(self, args, opts):
         '''config - add the configuration from a file'''
@@ -59,6 +61,7 @@ class Shell(Cmd):
         else:
             self.cluster.parse_conf()
         self.cluster.set_interface(opts.interface)
+        self.cluster.set_cloud(opts.cloud)
 
     def do_debug(self, debug=True):
         print "to do debug"
