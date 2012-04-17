@@ -119,7 +119,7 @@ where you like to install our tool.
 Repeated Use
 ------------
 
-We assume that you are using the same machine as the first time you run our tool
+We assume that you are using the same machine as the first time you ran our tool.
 
 * **Step 1: Environment Setup (using india.futuregrid.org machines):**
 	
@@ -143,7 +143,7 @@ We assume that you are using the same machine as the first time you run our tool
 
 	    $ source ENV/bin/activate
 
-Now you can use our tool to manage your virtual cluster
+Now you can use our tool to manage your virtual clusters.
 
 FutureGrid Specific Instalation
 -------------------------------
