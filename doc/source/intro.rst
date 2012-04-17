@@ -445,13 +445,25 @@ Using fg-cluster tool
 
 A much simpler way to run a MPI program is to use our tool
 
-So you can simply run command::
+You can choose different ways to run your MPI program, one way is to 
+use salloc command in SLURM and another way is to use sbatch command. 
+And you can also use our tool to achieve this.
+
+If you want to directly run MPI program using salloc, you can simply run command::
 
     # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name>
 
 For example::
 
     # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1
+
+If you want to submit a job script to the SLURM, you can simply run command::
+
+    # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name> -c <script-name>
+
+For example::
+
+    # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -c helloworld.sh
 
 Parameters
 
