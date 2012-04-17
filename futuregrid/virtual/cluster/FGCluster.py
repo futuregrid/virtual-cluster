@@ -1048,6 +1048,12 @@ class Cluster(object):
                 instance = self.cloud_instances.get_by_id(i)
                 time.sleep(1)
                 if self.cloud == 'nova':
+                    if len(ip_lists) < cluster_size:
+                        self.msg('ERROR: Not enough public IP addresses')
+                        for instance_id in range(cluster_size):
+                            instance = self.cloud_instances.get_by_id(instance_id)
+                            self.terminate_instance(instance['id'])
+                        sys.exit()
                     while not self.euca_associate_address(instance, ip_lists[i]):
                         self.stopWatch.increase('t_ipfail')
                         self.msg('Error in associating IP %s with instance %s, '
@@ -1056,6 +1062,12 @@ class Cluster(object):
                     addresses = self.euca_get_ip(instance['id'])
                     public_ip_address = addresses['public']
                     private_ip_address = addresses['private']
+                    if public_ip_address == private_ip_address:
+                        self.msg('ERROR: Not enough public IP addresses')
+                        for instance_id in range(cluster_size):
+                            instance = self.cloud_instances.get_by_id(instance_id)
+                            self.terminate_instance(instance['id'])
+                        sys.exit()
                     self.msg('ADDRESS %s' % public_ip_address)
                     self.cloud_instances.set_ip_by_id(instance['id'],
                                                       public_ip_address,
@@ -1081,12 +1093,23 @@ class Cluster(object):
                                                   instance.image_id,
                                                   instance.instance_type)
                 if self.cloud == 'nova':
+                    if len(ip_lists) < cluster_size:
+                        self.msg('ERROR: Not enought public IP addresses')
+                        for instance_id in range(cluster_size):
+                            instance = self.cloud_instances.get_by_id(instance_id)
+                            self.terminate_instance(instance.id)
+                        sys.exit()
                     ip_index += 1
                     self.boto_associate_address(instance.id,
                                                 ip_lists[ip_index],
                                                 instance.private_dns_name)
                 elif self.cloud == 'eucalyptus':
-                    print instance.public_dns_name
+                    if instance.public_dns_name == instance.private_dns_name:
+                        self.msg('ERROR: Not enought public IP addresses')
+                        for instance_id in range(cluster_size):
+                            instance = self.cloud_instances.get_by_id(instance_id)
+                            self.terminate_instance(instance.id)
+                        sys.exit()
                     self.cloud_instances.set_ip_by_id(instance.id,
                                                       instance.public_dns_name,
                                                       instance.private_dns_name)
