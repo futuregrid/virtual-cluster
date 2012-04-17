@@ -38,7 +38,7 @@ Managment operations include:
 HOW TO INSTALL
 ==============
 
-Installation
+First Setup
 ------------
 
 We assume that yo do not have super user priviledges on the computer
@@ -115,6 +115,35 @@ where you like to install our tool.
 	.. note: For more information about virtualenv, you may see documentation of virtualenv at
 	
 		* http://www.virtualenv.org/en/latest/index.html
+
+Repeated Use
+------------
+
+We assume that you are using the same machine as the first time you run our tool
+
+* **Step 1: Environment Setup (using india.futuregrid.org machines):**
+	
+	india.futuregrid.org has installed every tools you may need to finish this
+	installation, so to activate euca2ools (version 1.2) after you login into
+	india futuregrid machines, just simply do::
+    
+		$ module load euca2ools
+    
+	To activate python 2.7, simply do::
+
+		$ module load python
+		
+	Those commands will help you load tools with correct version you need
+	to finish installation. So now you may proceed with following
+	installation steps.
+
+* **Step 2: Activate virtualenv**
+
+	You can activate virtualenv again by following command::
+
+	    $ source ENV/bin/activate
+
+Now you can use our tool to manage your virtual cluster
 
 FutureGrid Specific Instalation
 -------------------------------
