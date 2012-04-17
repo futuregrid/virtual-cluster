@@ -8,6 +8,14 @@ System requirements
 * python: version 2.7
 * virtualenv (optional, if you do not have sudo rights)
 
+Code Repository
+---------------
+
+Our code and web page is maintained in github
+
+* Source: https://github.com/futuregrid/virtual-cluster
+* Documentation: http://futuregrid.github.com/virtual-cluster
+
 Introduction
 ------------
 
@@ -198,18 +206,26 @@ It has the following format::
     # Slurm configuration input file
     slurm = ~/.futuregrid/slurm.conf.in
     # userkey pem file
-    userkey = ~/PUT-YOUR-USER-NAME.pem
+    userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
     # environment file
     enrc = ~/novarc
     # program interface
     interface = euca2ools
+    # cloud to use
+    cloud = nova
 
 You will have to modify the <PUT-YOUR-USER-NAME-HERE> occurrence
 within the file with the name that you use to associate your key. The
 file is to be placed at ~/.futuregrid/futuregrid.cfg or concatenated
 to an already existing futuregrid.cfg file. In order to use different 
-interface (euca2ools/boto) to run this tool, you can change interface 
-parameter in the configuration file to achieve that.
+interface (euca2ools/boto) or cloud to run this tool, you can change
+interface or cloud parameter in the configuration file to achieve that.
+
+If you want to use a different configuration file instead of changing 
+one configuration file back and forth, you can use argument --file 
+before you specify each subcommand you would like to run.::
+
+    $ fg-cluster --file <configuration-file> <subcommands>
 
 NOTE: Please make sure all the files are placed under the location as
 you specified in configuration file. You can also find an example of
@@ -230,11 +246,10 @@ Create a virtual cluster
 Run following command will create a virtual cluster of given
 parameters (command example is given below)::
 
-    $ fg-cluster -f <config-file> run -n <number-of-computation-nodes> -t <instance-type> -i <image-id> -a <cluster-name>
+    $ fg-cluster run -n <number-of-computation-nodes> -t <instance-type> -i <image-id> -a <cluster-name>
 
 Parameters:
 
-	-f 	Futuregrid configuration file named futuregrid.cfg.
 	-n 	Number of computation nodes. 
 	-s 	Instance type. 
 		Instance type includes: m1.tiny, m1.small and m1.large.
@@ -248,14 +263,12 @@ nodes is the number of computations node plus one control node.
 
 For example::
 
-    $ fg-cluster -f futuregrid.cfg run -n 2 -t m1.small -i ami-0000001d -a mycluster1
+    $ fg-cluster run -n 2 -t m1.small -i ami-0000001d -a mycluster1
 
 Virtual cluster info will be saved in backup file specified in
 futuregrid configuration file. Note: Cluster name should be different
 as other virtual clusters which is running if you want to run multiple
-virtual clusters. If you want to use default configure file, you
-should put this file at ~/.futuregrid/futuregrid.cfg, then argument -f
-can be omitted
+virtual clusters. 
 
 
 Save a virtual cluster
@@ -265,11 +278,10 @@ Run following command will save a currently running virtual cluster into one
 control image and compute image for later resotre. (Installed softwares and 
 unfinished jobs will also be saved)::
 
-    $ fg-cluster -f <config-file> checkpoint -c <control-node-bucket> -t <control-node-name> -m <compute-bucket> -e  <compute-name> -a <cluster-name>
+    $ fg-cluster checkpoint -c <control-node-bucket> -t <control-node-name> -m <compute-bucket> -e  <compute-name> -a <cluster-name>
 
 Parameters:
 
-  -f  	Futuregrid configuration file
   -c  	Control node bucket name. Bucket name which you can identify control image
   -t  	Control node image name. Image name which you can use to identify your control image
   -m  	Compute node bucket name. Bucket name which you can identify your compute image
@@ -278,7 +290,7 @@ Parameters:
 
 For example::
 
-    $ fg-cluster -f futuregrid.cfg checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1
+    $ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1
     
 If you successfully upload your control image and compute image, you
 can find them in openstack image repository according to the bucker
@@ -300,7 +312,7 @@ Run following command will restore a virtual cluster state including
 installed softwares, unfinished jobs which was saved before, so that
 you can continue your work from that saved point::
 
-    $ fg-cluster -f <config-file> restore -a <cluster-name>
+    $ fg-cluster restore -a <cluster-name>
 
 Parameters:
 
@@ -308,7 +320,7 @@ Parameters:
 
 For example::
 
-    $ fg-cluster -f futuregrid.cfg restore -a mycluster2
+    $ fg-cluster restore -a mycluster2
 
 Note: Cluster name should be the name of cluster which had been saved
 before.  You can check the images you saved, the images you saved will 
@@ -323,16 +335,15 @@ Shutdown a virtual cluster
 
 Run following command will terminate a virtual cluster::
 
-    $ fg-cluster -f <config-file> terminate -a <cluster-name>
+    $ fg-cluster terminate -a <cluster-name>
 
 Parameters:
 
-  -f 	Futuregrid configuration file
   -a 	Virtual cluster name
 
 For example::
 
-    $ fg-cluster -f futuregrid.cfg terminate -a mycluster2
+    $ fg-cluster terminate -a mycluster2
 
 Note: Cluster name should be a name of cluster which is currently
 running. After executing this command, cluster info will be removed
@@ -345,11 +356,10 @@ Show status of virtual cluster(s)
 Run following command will show status of currently running 
 virtual cluster(s) including cluster size, image id, instance id, ip::
 
-    $ fg-cluster -f <config-file> status -a <cluster-name>
+    $ fg-cluster status -a <cluster-name>
 
 Parameters:
 
-  -f  	Futuregrid configuration file
   -a  	Virtual cluster name
 
 
@@ -357,11 +367,11 @@ For example:
 
 Show status of one specific cluster given cluster name::
 
-    fg-cluster -f futuregrid.cfg status -a mycluster1
+    fg-cluster status -a mycluster1
 
 Show status of all currently running clusters::
 
-    fg-cluster -f futuregrid.cfg status
+    fg-cluster -status
 
 Note: If argument -a is specified, then name of cluster should be 
 a cluster that is currently running
@@ -372,11 +382,11 @@ List the virtual clusters
 
 Run following command will give you a list of virtual clusters and their status::
 
-    $ fg-cluster -f <config-file> list
+    $ fg-cluster list
     
 For example::
 
-    $ fg-cluster -f futuregrid.cfg list
+    $ fg-cluster list
 
 
 Run a simple MPI program on virtual cluster
@@ -435,7 +445,11 @@ Using fg-cluster tool
 
 A much simpler way to run a MPI program is to use our tool
 
-So you can simply run command::
+You can choose different ways to run your MPI program, one way is to 
+use salloc command in SLURM and another way is to use sbatch command. 
+And you can also use our tool to achieve this.
+
+If you want to directly run MPI program using salloc, you can simply run command::
 
     # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name>
 
@@ -443,11 +457,20 @@ For example::
 
     # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1
 
+If you want to submit a job script to the SLURM, you can simply run command::
+
+    # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name> -c <script-name>
+
+For example::
+
+    # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -c helloworld.sh
+
 Parameters
 
   -p 	Program source code file
   -n 	Number of computaion nodes you want to run with. 
   -a 	Name of virtual cluster you want to run program on
+  -c    Job script you would like to submit to SLURM
 
 Make sure that the number you input is no larger than the acutal number of computaion node you created. 
 The virtual cluster name should be a name of cluster which is currently running.
@@ -459,8 +482,17 @@ FOR DEVELOPERS ONLY
 Generating the Distribution
 ---------------------------
 
-Assume that you have git correctly installed and configured on your
-computer.
+Assume that you have git correctly installed, configured on your
+computer. And you also added your ssh public key on github. So you
+can proceed with step 1.
+
+If you use machines on indiana futuregrid, you can load git by
+
+	::
+
+	    module load git
+
+And added ssh public key on github.
 
 * **Step 1: You can pull source code from github by**
 
