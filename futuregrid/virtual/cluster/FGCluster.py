@@ -72,10 +72,11 @@ import random
 import Queue
 import re
 import boto.ec2
+import platform
 
 from boto.ec2.connection import EC2Connection
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
-#from CloudInstances import CloudInstances
+from StopWatch import StopWatch
 from subprocess import Popen, PIPE
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
@@ -124,6 +125,7 @@ class Cluster(object):
         super(Cluster, self).__init__()
         self.cloud_instances = CloudInstances()
         self.mutex = threading.Lock()
+        self.stopWatch = StopWatch()
 
 # ---------------------------------------------------------------------
 # METHODS TO PRINT HELP MESSAGES
@@ -534,8 +536,10 @@ class Cluster(object):
         self.disassociate_address(instance['ip'])
         # associate a new random free ip
         self.debug('Associating new IP on %s' % instance['id'])
-        self.euca_associate_address(instance, ip_lists[random.randint(0,
-                                            len(ip_lists) - 1)])
+        while not self.euca_associate_address(instance, ip_lists[random.randint(0,
+                                                        len(ip_lists) - 1)]):
+            self.stopWatch.increase('t_ipfail')
+            self.msg('ERROR: Associating IP addresses failed, trying again')
 
     def boto_change_ip(self, instance):
         '''
@@ -608,6 +612,7 @@ class Cluster(object):
                         self.cloud_instances.del_instance(instance)
                         self.terminate_instance(instance['id'])
                         self.mutex.acquire()
+                        self.stopWatch.increase('t_termination')
                         if self.interface == 'euca2ools':
                             instance = \
                                 self.euca_start_new_instance(instance,
@@ -624,6 +629,7 @@ class Cluster(object):
                                  % instance['id'])
                         # get free ip addresses
                         self.mutex.acquire()
+                        self.stopWatch.increase('t_ipchange')
                         if self.interface == 'euca2ools':
                             self.euca_change_ip(instance)
                         elif self.interface == 'boto':
@@ -772,6 +778,7 @@ class Cluster(object):
         while True:
             try:
                 time.sleep(2)
+                self.stopWatch.increase('t_ipfail')
                 self.ec2_conn.associate_address(instance_id, address_public_ip)
                 break
             except:
@@ -1022,20 +1029,27 @@ class Cluster(object):
         self.cloud_instances.set_cloud_instances_by_name(args.name)
 
         self.debug('Creating cluster')
+        self.stopWatch.start('t_total')
+        self.stopWatch.start_count('t_ipfail')
+        self.stopWatch.start_count('t_ipchange')
+        self.stopWatch.start_count('t_termination')
         # run instances given parameters
         if self.interface == 'euca2ools':
+            self.stopWatch.start('t_setup_createvm')
             self.euca_run_instance(self.user, cluster_size, args.image,
                                    args.type)
-
+            self.stopWatch.stop('t_setup_createvm')
             time.sleep(5)
 
             self.msg('\nAssociating public IP addresses')
+            self.stopWatch.start('t_setup_getip')
             ip_lists = self.euca_describe_addresses()
             for i in range(cluster_size):
                 instance = self.cloud_instances.get_by_id(i)
                 time.sleep(1)
                 if self.cloud == 'nova':
                     while not self.euca_associate_address(instance, ip_lists[i]):
+                        self.stopWatch.increase('t_ipfail')
                         self.msg('Error in associating IP %s with instance %s, '
                                  'trying again' % (ip_lists[i], instance['id']))
                 elif self.cloud == 'eucalyptus':
@@ -1046,14 +1060,18 @@ class Cluster(object):
                     self.cloud_instances.set_ip_by_id(instance['id'],
                                                       public_ip_address,
                                                       private_ip_address)
+            self.stopWatch.stop('t_setup_getip')
 
         elif self.interface == 'boto':
+            self.stopWatch.start('t_setup_createvm')
             reservation = \
                 self.boto_run_instances(args.image, cluster_size, args.type)
+            self.stopWatch.stop('t_setup_createvm')
 
             time.sleep(5)
 
             self.msg('\nAssociating public IP addresses')
+            self.stopWatch.start('t_setup_getip')
             ip_index = 0
             ip_lists = self.boto_describe_addresses()
             for instance in reservation.instances:
@@ -1072,6 +1090,7 @@ class Cluster(object):
                     self.cloud_instances.set_ip_by_id(instance.id,
                                                       instance.public_dns_name,
                                                       instance.private_dns_name)
+            self.stopWatch.stop('t_setup_getip')
 
         self.debug('Creating IU ubunto repo source list')
         # choose repo, by defalt, using IU ubuntu repo
@@ -1079,7 +1098,7 @@ class Cluster(object):
 
         self.debug('Checking alive instance for deploying')
         # detect if VMs are ready for deploy
-
+        self.stopWatch.start('t_setup_install')
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 threading.Thread(target=self.installation,
@@ -1087,10 +1106,13 @@ class Cluster(object):
 
         while threading.activeCount() > 1:
             time.sleep(1)
+        self.stopWatch.stop('t_setup_install')
 
         self.debug('Configuraing SLURM')
         # config SLURM system
+        self.stopWatch.start('t_setup_configure')
         self.config_slurm()
+        self.stopWatch.stop('t_setup_configure')
 
         self.debug('Cleaning up')
         # clean repo file
@@ -1098,7 +1120,28 @@ class Cluster(object):
         self.debug('Saving cloud instance into backup file')
         # save cloud instance
         self.cloud_instances.save_instances()
+        self.stopWatch.stop('t_total')
         self.debug('Done creation of cluster')
+        self.msg('\n\n\n\tName | Total | IP Association | Installtion | '
+                 'Configuration | IP association failure | IP change | Instance termination')
+        self.msg('----------------------------------------------------------------------'
+                 '----------------------------------------------------------------------')
+        if self.cloud == 'nova':
+            self.msg('\nPerformance data:\tmachine-%s-%s-%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s'
+                     % (platform.node(), args.type, str(args.number),
+                        self.stopWatch.print_time('t_total'),
+                        self.stopWatch.print_time('t_setup_getip'),
+                        self.stopWatch.print_time('t_setup_install'),
+                        self.stopWatch.print_time('t_setup_configure'),
+                        self.stopWatch.print_count('t_ipfail'),
+                        self.stopWatch.print_count('t_ipchange'),
+                        self.stopWatch.print_count('t_termination')))
+        elif self.cloud == 'eucalyptus':
+            self.msg('\nPerformance data:\tmachine-%s-%s-%s\t%s\t%s\t%s'
+                     % (platform.node(), args.type, str(args.number),
+                        self.stopWatch.print_time('t_total'),
+                        self.stopWatch.print_time('t_setup_install'),
+                        self.stopWatch.print_time('t_setup_configure')))
 
     def clean_repo(self):
         '''
@@ -1941,10 +1984,12 @@ class Cluster(object):
                      % args.name)
             sys.exit()
 
+        self.stopWatch.start('t_shutdown')
         for instance in self.cloud_instances.get_list().values():
             if type(instance) is dict:
                 self.terminate_instance(instance['id'])
                 self.del_known_host(instance['ip'])
+        self.stopWatch.stop('t_shutdown')
 
         # change status to terminated, and save
         self.debug('If status is %s' % self.cloud_instances.RUN)
@@ -1955,6 +2000,9 @@ class Cluster(object):
             self.cloud_instances.del_by_name(args.name)
             self.debug('Saving instance into backup file')
             self.cloud_instances.save_instances()
+
+        self.msg('\n\n\n\nPerformance data: Termination time')
+        self.msg('\n%s' % self.stopWatch.print_time('t_shutdown'))
 # ---------------------------------------------------------------------
 # METHODS TO SHOW VIRTUAL CLUSTER(S) STATUS
 # ---------------------------------------------------------------------
@@ -2106,9 +2154,23 @@ class Cluster(object):
 
         self.msg('\nRunning program %s\n' % program_name)
         # run program on control node
-        self.execute(self.cloud_instances.get_by_id(0),
-                     "salloc -N %d mpirun %s"
-                     % (int(args.number), program_name))
+        if args.script == None:
+            self.stopWatch.start('t_execute')
+            self.execute(self.cloud_instances.get_by_id(0),
+                         "salloc -N %d mpirun %s"
+                         % (int(args.number), program_name))
+            self.stopWatch.stop('t_execute')
+        else:
+            script_name = args.script.split('/')[-1]
+            self.copyto(self.cloud_instances.get_by_id(0), args.script)
+            self.stopWatch.start('t_execute')
+            self.execute(self.cloud_instances.get_by_id(0),
+                         "sbatch %s"
+                         % script_name)
+            self.stopWatch.stop('t_execute')
+
+        self.msg('\n\n\n\nPerformance data: Job running time')
+        self.msg('\n%s' % self.stopWatch.print_time('t_execute'))
 
     def copy_compile_prog(self, instance, prog, prog_name):
         self.copyto(instance, prog)
@@ -2225,6 +2287,8 @@ def commandline_parser():
     run_program_parser.add_argument('-n', '--number', action='store',
                                    required=True,
                                    help='Number of compute nodes to use')
+    run_program_parser.add_argument('-s', '--script', action='store',
+                                   help='job script')
     run_program_parser.set_defaults(func=virtual_cluster.run_program)
     args = parser.parse_args()
 
