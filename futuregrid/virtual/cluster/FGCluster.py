@@ -1150,7 +1150,7 @@ class Cluster(object):
         self.msg('----------------------------------------------------------------------'
                  '----------------------------------------------------------------------')
         if self.cloud == 'nova':
-            self.msg('\nPerformance data:\tmachine-%s-%s-%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s'
+            self.msg('\nPerformance data:\tmachine-%s-nova-%s-%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s'
                      % (platform.node(), args.type, str(args.number),
                         self.stopWatch.print_time('t_total'),
                         self.stopWatch.print_time('t_setup_getip'),
@@ -1160,7 +1160,7 @@ class Cluster(object):
                         self.stopWatch.print_count('t_ipchange'),
                         self.stopWatch.print_count('t_termination')))
         elif self.cloud == 'eucalyptus':
-            self.msg('\nPerformance data:\tmachine-%s-%s-%s\t%s\t%s\t%s'
+            self.msg('\nPerformance data:\tmachine-%s-eucalyptus-%s-%s\t%s\t%s\t%s'
                      % (platform.node(), args.type, str(args.number),
                         self.stopWatch.print_time('t_total'),
                         self.stopWatch.print_time('t_setup_install'),
