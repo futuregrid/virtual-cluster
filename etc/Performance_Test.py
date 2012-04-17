@@ -3,19 +3,24 @@
 
 import os
 
+
+######################################
+#change here to parameterize the test#
+######################################
+test_runs = 3
+instance_type = 'm1.small'
+nodes_num = 2
+
 def process_data(create_time, run_prog, terminate_time):
+    if not create_time.split()[0] == 'Performance data:':
+        print 'Test failed'
+        return
+
     with open('performance_test', 'aw') as pt:
         pt.write(create_time+'\t'+run_prog+'\t'+terminate_time+'\n')
     pt.close()
     
 def performance_test():
-
-    ######################################
-    #change here to parameterize the test#
-    ######################################
-    test_runs = 3
-    instance_type = 'm1.small'
-    nodes_num = 1
 
     for i in range(test_runs):
         print '\n\nRunning Test %d' % int(i + 1)
