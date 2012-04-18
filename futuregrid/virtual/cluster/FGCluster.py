@@ -2242,7 +2242,7 @@ def commandline_parser():
     parser = \
         argparse.ArgumentParser(description='Virtual'
                                 ' cluster management operations',
-                                version='0.2.0')
+                                version='0.2.3')
     parser.add_argument('--file', action='store',
                         help='Specify futuregrid configure file')
     parser.add_argument('--debug', action='store_true',

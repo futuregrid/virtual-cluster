@@ -8,7 +8,7 @@ program is included to test the functionality. of teh virtual cluster.
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.2.0'
+version = '0.2.3'
 
 # due to a bug we are not including VERION.py yet
 # execfile('VERSION.py)
