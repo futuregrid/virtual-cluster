@@ -76,7 +76,7 @@ import platform
 
 from boto.ec2.connection import EC2Connection
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
-from StopWatch import StopWatch
+from futuregrid.virtual.cluster.StopWatch import StopWatch
 from subprocess import Popen, PIPE
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
