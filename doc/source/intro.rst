@@ -145,7 +145,7 @@ We assume that you are using the same machine as the first time you ran our tool
 
 Now you can use our tool to manage your virtual clusters.
 
-FutureGrid Specific Instalation
+FutureGrid Specific Installation
 -------------------------------
 
 Install without admin rights on india futuregrid
@@ -203,7 +203,7 @@ private key name)::
     $ chmod 0600 youruserkey.pem
 
 You can also use our tool to create a userkey for you, but you need 
-to specify the userkey name in confifuration file which is listed 
+to specify the userkey name in configuration file which is listed 
 below. The key can be created if you use --create-key argument before 
 any subcommands when you first run our tool. For more help see also::
 
