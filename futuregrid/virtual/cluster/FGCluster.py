@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+
 '''
 FGCluster.py (python)
 -------------------------
@@ -62,6 +63,7 @@ usage:
     list: list virtual clusters
 '''
 
+
 import argparse
 import sys
 import os
@@ -75,12 +77,13 @@ import boto.ec2
 import platform
 
 from boto.ec2.connection import EC2Connection
-from futuregrid.virtual.cluster.CloudInstances import CloudInstances
-from futuregrid.virtual.cluster.StopWatch import StopWatch
 from subprocess import Popen, PIPE
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
 from ConfigParser import NoSectionError
+
+from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+from futuregrid.virtual.cluster.StopWatch import StopWatch
 
 
 class Cluster(object):
@@ -390,7 +393,7 @@ class Cluster(object):
                     key_dir = "."
                 if self.cloud == 'nova':
                     os.environ["NOVA_KEY_DIR"] = key_dir
-                elif self.cloud =='eucalyptus':
+                elif self.cloud == 'eucalyptus':
                     os.environ['EUCA_KEY_DIR'] = key_dir
                 with open(os.path.expanduser(self.enrc)) as enrc_content:
                     for line in enrc_content:
@@ -536,7 +539,8 @@ class Cluster(object):
         self.disassociate_address(instance['ip'])
         # associate a new random free ip
         self.debug('Associating new IP on %s' % instance['id'])
-        while not self.euca_associate_address(instance, ip_lists[random.randint(0,
+        while not self.euca_associate_address(instance,
+                                              ip_lists[random.randint(0,
                                                         len(ip_lists) - 1)]):
             self.stopWatch.increase('t_ipfail')
             self.msg('ERROR: Associating IP addresses failed, trying again')
@@ -640,7 +644,8 @@ class Cluster(object):
                         ip_change = True
                 time.sleep(3)
             elif self.cloud == 'eucalyptus':
-                self.msg('Checking %s (%s) availability' % (instance['id'], instance['ip']))
+                self.msg('Checking %s (%s) availability'
+                         % (instance['id'], instance['ip']))
                 time.sleep(3)
 
 # ---------------------------------------------------------------------
@@ -770,7 +775,10 @@ class Cluster(object):
         r_in = self.ec2_conn.get_all_instances(instance_ids=[instance_id])
         return r_in[0].instances[0]
 
-    def boto_associate_address(self, instance_id, address_public_ip, address_private_ip):
+    def boto_associate_address(self,
+                               instance_id,
+                               address_public_ip,
+                               address_private_ip):
         '''
         associate ip address using boto
         '''
@@ -785,7 +793,9 @@ class Cluster(object):
                 self.msg('ERROR: Associating ip %s with instance %s failed, '
                          'trying again' % (address_public_ip, instance_id))
         self.msg('ADDRESS: %s %s' % (address_public_ip, instance_id))
-        self.cloud_instances.set_ip_by_id(instance_id, address_public_ip, address_private_ip)
+        self.cloud_instances.set_ip_by_id(instance_id,
+                                          address_public_ip,
+                                          address_private_ip)
 
     def boto_run_instances(self, image, cluster_size, instance_type):
         '''
@@ -964,6 +974,7 @@ class Cluster(object):
                     return True
                 else:
                     return False
+
     def euca_get_ip(self, instance_id):
         '''
         Get instance public given instance id
@@ -971,7 +982,8 @@ class Cluster(object):
         result = self.get_command_result('euca-describe-instances').split('\n')
         for i in result:
             if i.find(instance_id) >= 0:
-                return {'public':i.split('\t')[3], 'private':i.split('\t')[4]}
+                return {'public': i.split('\t')[3],
+                        'private': i.split('\t')[4]}
 
     def create_cluster(self, args):
         '''
@@ -1051,13 +1063,16 @@ class Cluster(object):
                     if len(ip_lists) < cluster_size:
                         self.msg('ERROR: Not enough public IP addresses')
                         for instance_id in range(cluster_size):
-                            instance = self.cloud_instances.get_by_id(instance_id)
+                            instance =\
+                                self.cloud_instances.get_by_id(instance_id)
                             self.terminate_instance(instance['id'])
                         sys.exit()
-                    while not self.euca_associate_address(instance, ip_lists[i]):
+                    while not \
+                        self.euca_associate_address(instance, ip_lists[i]):
                         self.stopWatch.increase('t_ipfail')
-                        self.msg('Error in associating IP %s with instance %s, '
-                                 'trying again' % (ip_lists[i], instance['id']))
+                        self.msg('ERROR: Associating IP %s with instance %s, '
+                                 'trying again' % (ip_lists[i],
+                                                   instance['id']))
                 elif self.cloud == 'eucalyptus':
                     addresses = self.euca_get_ip(instance['id'])
                     public_ip_address = addresses['public']
@@ -1065,7 +1080,8 @@ class Cluster(object):
                     if public_ip_address == private_ip_address:
                         self.msg('ERROR: Not enough public IP addresses')
                         for instance_id in range(cluster_size):
-                            instance = self.cloud_instances.get_by_id(instance_id)
+                            instance = \
+                                self.cloud_instances.get_by_id(instance_id)
                             self.terminate_instance(instance['id'])
                         sys.exit()
                     self.msg('ADDRESS %s' % public_ip_address)
@@ -1096,7 +1112,8 @@ class Cluster(object):
                     if len(ip_lists) < cluster_size:
                         self.msg('ERROR: Not enought public IP addresses')
                         for instance_id in range(cluster_size):
-                            instance = self.cloud_instances.get_by_id(instance_id)
+                            instance = \
+                                self.cloud_instances.get_by_id(instance_id)
                             self.terminate_instance(instance.id)
                         sys.exit()
                     ip_index += 1
@@ -1107,12 +1124,13 @@ class Cluster(object):
                     if instance.public_dns_name == instance.private_dns_name:
                         self.msg('ERROR: Not enought public IP addresses')
                         for instance_id in range(cluster_size):
-                            instance = self.cloud_instances.get_by_id(instance_id)
+                            instance = \
+                                self.cloud_instances.get_by_id(instance_id)
                             self.terminate_instance(instance.id)
                         sys.exit()
                     self.cloud_instances.set_ip_by_id(instance.id,
-                                                      instance.public_dns_name,
-                                                      instance.private_dns_name)
+                                                    instance.public_dns_name,
+                                                    instance.private_dns_name)
             self.stopWatch.stop('t_setup_getip')
 
         self.debug('Creating IU ubunto repo source list')
@@ -1798,9 +1816,18 @@ class Cluster(object):
             if type(instance) is dict:
                 self.terminate_instance(instance['id'])
                 self.del_known_host(instance['ip'])
+
 # ---------------------------------------------------------------------
 # METHODS TO RESTORE VIRTUAL CLUSTER
 # ---------------------------------------------------------------------
+
+    def check_image_availability(self, image_id):
+        '''
+        Checks if image is available
+        '''
+        command_result = [x for x in
+                          self.describe_images(image_id).split()]
+        return command_result[3] == 'available'
 
     def restore_cluster(self, args):
         '''
@@ -1833,7 +1860,7 @@ class Cluster(object):
         if self.cloud == 'eucalyptus':
             self.msg('bugs')
             sys.exit()
-        
+
         control_node_num = 1
 
         # only restore cluster which is saved
@@ -1864,6 +1891,12 @@ class Cluster(object):
         else:
             self.msg('Error in locating virtual cluster %s, not created?'
                      % args.name)
+            sys.exit()
+
+        self.msg('Checking image availability')
+        if not self.check_image_availability(control_node_id) or\
+            not self.check_image_availability(compute_node_id):
+            self.msg('Bundled Images are not avaliable right now, try later')
             sys.exit()
 
         cluster_size = int(cluster_size) + control_node_num
@@ -2331,4 +2364,3 @@ def commandline_parser():
 
 if __name__ == '__main__':
     commandline_parser()
-
