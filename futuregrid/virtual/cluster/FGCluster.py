@@ -2131,7 +2131,7 @@ class Cluster(object):
 # METHODS TO SHOW VIRTUAL CLUSTER LIST
 # ---------------------------------------------------------------------
 
-        def get_list(self, _args):
+    def get_list(self, _args):
         '''
         lists all virtual clusters and status
 
