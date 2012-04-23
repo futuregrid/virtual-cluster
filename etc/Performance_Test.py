@@ -39,13 +39,13 @@ def performance_test():
 def create_cluster(instance_type, number):
     print '\nInstance type -- %s' % instance_type
     print 'Number of computation nodes -- %s' % number
-    return os.popen("python FGCluster.py run -a test -i %s -t %s -n %s" % (image_id, instance_type, number)).read().split('\n')[-2]
+    return os.popen("fg-cluster run -a test -i %s -t %s -n %s" % (image_id, instance_type, number)).read().split('\n')[-2]
 
 def terminate_cluster():
-    return os.popen("python FGCluster.py terminate -a test").read().split('\n')[-2]
+    return os.popen("fg-cluster terminate -a test").read().split('\n')[-2]
 
 def run_program(number):
-    return os.popen("python FGCluster.py mpirun -p helloworld.c -a test -n %s" % number).read().split('\n')[-2]
+    return os.popen("fg-cluster mpirun -p helloworld.c -a test -n %s" % number).read().split('\n')[-2]
 
     
 def main():
