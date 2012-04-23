@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import ConfigParser
 
 ######################################
 #change here to parameterize the test#
@@ -9,8 +10,18 @@ import os
 test_runs = 3
 instance_type = 'm1.small'
 nodes_num = 2
-image_id = 'ami-0000001d'
+image_id = None
 
+def read_config():
+    global image_id
+    config = ConfigParser.ConfigParser()
+    config.read([os.path.expanduser('~/.futuregrid/futuregrid.cfg'),
+                         'futuregrid.cfg'])
+    cloud = config.get('virtual-cluster', 'cloud')
+    if cloud == 'nova':
+        image_id = 'ami-0000001d'
+    elif cloud == 'eucalyptus':
+        image_id = 'emi-FC6A1197'
 
 def process_data(create_time, run_prog, terminate_time):
     if not create_time.split()[0] == 'Performance':
@@ -49,6 +60,7 @@ def run_program(number):
 
     
 def main():
+    read_config()
     performance_test()
 
 if __name__ == '__main__':
