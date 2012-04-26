@@ -1041,7 +1041,7 @@ class Cluster(object):
             self.euca_run_instance(self.user, cluster_size, args.image,
                                    args.type)
             self.stopWatch.stop('t_setup_createvm')
-            time.sleep(5)
+            time.sleep(20)
 
             self.msg('\nAssociating public IP addresses')
             self.stopWatch.start('t_setup_getip')
@@ -1082,7 +1082,7 @@ class Cluster(object):
                 self.boto_run_instances(args.image, cluster_size, args.type)
             self.stopWatch.stop('t_setup_createvm')
 
-            time.sleep(5)
+            time.sleep(20)
 
             self.msg('\nAssociating public IP addresses')
             self.stopWatch.start('t_setup_getip')
@@ -1099,7 +1099,7 @@ class Cluster(object):
                         self.msg('ERROR: Not enought public IP addresses')
                         for instance_id in range(cluster_size):
                             instance = self.cloud_instances.get_by_id(instance_id)
-                            self.terminate_instance(instance.id)
+                            self.terminate_instance(instance['id'])
                         sys.exit()
                     ip_index += 1
                     self.boto_associate_address(instance.id,
@@ -1110,7 +1110,7 @@ class Cluster(object):
                         self.msg('ERROR: Not enought public IP addresses')
                         for instance_id in range(cluster_size):
                             instance = self.cloud_instances.get_by_id(instance_id)
-                            self.terminate_instance(instance.id)
+                            self.terminate_instance(instance['id'])
                         sys.exit()
                     self.cloud_instances.set_ip_by_id(instance.id,
                                                       instance.public_dns_name,
