@@ -9,9 +9,7 @@ from numpy import *
 class Performance_Static():
 
     nova_data = {}
-    nova_data_length = 11
     euca_data = {}
-    euca_data_length = 7
 
     def process_file(self, args):
         with open(os.path.expanduser(args.file)) as raw_input:
@@ -19,7 +17,7 @@ class Performance_Static():
         for line in content:
             values = line.split('\n')[0].split('\t')
             # if nova data
-            if len(values) == self.nova_data_length:
+            if values[1].finds('nova') >= 0:
                 if not values[1] in self.nova_data:
                     self.nova_data[values[1]] = {}
                     self.nova_data[values[1]]['t_total'] = [float(values[2])]
@@ -42,20 +40,20 @@ class Performance_Static():
                     self.nova_data[values[1]]['t_execute'].append(float(values[9]))
                     self.nova_data[values[1]]['t_shutdown'].append(float(values[10]))
             # if euca_data
-            if len(values) == self.euca_data_length:
+            if values[1].finds('eucalyptus') >= 0:
                 if not values[1] in self.euca_data:
                     self.euca_data[values[1]] = {}
                     self.euca_data[values[1]]['t_total'] = [float(values[2])]
-                    self.euca_data[values[1]]['t_setup_install'] = [float(values[3])]
-                    self.euca_data[values[1]]['t_setup_configure'] = [float(values[4])]
-                    self.euca_data[values[1]]['t_execute'] = [float(values[5])]
-                    self.euca_data[values[1]]['t_shutdown'] = [float(values[6])]
+                    self.euca_data[values[1]]['t_setup_install'] = [float(values[4])]
+                    self.euca_data[values[1]]['t_setup_configure'] = [float(values[5])]
+                    self.euca_data[values[1]]['t_execute'] = [float(values[9])]
+                    self.euca_data[values[1]]['t_shutdown'] = [float(values[10])]
                 else:
                     self.euca_data[values[1]]['t_total'].append(float(values[2]))
-                    self.euca_data[values[1]]['t_setup_install'].append(float(values[3]))
-                    self.euca_data[values[1]]['t_setup_configure'].append(float(values[4]))
-                    self.euca_data[values[1]]['t_execute'].append(float(values[5]))
-                    self.euca_data[values[1]]['t_shutdown'].append(float(values[6]))
+                    self.euca_data[values[1]]['t_setup_install'].append(float(values[4]))
+                    self.euca_data[values[1]]['t_setup_configure'].append(float(values[5]))
+                    self.euca_data[values[1]]['t_execute'].append(float(values[9]))
+                    self.euca_data[values[1]]['t_shutdown'].append(float(values[10]))
         self.process_data_nova()
         self.process_data_euca()
 
