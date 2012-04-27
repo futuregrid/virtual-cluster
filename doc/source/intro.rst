@@ -548,15 +548,6 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 
 	When you finish performance test, you will get result like following::
 
-				Test name	Total Time	IP association time	Installation time	Configuration time	IP association failure	IP change	Termination	Execution time	Termination
-	Performance data:	machine-i136-nova-m1.small-1	341.383718014	4.09799218178	329.011784077	2.2311000824	0	2	0	0.195244073868	1.11172604561
-	Performance data:	machine-i136-nova-m1.small-1	542.71714282	4.27987098694	529.01767993	3.43776106834	0	2	1	0.358952999115	1.15523195267
-	Performance data:	machine-i136-nova-m1.small-1	338.774327993	4.29085683823	326.011389971	2.40805697441	0	2	0	0.854948043823	1.05370903015
-	Performance data:	machine-s1-eucalyptus-m1.small-1	119.64466095	N/A	70.9935519695	5.20912003517	N/A	N/A	N/A	0.278912067413	0.544021844864
-	Performance data:	machine-s1-eucalyptus-m1.small-1	123.578747034	N/A	73.9941020012	6.00495195389	N/A	N/A	N/A	0.354911804199	0.574532032013
-	Performance data:	machine-s1-eucalyptus-m1.small-1	131.400607824	N/A	81.9961931705	5.99983000755	N/A	N/A	N/A	0.222611188889	0.558506011963
-
-
 	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
 	medium, large
 
