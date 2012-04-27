@@ -1041,11 +1041,14 @@ class Cluster(object):
             self.euca_run_instance(self.user, cluster_size, args.image,
                                    args.type)
             self.stopWatch.stop('t_setup_createvm')
-            time.sleep(20)
 
+            time.sleep(5)
             self.msg('\nAssociating public IP addresses')
             self.stopWatch.start('t_setup_getip')
             ip_lists = self.euca_describe_addresses()
+            # if euca, wait until IP is associated
+            if self.cloud == 'eucalyptus':
+                time.sleep(60)
             for i in range(cluster_size):
                 instance = self.cloud_instances.get_by_id(i)
                 time.sleep(1)
@@ -1082,12 +1085,14 @@ class Cluster(object):
                 self.boto_run_instances(args.image, cluster_size, args.type)
             self.stopWatch.stop('t_setup_createvm')
 
-            time.sleep(20)
-
+            time.sleep(5)
             self.msg('\nAssociating public IP addresses')
             self.stopWatch.start('t_setup_getip')
             ip_index = 0
             ip_lists = self.boto_describe_addresses()
+            # if euca, wait until IP is associated
+            if self.cloud == 'eucalyptus':
+                time.sleep(60)
             for instance in reservation.instances:
                 time.sleep(1)
                 instance.update()
@@ -1162,7 +1167,7 @@ class Cluster(object):
                         self.stopWatch.print_count('t_ipchange'),
                         self.stopWatch.print_count('t_termination')))
         elif self.cloud == 'eucalyptus':
-            self.msg('\nPerformance data:\tmachine-%s-eucalyptus-%s-%s\t%s\t%s\t%s'
+            self.msg('\nPerformance data:\tmachine-%s-eucalyptus-%s-%s\t%s\tN/A\t%s\t%s\tN/A\tN/A\tN/A'
                      % (platform.node(), args.type, str(args.number),
                         self.stopWatch.print_time('t_total'),
                         self.stopWatch.print_time('t_setup_install'),
@@ -1274,6 +1279,7 @@ class Cluster(object):
                     self.execute(instance, 'hostname %s' % instance['id'])
                     self.copyto(instance, hosts)
                     self.execute(instance, 'cp %s /etc/' % hosts)
+            os.remove(hosts)
 
         # copy SLURM conf file to every node
         for instance in self.cloud_instances.get_list().values():
