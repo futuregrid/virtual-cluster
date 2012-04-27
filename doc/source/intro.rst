@@ -504,6 +504,62 @@ Parameters
 Make sure that the number you input is no larger than the acutal number of computaion node you created. 
 The virtual cluster name should be a name of cluster which is currently running.
 
+PERFORMANCE TEST
+================
+
+You can use our tool to run performance test on OpenStack and Eucalyptus.
+
+Prerequisites
+-------------
+
+In order to use our tool to run performance test on Openstack and Eucalyptus. You must have
+our tool correctly installed. You can refer to the tutorial about how to run in the pervious
+sections. Once you can successfully run our tool, you can proceed with the following steps
+
+* **Step 1: Download our peroformance test tool**
+	
+	You can download the performan test tool from
+	* https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Testall.py
+	* https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Statistic.py
+
+	It has two files, Performance_Testall.py is the test script that you can use to run the performance test
+	Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected
+
+	NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
+	futuregrid.cfg file correctly configuared.
+
+* **Step 2: Run performance test script**
+
+	Beaucase each test involves running a MPI program, so please download our sample MPI helloworld from
+
+	* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c
+
+	and put it where you would like you run the test script.
+
+	If you have done all the steps above, then you can run the test scripte by::
+
+	$ python Performance_Testall.py
+
+	This will run tests which involve creating different virtual clusters with various parameters, 
+	run MPI program and terminating virtual clusters, then produces performance_test_raw which contains
+	all the performance data you collected.
+
+	When you finish performance test, you will get result like following:
+
+	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
+	medium, large
+
+* **Step 3: Process performance test data**
+
+	Once you have done the performance test and outpus the raw data file. You can create excel sheet by
+	the following command::
+
+	$ python Performance_Statistic.py
+
+	This will create two excels for you. One is for OpenStack data, and the other one is for Eucalyptus 
+	data. 
+
+	The file has the following format:
 
 FOR DEVELOPERS ONLY
 ===================
