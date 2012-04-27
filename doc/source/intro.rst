@@ -514,7 +514,7 @@ Prerequisites
 
 In order to use our tool to run performance test on Openstack and Eucalyptus. You must have
 our tool correctly installed. You can refer to the tutorial about how to run in the pervious
-sections. Once you can successfully run our tool, you can proceed with the following steps
+sections. Once you can successfully run our tool, you can proceed with the following steps.
 
 * **Step 1: Download our peroformance test tool**
 	
@@ -524,7 +524,7 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 
 	* https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Statistic.py
 
-	It has two files, Performance_Testall.py is the test script that you can use to run the performance test
+	It has two files, Performance_Testall.py is the test script that you can use to run the performance test. 
 	Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected
 
 	NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
@@ -543,10 +543,19 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 	$ python Performance_Testall.py
 
 	This will run tests which involve creating different virtual clusters with various parameters, 
-	run MPI program and terminating virtual clusters, then produces performance_test_raw which contains
+	running MPI program and terminating virtual clusters, then produces performance_test_raw which contains
 	all the performance data you collected.
 
-	When you finish performance test, you will get result like following:
+	When you finish performance test, you will get result like following::
+
+				Test name	Total Time	IP association time	Installation time	Configuration time	IP association failure	IP change	Termination	Execution time	Termination
+	Performance data:	machine-i136-nova-m1.small-1	341.383718014	4.09799218178	329.011784077	2.2311000824	0	2	0	0.195244073868	1.11172604561
+	Performance data:	machine-i136-nova-m1.small-1	542.71714282	4.27987098694	529.01767993	3.43776106834	0	2	1	0.358952999115	1.15523195267
+	Performance data:	machine-i136-nova-m1.small-1	338.774327993	4.29085683823	326.011389971	2.40805697441	0	2	0	0.854948043823	1.05370903015
+	Performance data:	machine-s1-eucalyptus-m1.small-1	119.64466095	N/A	70.9935519695	5.20912003517	N/A	N/A	N/A	0.278912067413	0.544021844864
+	Performance data:	machine-s1-eucalyptus-m1.small-1	123.578747034	N/A	73.9941020012	6.00495195389	N/A	N/A	N/A	0.354911804199	0.574532032013
+	Performance data:	machine-s1-eucalyptus-m1.small-1	131.400607824	N/A	81.9961931705	5.99983000755	N/A	N/A	N/A	0.222611188889	0.558506011963
+
 
 	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
 	medium, large
