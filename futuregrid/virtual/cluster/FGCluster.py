@@ -975,6 +975,11 @@ class Cluster(object):
             if i.find(instance_id) >= 0:
                 return {'public':i.split('\t')[3], 'private':i.split('\t')[4]}
 
+    def terminate_all(self, cluster_size):
+        for instance_id in range(cluster_size):
+            instance = self.cloud_instances.get_by_id(instance_id)
+            self.terminate_instance(instance['id'])
+
     def create_cluster(self, args):
         '''
         Method for creating cluster
@@ -1042,37 +1047,41 @@ class Cluster(object):
                                    args.type)
             self.stopWatch.stop('t_setup_createvm')
 
-            time.sleep(5)
+            time.sleep(10)
             self.msg('\nAssociating public IP addresses')
             self.stopWatch.start('t_setup_getip')
             ip_lists = self.euca_describe_addresses()
-            # if euca, wait until IP is associated
-            if self.cloud == 'eucalyptus':
-                time.sleep(60)
+
             for i in range(cluster_size):
                 instance = self.cloud_instances.get_by_id(i)
                 time.sleep(1)
                 if self.cloud == 'nova':
                     if len(ip_lists) < cluster_size:
                         self.msg('ERROR: Not enough public IP addresses')
-                        for instance_id in range(cluster_size):
-                            instance = self.cloud_instances.get_by_id(instance_id)
-                            self.terminate_instance(instance['id'])
+                        self.terminate_all(cluster_size)
                         sys.exit()
                     while not self.euca_associate_address(instance, ip_lists[i]):
                         self.stopWatch.increase('t_ipfail')
                         self.msg('Error in associating IP %s with instance %s, '
                                  'trying again' % (ip_lists[i], instance['id']))
+                # eucalyptus gives instances with ip, so need to get that ip
                 elif self.cloud == 'eucalyptus':
-                    addresses = self.euca_get_ip(instance['id'])
-                    public_ip_address = addresses['public']
-                    private_ip_address = addresses['private']
-                    if public_ip_address == private_ip_address:
-                        self.msg('ERROR: Not enough public IP addresses')
-                        for instance_id in range(cluster_size):
-                            instance = self.cloud_instances.get_by_id(instance_id)
-                            self.terminate_instance(instance['id'])
-                        sys.exit()
+                    ip_asso_count = 0
+                    while True:
+                        addresses = self.euca_get_ip(instance['id'])
+                        public_ip_address = addresses['public']
+                        private_ip_address = addresses['private']
+
+                        if not public_ip_address == private_ip_address:
+                            break
+                        else:
+                            ip_asso_count += 1
+                            time.sleep(1)
+                        if ip_asso_count > 200:
+                            self.msg('ERROR: Not enough public IP addresses')
+                            self.terminate_all(cluster_size)
+                            sys.exit()
+
                     self.msg('ADDRESS %s' % public_ip_address)
                     self.cloud_instances.set_ip_by_id(instance['id'],
                                                       public_ip_address,
@@ -1085,14 +1094,12 @@ class Cluster(object):
                 self.boto_run_instances(args.image, cluster_size, args.type)
             self.stopWatch.stop('t_setup_createvm')
 
-            time.sleep(5)
+            time.sleep(10)
             self.msg('\nAssociating public IP addresses')
             self.stopWatch.start('t_setup_getip')
             ip_index = 0
             ip_lists = self.boto_describe_addresses()
-            # if euca, wait until IP is associated
-            if self.cloud == 'eucalyptus':
-                time.sleep(60)
+
             for instance in reservation.instances:
                 time.sleep(1)
                 instance.update()
@@ -1102,21 +1109,24 @@ class Cluster(object):
                 if self.cloud == 'nova':
                     if len(ip_lists) < cluster_size:
                         self.msg('ERROR: Not enought public IP addresses')
-                        for instance_id in range(cluster_size):
-                            instance = self.cloud_instances.get_by_id(instance_id)
-                            self.terminate_instance(instance['id'])
+                        self.terminate_all(cluster_size)
                         sys.exit()
                     ip_index += 1
                     self.boto_associate_address(instance.id,
                                                 ip_lists[ip_index],
                                                 instance.private_dns_name)
                 elif self.cloud == 'eucalyptus':
-                    if instance.public_dns_name == instance.private_dns_name:
-                        self.msg('ERROR: Not enought public IP addresses')
-                        for instance_id in range(cluster_size):
-                            instance = self.cloud_instances.get_by_id(instance_id)
-                            self.terminate_instance(instance['id'])
-                        sys.exit()
+                    ip_asso_count = 0
+                    while True:
+                        if not instance.public_dns_name == instance.private_dns_name:
+                            break
+                        else:
+                            ip_asso_count += 1
+                            time.sleep(1)
+                        if ip_asso_count > 200:
+                            self.msg('ERROR: Not enough public IP addresses')
+                            self.terminate_all(cluster_size)
+                            sys.exit()
                     self.cloud_instances.set_ip_by_id(instance.id,
                                                       instance.public_dns_name,
                                                       instance.private_dns_name)
