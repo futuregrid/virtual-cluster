@@ -1118,9 +1118,9 @@ class Cluster(object):
                 elif self.cloud == 'eucalyptus':
                     ip_asso_count = 0
                     while True:
-			instance.update()
+                        instance.update()
                         if not instance.public_dns_name == instance.private_dns_name:
-			    self.msg('%s\t%s' % (instance.public_dns_name, instance.id))
+                            self.msg('%s\t%s' % (instance.public_dns_name, instance.id))
                             break
                         else:
                             ip_asso_count += 1
