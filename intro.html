@@ -98,8 +98,9 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#how-to-install">HOW TO INSTALL</a><ul>
-<li><a class="reference internal" href="#installation">Installation</a></li>
-<li><a class="reference internal" href="#futuregrid-specific-instalation">FutureGrid Specific Instalation</a><ul>
+<li><a class="reference internal" href="#first-setup">First Setup</a></li>
+<li><a class="reference internal" href="#repeated-use">Repeated Use</a></li>
+<li><a class="reference internal" href="#futuregrid-specific-installation">FutureGrid Specific Installation</a><ul>
 <li><a class="reference internal" href="#install-without-admin-rights-on-india-futuregrid">Install without admin rights on india futuregrid</a></li>
 </ul>
 </li>
@@ -118,6 +119,10 @@
 </li>
 <li><a class="reference internal" href="#run-a-simple-mpi-program-on-virtual-cluster">Run a simple MPI program on virtual cluster</a><ul>
 <li><a class="reference internal" href="#using-fg-cluster-tool">Using fg-cluster tool</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#performance-test">PERFORMANCE TEST</a><ul>
+<li><a class="reference internal" href="#id2">Prerequisites</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#for-developers-only">FOR DEVELOPERS ONLY</a><ul>
@@ -199,8 +204,8 @@ operations to virtual clusters on FutureGrid.</p>
 </div>
 <div class="section" id="how-to-install">
 <h1>HOW TO INSTALL<a class="headerlink" href="#how-to-install" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="first-setup">
+<h2>First Setup<a class="headerlink" href="#first-setup" title="Permalink to this headline">¶</a></h2>
 <p>We assume that yo do not have super user priviledges on the computer
 where you like to install our tool.</p>
 <ul>
@@ -274,8 +279,37 @@ newest version, you can do it by following command:</p>
 </li>
 </ul>
 </div>
-<div class="section" id="futuregrid-specific-instalation">
-<h2>FutureGrid Specific Instalation<a class="headerlink" href="#futuregrid-specific-instalation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="repeated-use">
+<h2>Repeated Use<a class="headerlink" href="#repeated-use" title="Permalink to this headline">¶</a></h2>
+<p>We assume that you are using the same machine as the first time you ran our tool.</p>
+<ul>
+<li><p class="first"><strong>Step 1: Environment Setup (using india.futuregrid.org machines):</strong></p>
+<blockquote>
+<div><p>india.futuregrid.org has installed every tools you may need to finish this
+installation, so to activate euca2ools (version 1.2) after you login into
+india futuregrid machines, just simply do:</p>
+<div class="highlight-python"><pre>$ module load euca2ools</pre>
+</div>
+<p>To activate python 2.7, simply do:</p>
+<div class="highlight-python"><pre>$ module load python</pre>
+</div>
+<p>Those commands will help you load tools with correct version you need
+to finish installation. So now you may proceed with following
+installation steps.</p>
+</div></blockquote>
+</li>
+<li><p class="first"><strong>Step 2: Activate virtualenv</strong></p>
+<blockquote>
+<div><p>You can activate virtualenv again by following command:</p>
+<div class="highlight-python"><pre>$ source ENV/bin/activate</pre>
+</div>
+</div></blockquote>
+</li>
+</ul>
+<p>Now you can use our tool to manage your virtual clusters.</p>
+</div>
+<div class="section" id="futuregrid-specific-installation">
+<h2>FutureGrid Specific Installation<a class="headerlink" href="#futuregrid-specific-installation" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="install-without-admin-rights-on-india-futuregrid">
 <h3>Install without admin rights on india futuregrid<a class="headerlink" href="#install-without-admin-rights-on-india-futuregrid" title="Permalink to this headline">¶</a></h3>
 <p>Go to the futuregrid portal</p>
@@ -324,7 +358,7 @@ private key name):</p>
 $ chmod 0600 youruserkey.pem</pre>
 </div>
 <p>You can also use our tool to create a userkey for you, but you need
-to specify the userkey name in confifuration file which is listed
+to specify the userkey name in configuration file which is listed
 below. The key can be created if you use &#8211;create-key argument before
 any subcommands when you first run our tool. For more help see also:</p>
 <div class="highlight-python"><pre>$ fg-cluster --help</pre>
@@ -351,18 +385,25 @@ backup = ~/.futuregrid/virtual-cluster
 # Slurm configuration input file
 slurm = ~/.futuregrid/slurm.conf.in
 # userkey pem file
-userkey = ~/PUT-YOUR-USER-NAME.pem
+userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
 # environment file
 enrc = ~/novarc
 # program interface
-interface = euca2ools</pre>
+interface = euca2ools
+# cloud to use
+cloud = nova</pre>
 </div>
 <p>You will have to modify the &lt;PUT-YOUR-USER-NAME-HERE&gt; occurrence
 within the file with the name that you use to associate your key. The
 file is to be placed at ~/.futuregrid/futuregrid.cfg or concatenated
 to an already existing futuregrid.cfg file. In order to use different
-interface (euca2ools/boto) to run this tool, you can change interface
-parameter in the configuration file to achieve that.</p>
+interface (euca2ools/boto) or cloud to run this tool, you can change
+interface or cloud parameter in the configuration file to achieve that.</p>
+<p>If you want to use a different configuration file instead of changing
+one configuration file back and forth, you can use argument &#8211;file
+before you specify each subcommand you would like to run.:</p>
+<div class="highlight-python"><pre>$ fg-cluster --file &lt;configuration-file&gt; &lt;subcommands&gt;</pre>
+</div>
 <p>NOTE: Please make sure all the files are placed under the location as
 you specified in configuration file. You can also find an example of
 slurm.conf.in file which is used by configuring SLURM system from</p>
@@ -379,7 +420,7 @@ your virtual clusters</p>
 <h2>Create a virtual cluster<a class="headerlink" href="#create-a-virtual-cluster" title="Permalink to this headline">¶</a></h2>
 <p>Run following command will create a virtual cluster of given
 parameters (command example is given below):</p>
-<div class="highlight-python"><pre>$ fg-cluster -f &lt;config-file&gt; run -n &lt;number-of-computation-nodes&gt; -t &lt;instance-type&gt; -i &lt;image-id&gt; -a &lt;cluster-name&gt;</pre>
+<div class="highlight-python"><pre>$ fg-cluster run -n &lt;number-of-computation-nodes&gt; -t &lt;instance-type&gt; -i &lt;image-id&gt; -a &lt;cluster-name&gt;</pre>
 </div>
 <p>Parameters:</p>
 <blockquote>
@@ -387,9 +428,6 @@ parameters (command example is given below):</p>
 <col class="option" />
 <col class="description" />
 <tbody valign="top">
-<tr><td class="option-group">
-<kbd><span class="option">-f</span></kbd></td>
-<td>Futuregrid configuration file named futuregrid.cfg.</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">-n</span></kbd></td>
 <td>Number of computation nodes.</td></tr>
@@ -410,21 +448,19 @@ The virtual cluster name which uniquely identifies your cluster.</td></tr>
 <p>Please note that the number of computation nodes does not include the control node, so the actual number for virtual cluster.
 nodes is the number of computations node plus one control node.</p>
 <p>For example:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f futuregrid.cfg run -n 2 -t m1.small -i ami-0000001d -a mycluster1</pre>
+<div class="highlight-python"><pre>$ fg-cluster run -n 2 -t m1.small -i ami-0000001d -a mycluster1</pre>
 </div>
 <p>Virtual cluster info will be saved in backup file specified in
 futuregrid configuration file. Note: Cluster name should be different
 as other virtual clusters which is running if you want to run multiple
-virtual clusters. If you want to use default configure file, you
-should put this file at ~/.futuregrid/futuregrid.cfg, then argument -f
-can be omitted</p>
+virtual clusters.</p>
 </div>
 <div class="section" id="save-a-virtual-cluster">
 <h2>Save a virtual cluster<a class="headerlink" href="#save-a-virtual-cluster" title="Permalink to this headline">¶</a></h2>
 <p>Run following command will save a currently running virtual cluster into one
 control image and compute image for later resotre. (Installed softwares and
 unfinished jobs will also be saved):</p>
-<div class="highlight-python"><pre>$ fg-cluster -f &lt;config-file&gt; checkpoint -c &lt;control-node-bucket&gt; -t &lt;control-node-name&gt; -m &lt;compute-bucket&gt; -e  &lt;compute-name&gt; -a &lt;cluster-name&gt;</pre>
+<div class="highlight-python"><pre>$ fg-cluster checkpoint -c &lt;control-node-bucket&gt; -t &lt;control-node-name&gt; -m &lt;compute-bucket&gt; -e  &lt;compute-name&gt; -a &lt;cluster-name&gt;</pre>
 </div>
 <p>Parameters:</p>
 <blockquote>
@@ -432,9 +468,6 @@ unfinished jobs will also be saved):</p>
 <col class="option" />
 <col class="description" />
 <tbody valign="top">
-<tr><td class="option-group">
-<kbd><span class="option">-f</span></kbd></td>
-<td>Futuregrid configuration file</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">-c</span></kbd></td>
 <td>Control node bucket name. Bucket name which you can identify control image</td></tr>
@@ -454,7 +487,7 @@ unfinished jobs will also be saved):</p>
 </table>
 </div></blockquote>
 <p>For example:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f futuregrid.cfg checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1</pre>
+<div class="highlight-python"><pre>$ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1</pre>
 </div>
 <p>If you successfully upload your control image and compute image, you
 can find them in openstack image repository according to the bucker
@@ -471,7 +504,7 @@ are used for later restore.</p>
 <p>Run following command will restore a virtual cluster state including
 installed softwares, unfinished jobs which was saved before, so that
 you can continue your work from that saved point:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f &lt;config-file&gt; restore -a &lt;cluster-name&gt;</pre>
+<div class="highlight-python"><pre>$ fg-cluster restore -a &lt;cluster-name&gt;</pre>
 </div>
 <p>Parameters:</p>
 <blockquote>
@@ -486,7 +519,7 @@ you can continue your work from that saved point:</p>
 </table>
 </div></blockquote>
 <p>For example:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f futuregrid.cfg restore -a mycluster2</pre>
+<div class="highlight-python"><pre>$ fg-cluster restore -a mycluster2</pre>
 </div>
 <p>Note: Cluster name should be the name of cluster which had been saved
 before.  You can check the images you saved, the images you saved will
@@ -498,7 +531,7 @@ and which can be shown by following command:</p>
 <div class="section" id="shutdown-a-virtual-cluster">
 <h2>Shutdown a virtual cluster<a class="headerlink" href="#shutdown-a-virtual-cluster" title="Permalink to this headline">¶</a></h2>
 <p>Run following command will terminate a virtual cluster:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f &lt;config-file&gt; terminate -a &lt;cluster-name&gt;</pre>
+<div class="highlight-python"><pre>$ fg-cluster terminate -a &lt;cluster-name&gt;</pre>
 </div>
 <p>Parameters:</p>
 <blockquote>
@@ -507,16 +540,13 @@ and which can be shown by following command:</p>
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group">
-<kbd><span class="option">-f</span></kbd></td>
-<td>Futuregrid configuration file</td></tr>
-<tr><td class="option-group">
 <kbd><span class="option">-a</span></kbd></td>
 <td>Virtual cluster name</td></tr>
 </tbody>
 </table>
 </div></blockquote>
 <p>For example:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f futuregrid.cfg terminate -a mycluster2</pre>
+<div class="highlight-python"><pre>$ fg-cluster terminate -a mycluster2</pre>
 </div>
 <p>Note: Cluster name should be a name of cluster which is currently
 running. After executing this command, cluster info will be removed
@@ -526,7 +556,7 @@ from backup file which is specified by configuration file</p>
 <h2>Show status of virtual cluster(s)<a class="headerlink" href="#show-status-of-virtual-cluster-s" title="Permalink to this headline">¶</a></h2>
 <p>Run following command will show status of currently running
 virtual cluster(s) including cluster size, image id, instance id, ip:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f &lt;config-file&gt; status -a &lt;cluster-name&gt;</pre>
+<div class="highlight-python"><pre>$ fg-cluster status -a &lt;cluster-name&gt;</pre>
 </div>
 <p>Parameters:</p>
 <blockquote>
@@ -535,9 +565,6 @@ virtual cluster(s) including cluster size, image id, instance id, ip:</p>
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group">
-<kbd><span class="option">-f</span></kbd></td>
-<td>Futuregrid configuration file</td></tr>
-<tr><td class="option-group">
 <kbd><span class="option">-a</span></kbd></td>
 <td>Virtual cluster name</td></tr>
 </tbody>
@@ -545,10 +572,11 @@ virtual cluster(s) including cluster size, image id, instance id, ip:</p>
 </div></blockquote>
 <p>For example:</p>
 <p>Show status of one specific cluster given cluster name:</p>
-<div class="highlight-python"><pre>fg-cluster -f futuregrid.cfg status -a mycluster1</pre>
+<div class="highlight-python"><pre>fg-cluster status -a mycluster1</pre>
 </div>
 <p>Show status of all currently running clusters:</p>
-<div class="highlight-python"><pre>fg-cluster -f futuregrid.cfg status</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">fg</span><span class="o">-</span><span class="n">cluster</span> <span class="o">-</span><span class="n">status</span>
+</pre></div>
 </div>
 <p>Note: If argument -a is specified, then name of cluster should be
 a cluster that is currently running</p>
@@ -556,10 +584,10 @@ a cluster that is currently running</p>
 <div class="section" id="list-the-virtual-clusters">
 <h2>List the virtual clusters<a class="headerlink" href="#list-the-virtual-clusters" title="Permalink to this headline">¶</a></h2>
 <p>Run following command will give you a list of virtual clusters and their status:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f &lt;config-file&gt; list</pre>
+<div class="highlight-python"><pre>$ fg-cluster list</pre>
 </div>
 <p>For example:</p>
-<div class="highlight-python"><pre>$ fg-cluster -f futuregrid.cfg list</pre>
+<div class="highlight-python"><pre>$ fg-cluster list</pre>
 </div>
 </div>
 </div>
@@ -613,12 +641,23 @@ salloc: Relinquishing job allocation 2</pre>
 <div class="section" id="using-fg-cluster-tool">
 <h2>Using fg-cluster tool<a class="headerlink" href="#using-fg-cluster-tool" title="Permalink to this headline">¶</a></h2>
 <p>A much simpler way to run a MPI program is to use our tool</p>
-<p>So you can simply run command:</p>
+<p>You can choose different ways to run your MPI program, one way is to
+use salloc command in SLURM and another way is to use sbatch command.
+And you can also use our tool to achieve this.</p>
+<p>If you want to directly run MPI program using salloc, you can simply run command:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c"># fg-cluster mpirun -p &lt;program-source-file&gt; -n &lt;compute-nodes-to-use&gt; -a &lt;cluster-name&gt;</span>
 </pre></div>
 </div>
 <p>For example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c"># fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1</span>
+</pre></div>
+</div>
+<p>If you want to submit a job script to the SLURM, you can simply run command:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># fg-cluster mpirun -p &lt;program-source-file&gt; -n &lt;compute-nodes-to-use&gt; -a &lt;cluster-name&gt; -c &lt;script-name&gt;</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -c helloworld.sh</span>
 </pre></div>
 </div>
 <p>Parameters</p>
@@ -636,6 +675,9 @@ salloc: Relinquishing job allocation 2</pre>
 <tr><td class="option-group">
 <kbd><span class="option">-a</span></kbd></td>
 <td>Name of virtual cluster you want to run program on</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-c</span></kbd></td>
+<td>Job script you would like to submit to SLURM</td></tr>
 </tbody>
 </table>
 </div></blockquote>
@@ -643,12 +685,73 @@ salloc: Relinquishing job allocation 2</pre>
 The virtual cluster name should be a name of cluster which is currently running.</p>
 </div>
 </div>
+<div class="section" id="performance-test">
+<h1>PERFORMANCE TEST<a class="headerlink" href="#performance-test" title="Permalink to this headline">¶</a></h1>
+<p>You can use our tool to run performance test on OpenStack and Eucalyptus.</p>
+<div class="section" id="id2">
+<h2>Prerequisites<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>In order to use our tool to run performance test on Openstack and Eucalyptus. You must have
+our tool correctly installed. You can refer to the tutorial about how to run in the pervious
+sections. Once you can successfully run our tool, you can proceed with the following steps.</p>
+<ul>
+<li><p class="first"><strong>Step 1: Download our peroformance test tool</strong></p>
+<blockquote>
+<div><p>You can download the performan test tool from</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Testall.py">https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Testall.py</a></li>
+<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Statistic.py">https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Statistic.py</a></li>
+</ul>
+<p>It has two files, Performance_Testall.py is the test script that you can use to run the performance test.
+Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected</p>
+<p>NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
+futuregrid.cfg file correctly configuared.</p>
+</div></blockquote>
+</li>
+<li><p class="first"><strong>Step 2: Run performance test script</strong></p>
+<blockquote>
+<div><p>Beaucase each test involves running a MPI program, so please download our sample MPI helloworld from</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c">https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c</a></li>
+</ul>
+<p>and put it where you would like you run the test script.</p>
+<p>If you have done all the steps above, then you can run the test scripte by:</p>
+<div class="highlight-python"><pre>$ python Performance_Testall.py</pre>
+</div>
+<p>This will run tests which involve creating different virtual clusters with various parameters,
+running MPI program and terminating virtual clusters, then produces performance_test_raw which contains
+all the performance data you collected.</p>
+<p>When you finish performance test, you will get result like following:</p>
+<p>NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small,
+medium, large</p>
+</div></blockquote>
+</li>
+<li><p class="first"><strong>Step 3: Process performance test data</strong></p>
+<blockquote>
+<div><p>Once you have done the performance test and outpus the raw data file. You can create excel sheet by
+the following command:</p>
+<div class="highlight-python"><pre>$ python Performance_Statistic.py</pre>
+</div>
+<p>This will create two excels for you. One is for OpenStack data, and the other one is for Eucalyptus
+data.</p>
+<p>The file has the following format:</p>
+</div></blockquote>
+</li>
+</ul>
+</div>
+</div>
 <div class="section" id="for-developers-only">
 <h1>FOR DEVELOPERS ONLY<a class="headerlink" href="#for-developers-only" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="generating-the-distribution">
 <h2>Generating the Distribution<a class="headerlink" href="#generating-the-distribution" title="Permalink to this headline">¶</a></h2>
-<p>Assume that you have git correctly installed and configured on your
-computer.</p>
+<p>Assume that you have git correctly installed, configured on your
+computer. And you also added your ssh public key on github. So you
+can proceed with step 1.</p>
+<p>If you use machines on indiana futuregrid, you can load git by</p>
+<blockquote>
+<div><div class="highlight-python"><pre>module load git</pre>
+</div>
+</div></blockquote>
+<p>And added ssh public key on github.</p>
 <ul>
 <li><p class="first"><strong>Step 1: You can pull source code from github by</strong></p>
 <blockquote>
