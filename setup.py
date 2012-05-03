@@ -8,7 +8,7 @@ program is included to test the functionality. of teh virtual cluster.
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.2.3'
+version = '0.2.4'
 
 # due to a bug we are not including VERION.py yet
 # execfile('VERSION.py)
@@ -17,7 +17,7 @@ classifiers = """\
 Intended Audience :: Developers
 Intended Audience :: Education
 Intended Audience :: Science/Research
-Development Status :: 3 - Alpha
+Development Status :: 4 - Beta
 Intended Audience :: Developers
 License :: OSI Approved :: Apache Software License
 Programming Language :: Python
@@ -72,9 +72,8 @@ setup(
 
     install_requires = [
              'setuptools',
-             'pip'
+             'pip',
+             'fabric',
+             'boto',
              ],
-             #'fabric',
-             #'boto',
-
     )
