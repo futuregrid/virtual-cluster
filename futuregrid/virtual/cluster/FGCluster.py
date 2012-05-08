@@ -557,6 +557,7 @@ class Cluster(object):
         '''
         Reboot instance 
         '''
+        self.msg('Failed login to %s, rebooting' % instance['ip'])
         self.get_command_result('euca-reboot-instances %s' % instance['id'])
 
     def installation(self, instance, max_retry, install=True):
@@ -649,7 +650,7 @@ class Cluster(object):
             elif self.cloud == 'eucalyptus':
                 self.msg('Checking %s (%s) availability' % (instance['id'], instance['ip']))
                 wait_count += 1
-                if wait_count > 200:
+                if wait_count > 100:
                     self.euca_reboot(instance)
                     wait_count = 0
                 time.sleep(3)
