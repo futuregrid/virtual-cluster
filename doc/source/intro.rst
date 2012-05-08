@@ -555,6 +555,9 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 		euca-m1.small-1     	115.702837944  	96.9913449287  	6.05437302589  	0.58861207962  	0.159124135971 	N/A            	N/A                 	N/A       	N/A
 		euca-m1.small-1     	111.77609396   	92.9926450253  	6.03100919724  	0.55158996582  	0.157529830933 	N/A            	N/A                 	N/A       	N/A
 		euca-m1.small-1     	110.741933107  	92.9937160015  	5.04305911064  	0.598108053207 	0.16206908226  	N/A            	N/A                 	N/A       	N/A 
+		nova-m1.small-1     	151.426457167  	134.004024982  	2.22711896896  	0.196369886398 	1.20041799545  	4.12035417557  	0                   	0         	0         
+		nova-m1.small-1     	163.470904827  	146.006072998  	2.24714803696  	0.179543972015 	1.0476629734   	4.10231184959  	0                   	0         	0         
+		nova-m1.small-1     	153.810782194  	136.004303932  	2.69106817245  	0.219621181488 	1.00952887535  	4.1146697998   	0                   	0         	0
 
 	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
 	medium, large (TODO: Allow users to custormize)
