@@ -553,6 +553,12 @@ class Cluster(object):
         self.get_instance_from_reservation(instance['id']).update()
         self.boto_associate_address(instance['id'], free_public_ip)
 
+    def euca_reboot(self, instance):
+        '''
+        Reboot instance 
+        '''
+        self.get_command_result('euca-reboot-instances %s' % instance['id'])
+
     def installation(self, instance, max_retry, install=True):
         '''
         Checks if instances are ready to deploy and installs the
@@ -642,6 +648,10 @@ class Cluster(object):
                 time.sleep(3)
             elif self.cloud == 'eucalyptus':
                 self.msg('Checking %s (%s) availability' % (instance['id'], instance['ip']))
+                wait_count += 1
+                if wait_count > 200:
+                    self.euca_reboot(instance)
+                    wait_count = 0
                 time.sleep(3)
 
 # ---------------------------------------------------------------------
