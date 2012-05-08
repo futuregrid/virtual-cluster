@@ -570,12 +570,16 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 
 	Then, you can process the data by the following command::
 
-	$ python Performance_Statistic.py
+	$ python Performance_Statistic.py -f performance_test_raw
 
-	This will create two excels for you. One is for OpenStack data, and the other one is for Eucalyptus 
-	data. 
+	This will create two excels for you which you can view via excel. One is for OpenStack data, 
+	and the other one is for Eucalyptus data. 
 
-	The file has the following format:
+	The file has the following format::
+
+		name,t_total_avg,t_total_min,t_total_max,t_total_stdev,t_setup_install_avg,t_setup_install_min,t_setup_install_max,t_setup_install_stdev,t_setup_configure_avg,t_setup_configure_min,t_setup_configure_max,t_setup_configure_stdev,t_execute_avg,t_execute_min,t_execute_max,t_execute_stdev,t_shutdown_avg,t_shutdown_min,t_shutdown_max,t_shutdown_stdev
+		euca-m1.small-2,139.072920442,113.236577034,164.909263849,25.8363434075,114.992971659,85.9957351685,143.990208149,28.9972364903,6.78620207309,6.69066214561,6.88174200058,0.095539927485,0.642117619514,0.613047122955,0.671188116074,0.0290704965595,0.256532430649,0.254338026047,0.258726835251,0.002194404602
+		euca-m1.small-1,112.740288337,110.741933107,115.702837944,2.13696003674,94.3259019852,92.9926450253,96.9913449287,1.88475283095,5.70948044459,5.04305911064,6.05437302589,0.471327566829,0.579436699549,0.55158996582,0.598108053207,0.0200686125267,0.159574349721,0.157529830933,0.16206908226,0.00188028720646
 
 FOR DEVELOPERS ONLY
 ===================
