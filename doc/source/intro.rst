@@ -418,7 +418,7 @@ For example::
     $ fg-cluster list
 
 
-Run SIMPLE MPI PROGRAMS
+RUN SIMPLE MPI PROGRAMS UNDER SLURM
 ===========================================
 
 A simple MPI version of helloworld can be found at: 
