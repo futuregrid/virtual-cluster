@@ -74,15 +74,15 @@ import re
 import boto.ec2
 
 from boto.ec2.connection import EC2Connection
-from futuregrid.virtual.cluster.CloudInstances import CloudInstances
-#from CloudInstances import CloudInstances
-#from StopWatch import StopWatch
-from futuregrid.virtual.cluster.StopWatch import StopWatch
 from subprocess import Popen, PIPE
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
 from ConfigParser import NoSectionError
 
+from futuregrid.virtual.cluster.CloudInstances import CloudInstances
+from futuregrid.virtual.cluster.StopWatch import StopWatch
+#from CloudInstances import CloudInstances
+#from StopWatch import StopWatch
 
 class Cluster(object):
     """
@@ -1145,8 +1145,9 @@ class Cluster(object):
             self.stopWatch.stop('t_setup_getip')
 
         self.debug('Creating IU ubunto repo source list')
+        suit = self.get_version(self.cloud_instances.get_by_id(0))
         # choose repo, by defalt, using IU ubuntu repo
-        self.define_repo()
+        self.define_repo(suit)
 
         self.debug('Checking alive instance for deploying')
         # detect if VMs are ready for deploy
@@ -1378,7 +1379,21 @@ class Cluster(object):
         self.msg('\nSrarting munge on node %s' % instance['id'])
         self.execute(instance, 'sudo /etc/init.d/munge start')
 
-    def define_repo(self):
+    def get_version(self, instance):
+        '''
+        Get suit of ubuntu
+        '''
+        
+        result = self.get_command_result("ssh -i %s %s@%s lsb_release -a"
+                                         % (self.userkey,
+                                            self.user_login,
+                                            instance['ip']))
+        for element in result.split('\n'):
+            if element.find('Codename') >= 0:
+                return element.split('\t')[1]
+
+
+    def define_repo(self, suit):
         '''
         Set ubuntu repo to IU ubuntu repository
 
@@ -1387,14 +1402,14 @@ class Cluster(object):
         Source list file content:
         -------------------------
 
-        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
-        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates main
-        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty universe
-        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty universe
-        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
-        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty-updates universe
-        deb http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
-        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ natty main
+        deb http://ftp.ussg.iu.edu/linux/ubuntu/ suit-updates main
+        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ suit-updates main
+        deb http://ftp.ussg.iu.edu/linux/ubuntu/ suit universe
+        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ suit universe
+        deb http://ftp.ussg.iu.edu/linux/ubuntu/ suit-updates universe
+        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ suit-updates universe
+        deb http://ftp.ussg.iu.edu/linux/ubuntu/ suit main
+        deb-src http://ftp.ussg.iu.edu/linux/ubuntu/ suit main
 
         Logic:
             If uses IU ubuntu repository, creates sources_list file
@@ -1412,15 +1427,15 @@ class Cluster(object):
             self.debug('Using %s' % iu_repo)
             self.debug('Opening %s for writting' % self.sources_list)
             with open(self.sources_list, 'w') as source:
-                source.write('deb ' + iu_repo + ' natty-updates main\n')
-                source.write('deb-src ' + iu_repo + ' natty-updates main\n')
-                source.write('deb ' + iu_repo + ' natty universe\n')
-                source.write('deb-src ' + iu_repo + ' natty universe\n')
-                source.write('deb ' + iu_repo + ' natty-updates universe\n')
+                source.write('deb ' + iu_repo + ' ' + suit +'-updates main\n')
+                source.write('deb-src ' + iu_repo + ' ' + suit +'-updates main\n')
+                source.write('deb ' + iu_repo + ' ' + suit +' universe\n')
+                source.write('deb-src ' + iu_repo + ' ' + suit +' universe\n')
+                source.write('deb ' + iu_repo + ' ' + suit +'-updates universe\n')
                 source.write('deb-src ' + iu_repo +
-                             ' natty-updates universe\n')
-                source.write('deb ' + iu_repo + ' natty main\n')
-                source.write('deb-src ' + iu_repo + ' natty main\n')
+                             ' ' + suit +'-updates universe\n')
+                source.write('deb ' + iu_repo + ' ' + suit +' main\n')
+                source.write('deb-src ' + iu_repo + ' ' + suit +' main\n')
             source.close()
 
     def deploy_services(self, instance):
