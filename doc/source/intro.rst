@@ -44,7 +44,7 @@ First Setup
 We assume that yo do not have super user priviledges on the computer
 where you like to install our tool.
 
-* **Step 0:** Prerequisites (not using india.futuregrid.org machines):
+* **Step 0: Prerequisites (not using india.futuregrid.org machines):**
     
   In order to make the installation process work smoothly, please make 
   sure that the computer you like to install our tool has already
