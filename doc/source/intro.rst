@@ -549,7 +549,7 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 	running MPI program and terminating virtual clusters, then produces performance_test_raw which contains
 	all the performance data you collected.
 
-	When you finish performance test, you will get result like following:::
+	When you finish performance test, you will get result like following::
 
 		Test Name           	Total Time     	Installation   	Configuration  	Execution      	Termination    	IP association 	IP association fail 	IP change 	Restart
 		euca-m1.small-1     	115.702837944  	96.9913449287  	6.05437302589  	0.58861207962  	0.159124135971 	N/A            	N/A                 	N/A       	N/A
@@ -557,7 +557,7 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 		euca-m1.small-1     	110.741933107  	92.9937160015  	5.04305911064  	0.598108053207 	0.16206908226  	N/A            	N/A                 	N/A       	N/A 
 
 	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
-	medium, large
+	medium, large (TODO: Allow users to custormize)
 
 * **Step 3: Process performance test data**
 
