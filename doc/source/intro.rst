@@ -549,7 +549,9 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 	running MPI program and terminating virtual clusters, then produces performance_test_raw which contains
 	all the performance data you collected.
 
-	When you finish performance test, you will get result like following::
+	When you finish performance test, you will get result like following:
+
+	::
 
 	Test Name           	Total Time     	Installation   	Configuration  	Execution      	Termination    	IP association 	IP association fail 	IP change 	Restart
 
