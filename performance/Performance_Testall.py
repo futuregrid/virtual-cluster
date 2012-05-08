@@ -15,14 +15,32 @@ Image shoudld be ubuntu natty if u want to use IU ubuntu repository
 test_runs = 3
 node_nums = [1,2,4,8,16,24,32]
 cloud_specific_para = {'nova':{'image_id':'ami-0000001d', 'instance_type':['m1.small', 'm1.medium', 'm1.large']}, 
-                       'eucalyptus':{'image_id':'emi-FC6A1197', 'instance_type':['m1.small', 'c1.medium', 'm1.large']}}
+                       'eucalyptus':{'image_id':'emi-D21D3F6C', 'instance_type':['m1.small', 'c1.medium', 'm1.large']}}
 
 def process_data(create_time, run_prog, terminate_time):
+
+    #if no output
     if not create_time.split()[0] == 'Performance':
         print 'Test failed'
         return
+
+    data = []
+    create_time_parts = create_time.split('\t')
+    
+    data.insert(0, create_time_parts[1])
+    data.insert(1, create_time_parts[2])
+    data.insert(2, create_time_parts[4])
+    data.insert(3, create_time_parts[5])
+    data.insert(4, run_prog)
+    data.insert(5, terminate_time)
+    data.insert(6, create_time_parts[3])
+    data.insert(7, create_time_parts[6])
+    data.insert(8, create_time_parts[7])
+    data.insert(9, create_time_parts[8])
+ 
     with open('performance_test_raw', 'a') as pt:
-        pt.write(create_time+'\t'+run_prog+'\t'+terminate_time+'\n')
+        pt.write('%-20s\t%-15s\t%-15s\t%-15s\t%-15s\t%-15s\t%-15s\t%-20s\t%-10s\t%-10s\n'
+                     % (data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]))
     pt.close()
     
 def performance_test():
@@ -37,8 +55,17 @@ def performance_test():
     # Writes the first row
     if not os.path.isfile('performance_test_raw'):
         with open('performance_test_raw', 'w') as pt:
-            pt.write('\t\t\tTest name\tTotal Time\tIP association time\tInstallation time'
-                     '\tConfiguration time\tIP association failure\tIP change\tTermination\tExecution time\tTermination\n')
+            pt.write('%-20s\t%-15s\t%-15s\t%-15s\t%-15s\t%-15s\t%-15s\t%-20s\t%-10s\t%-10s\n'
+                     % ('Test Name',
+                        'Total Time',
+                        'Installation',
+                        'Configuration',
+                        'Execution',
+                        'Termination',
+                        'IP association',
+                        'IP association fail',
+                        'IP change',
+                        'Restart'))
         pt.close()
 
     # Runs tests, writes data into file

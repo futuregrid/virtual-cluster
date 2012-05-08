@@ -72,7 +72,6 @@ import random
 import Queue
 import re
 import boto.ec2
-import platform
 
 from boto.ec2.connection import EC2Connection
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
@@ -1118,9 +1117,9 @@ class Cluster(object):
                 elif self.cloud == 'eucalyptus':
                     ip_asso_count = 0
                     while True:
-			instance.update()
+                        instance.update()
                         if not instance.public_dns_name == instance.private_dns_name:
-			    self.msg('%s\t%s' % (instance.public_dns_name, instance.id))
+                            self.msg('%s\t%s' % (instance.public_dns_name, instance.id))
                             break
                         else:
                             ip_asso_count += 1
@@ -1169,8 +1168,8 @@ class Cluster(object):
         self.msg('----------------------------------------------------------------------'
                  '----------------------------------------------------------------------')
         if self.cloud == 'nova':
-            self.msg('\nPerformance data:\tmachine-%s-nova-%s-%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s'
-                     % (platform.node(), args.type, str(args.number),
+            self.msg('\nPerformance data:\tnova-%s-%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s'
+                     % (args.type, str(args.number),
                         self.stopWatch.print_time('t_total'),
                         self.stopWatch.print_time('t_setup_getip'),
                         self.stopWatch.print_time('t_setup_install'),
@@ -1179,11 +1178,15 @@ class Cluster(object):
                         self.stopWatch.print_count('t_ipchange'),
                         self.stopWatch.print_count('t_termination')))
         elif self.cloud == 'eucalyptus':
-            self.msg('\nPerformance data:\tmachine-%s-eucalyptus-%s-%s\t%s\tN/A\t%s\t%s\tN/A\tN/A\tN/A'
-                     % (platform.node(), args.type, str(args.number),
+            self.msg('\nPerformance data:\teuca-%s-%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s'
+                     % (args.type, str(args.number),
                         self.stopWatch.print_time('t_total'),
+                        'N/A',
                         self.stopWatch.print_time('t_setup_install'),
-                        self.stopWatch.print_time('t_setup_configure')))
+                        self.stopWatch.print_time('t_setup_configure'),
+                        'N/A',
+                        'N/A',
+                        'N/A'))
 
     def clean_repo(self):
         '''

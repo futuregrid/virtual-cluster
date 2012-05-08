@@ -16,44 +16,46 @@ class Performance_Static():
             content = raw_input.readlines()
         for line in content:
             values = line.split('\n')[0].split('\t')
+            test_name = values[0].strip()
+
             # if nova data
-            if values[1].finds('nova') >= 0:
-                if not values[1] in self.nova_data:
-                    self.nova_data[values[1]] = {}
-                    self.nova_data[values[1]]['t_total'] = [float(values[2])]
-                    self.nova_data[values[1]]['t_setup_getip'] = [float(values[3])]
-                    self.nova_data[values[1]]['t_setup_install'] = [float(values[4])]
-                    self.nova_data[values[1]]['t_setup_configure'] = [float(values[5])]
-                    self.nova_data[values[1]]['t_ipfail'] = [float(values[6])]
-                    self.nova_data[values[1]]['t_ipchange'] = [float(values[7])]
-                    self.nova_data[values[1]]['t_termination'] = [float(values[8])]
-                    self.nova_data[values[1]]['t_execute'] = [float(values[9])]
-                    self.nova_data[values[1]]['t_shutdown'] = [float(values[10])]
+            if values[0].find('nova') >= 0:
+                if not test_name in self.nova_data:
+                    self.nova_data[test_name] = {}
+                    self.nova_data[test_name]['t_total'] = [float(values[1].strip())]
+                    self.nova_data[test_name]['t_setup_install'] = [float(values[2].strip())]
+                    self.nova_data[test_name]['t_setup_configure'] = [float(values[3].strip())]
+                    self.nova_data[test_name]['t_execute'] = [float(values[4].strip())]
+                    self.nova_data[test_name]['t_shutdown'] = [float(values[5].strip())]
+                    self.nova_data[test_name]['t_setup_getip'] = [float(values[6].strip())]
+                    self.nova_data[test_name]['t_ipfail'] = [float(values[7].strip())]
+                    self.nova_data[test_name]['t_ipchange'] = [float(values[8].strip())]
+                    self.nova_data[test_name]['t_restart'] = [float(values[9].strip())]
                 else:
-                    self.nova_data[values[1]]['t_total'].append(float(values[2]))
-                    self.nova_data[values[1]]['t_setup_getip'].append(float(values[3]))
-                    self.nova_data[values[1]]['t_setup_install'].append(float(values[4]))
-                    self.nova_data[values[1]]['t_setup_configure'].append(float(values[5]))
-                    self.nova_data[values[1]]['t_ipfail'].append(float(values[6]))
-                    self.nova_data[values[1]]['t_ipchange'].append(float(values[7]))
-                    self.nova_data[values[1]]['t_termination'].append(float(values[8]))
-                    self.nova_data[values[1]]['t_execute'].append(float(values[9]))
-                    self.nova_data[values[1]]['t_shutdown'].append(float(values[10]))
+                    self.nova_data[test_name]['t_total'].append(float(values[1].strip()))
+                    self.nova_data[test_name]['t_setup_install'].append(float(values[2].strip()))
+                    self.nova_data[test_name]['t_setup_configure'].append(float(values[3].strip()))
+                    self.nova_data[test_name]['t_execute'].append(float(values[4].strip()))
+                    self.nova_data[test_name]['t_shutdown'].append(float(values[5].strip()))
+                    self.nova_data[test_name]['t_setup_getip'].append(float(values[6].strip()))
+                    self.nova_data[test_name]['t_ipfail'].append(float(values[7].strip()))
+                    self.nova_data[test_name]['t_ipchange'].append(float(values[8].strip()))
+                    self.nova_data[test_name]['t_restart'].append(float(values[9].strip()))
             # if euca_data
-            if values[1].finds('eucalyptus') >= 0:
-                if not values[1] in self.euca_data:
-                    self.euca_data[values[1]] = {}
-                    self.euca_data[values[1]]['t_total'] = [float(values[2])]
-                    self.euca_data[values[1]]['t_setup_install'] = [float(values[4])]
-                    self.euca_data[values[1]]['t_setup_configure'] = [float(values[5])]
-                    self.euca_data[values[1]]['t_execute'] = [float(values[9])]
-                    self.euca_data[values[1]]['t_shutdown'] = [float(values[10])]
+            if values[0].find('euca') >= 0:
+                if not test_name in self.euca_data:
+                    self.euca_data[test_name] = {}
+                    self.euca_data[test_name]['t_total'] = [float(values[1].strip())]
+                    self.euca_data[test_name]['t_setup_install'] = [float(values[2].strip())]
+                    self.euca_data[test_name]['t_setup_configure'] = [float(values[3].strip())]
+                    self.euca_data[test_name]['t_execute'] = [float(values[4].strip())]
+                    self.euca_data[test_name]['t_shutdown'] = [float(values[5].strip())]
                 else:
-                    self.euca_data[values[1]]['t_total'].append(float(values[2]))
-                    self.euca_data[values[1]]['t_setup_install'].append(float(values[4]))
-                    self.euca_data[values[1]]['t_setup_configure'].append(float(values[5]))
-                    self.euca_data[values[1]]['t_execute'].append(float(values[9]))
-                    self.euca_data[values[1]]['t_shutdown'].append(float(values[10]))
+                    self.euca_data[test_name]['t_total'].append(float(values[1].strip()))
+                    self.euca_data[test_name]['t_setup_install'].append(float(values[2].strip()))
+                    self.euca_data[test_name]['t_setup_configure'].append(float(values[3].strip()))
+                    self.euca_data[test_name]['t_execute'].append(float(values[4].strip()))
+                    self.euca_data[test_name]['t_shutdown'].append(float(values[5].strip()))
         self.process_data_nova()
         self.process_data_euca()
 
