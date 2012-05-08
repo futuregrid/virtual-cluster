@@ -418,7 +418,7 @@ For example::
     $ fg-cluster list
 
 
-Run a simple MPI program on virtual cluster
+Run SIMPLE MPI PROGRAMS
 ===========================================
 
 A simple MPI version of helloworld can be found at: 
@@ -527,6 +527,9 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 	It has two files, Performance_Testall.py is the test script that you can use to run the performance test. 
 	Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected
 
+	Also, you can download our source code from github, and then you can find performance tool under 
+	performance folder.
+
 	NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
 	futuregrid.cfg file correctly configuared.
 
@@ -548,13 +551,24 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 
 	When you finish performance test, you will get result like following::
 
+	Test Name           	Total Time     	Installation   	Configuration  	Execution      	Termination    	IP association 	IP association fail 	IP change 	Restart   
+	euca-m1.small-1     	115.702837944  	96.9913449287  	6.05437302589  	0.58861207962  	0.159124135971 	N/A            	N/A                 	N/A       	N/A       
+	euca-m1.small-1     	111.77609396   	92.9926450253  	6.03100919724  	0.55158996582  	0.157529830933 	N/A            	N/A                 	N/A       	N/A       
+	euca-m1.small-1     	110.741933107  	92.9937160015  	5.04305911064  	0.598108053207 	0.16206908226  	N/A            	N/A                 	N/A       	N/A 
+
 	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
 	medium, large
 
 * **Step 3: Process performance test data**
 
-	Once you have done the performance test and outpus the raw data file. You can create excel sheet by
-	the following command::
+	Once you have done the performance test and outpus the raw data file. You can create excel sheets using	
+	our tool.
+
+	However, before you can proceed, you need to install numpy which is required by the tool::
+
+	$ pip install numpy
+
+	Then, you can process the data by the following command::
 
 	$ python Performance_Statistic.py
 
