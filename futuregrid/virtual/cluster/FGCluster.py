@@ -1144,11 +1144,6 @@ class Cluster(object):
                                                       instance.private_dns_name)
             self.stopWatch.stop('t_setup_getip')
 
-        self.debug('Creating IU ubunto repo source list')
-        suit = self.get_version(self.cloud_instances.get_by_id(0))
-        # choose repo, by defalt, using IU ubuntu repo
-        self.define_repo(suit)
-
         self.debug('Checking alive instance for deploying')
         # detect if VMs are ready for deploy
         self.stopWatch.start('t_setup_install')
@@ -1167,9 +1162,6 @@ class Cluster(object):
         self.config_slurm()
         self.stopWatch.stop('t_setup_configure')
 
-        self.debug('Cleaning up')
-        # clean repo file
-        self.clean_repo()
         self.debug('Saving cloud instance into backup file')
         # save cloud instance
         self.cloud_instances.save_instances()
@@ -1199,23 +1191,6 @@ class Cluster(object):
                         'N/A',
                         'N/A',
                         'N/A'))
-
-    def clean_repo(self):
-        '''
-        Remove source list file
-
-        No parameters:
-
-        Logic:
-            If if_default flag is set to false, then delete
-            source list file
-
-        No returns
-        '''
-
-        if not self.if_default:
-            self.debug('Removing %s' % self.sources_list)
-            os.remove(self.sources_list)
 
     def config_slurm(self, create_key=True):
         '''
@@ -1393,7 +1368,7 @@ class Cluster(object):
                 return element.split('\t')[1]
 
 
-    def define_repo(self, suit):
+    def define_repo(self, suit, instance):
         '''
         Set ubuntu repo to IU ubuntu repository
 
@@ -1426,17 +1401,18 @@ class Cluster(object):
             self.msg('\nUsing IU ubuntu repository')
             self.debug('Using %s' % iu_repo)
             self.debug('Opening %s for writting' % self.sources_list)
-            with open(self.sources_list, 'w') as source:
-                source.write('deb ' + iu_repo + ' ' + suit +'-updates main\n')
-                source.write('deb-src ' + iu_repo + ' ' + suit +'-updates main\n')
-                source.write('deb ' + iu_repo + ' ' + suit +' universe\n')
-                source.write('deb-src ' + iu_repo + ' ' + suit +' universe\n')
-                source.write('deb ' + iu_repo + ' ' + suit +'-updates universe\n')
+            with open(instance['id'], 'w') as source:
+                source.write('deb ' + iu_repo + ' ' + suit + '-updates main\n')
+                source.write('deb-src ' + iu_repo + ' ' + suit + '-updates main\n')
+                source.write('deb ' + iu_repo + ' ' + suit + ' universe\n')
+                source.write('deb-src ' + iu_repo + ' ' + suit + ' universe\n')
+                source.write('deb ' + iu_repo + ' ' + suit + '-updates universe\n')
                 source.write('deb-src ' + iu_repo +
-                             ' ' + suit +'-updates universe\n')
-                source.write('deb ' + iu_repo + ' ' + suit +' main\n')
-                source.write('deb-src ' + iu_repo + ' ' + suit +' main\n')
+                             ' ' + suit + '-updates universe\n')
+                source.write('deb ' + iu_repo + ' ' + suit + ' main\n')
+                source.write('deb-src ' + iu_repo + ' ' + suit + ' main\n')
             source.close()
+        return instance['id']
 
     def deploy_services(self, instance):
         '''
@@ -1456,12 +1432,18 @@ class Cluster(object):
         self.msg('\nInstalling SLURM system and OpenMPI on %s\n'
                  % instance['ip'])
 
+        self.debug('Creating IU ubunto repo source list')
+        suit = self.get_version(instance)
+        # choose repo, by defalt, using IU ubuntu repo
+        sources_list_name = self.define_repo(suit, instance)
+
         if not self.if_default:
-            self.debug('Copying %s to %s' % (self.sources_list,
+            self.debug('Copying %s to %s' % (sources_list_name,
                                              instance['id']))
-            self.copyto(instance, self.sources_list)
-            self.execute(instance, 'sudo cp %s /etc/apt/'
-                         % self.sources_list)
+            self.copyto(instance, sources_list_name)
+            self.execute(instance, 'sudo cp %s /etc/apt/%s'
+                         % (sources_list_name, self.sources_list))
+            os.remove(sources_list_name)
 
         self.debug('Updating on %s' % instance['id'])
         self.update(instance)
