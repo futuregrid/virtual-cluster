@@ -455,7 +455,7 @@ class Cluster(object):
         Check if operation successed
         '''
 
-        check_process = Popen(cmd, shell=True, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
+        check_process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         status = os.waitpid(check_process.pid, 0)[1]
         if status == 0:
             return True
@@ -1404,7 +1404,7 @@ class Cluster(object):
             if count >= 3:
                 self.msg('ERROR: Install %s failure, program will exit' % package)
                 self.terminate_all(self.cloud_instances.get_cluster_size())
-                sys.exit()
+                os._exit(1)
         
     def install_update(self, instance):
         '''
@@ -1419,7 +1419,7 @@ class Cluster(object):
             if update_count >= 3:
                 self.msg('ERROR: Update failure, program will exit')
                 self.terminate_all(self.cloud_instances.get_cluster_size())
-                sys.exit()
+                os._exit(1)
 
     def deploy_services(self, instance):
         '''
@@ -1452,16 +1452,18 @@ class Cluster(object):
                          % (sources_list_name, self.sources_list))
             os.remove(sources_list_name)
 
-        self.debug('Updating on %s' % instance['id'])
+        # Sometimes, due to Internet issue, apt-get install does
+        # not succeed, so try multiple times
+        self.msg('Updating on %s' % instance['id'])
         self.install_update(instance)
             
         # install SLURM
-        self.debug('Installing slurm-llnl on %s' % instance['id'])
+        self.msg('Installing slurm-llnl on %s' % instance['id'])
         self.install_package('slurm-llnl', instance)
         # install OpenMPI
-        self.debug('Installing openmpi on %s' % instance['id'])
+        self.msg('Installing openmpi on %s' % instance['id'])
         self.install_package('openmpi-bin', instance)
-        self.install_package('libopenmpi', instance)
+        self.install_package('libopenmpi-dev', instance)
 
 # ---------------------------------------------------------------------
 # METHODS TO SAVE RUNNING VIRTUAL CLUSTER
@@ -2025,7 +2027,7 @@ class Cluster(object):
             try:
                 self.ec2_conn.terminate_instances([instance_id])
             except:
-                self.msg('ERROR: terminat instance %s failed' % instance_id)
+                self.msg('ERROR: Terminate instance %s failed' % instance_id)
 
     def shut_down(self, args):
         '''
@@ -2390,7 +2392,7 @@ def commandline_parser():
     virtual_cluster.set_interface(args.interface)
     try:
         args.func(args)
-    except:
+    except KeyboardInterrupt:
         virtual_cluster.terminate_all(virtual_cluster.cloud_instances.get_cluster_size())
 
 if __name__ == '__main__':
