@@ -454,7 +454,7 @@ class Cluster(object):
         Check if operation successed
         '''
 
-        check_process = Popen(cmd, shell=True, stdout=fnull, stderr=fnull)
+        check_process = Popen(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL)
         status = os.waitpid(check_process.pid, 0)[1]
         if status == 0:
             return True
