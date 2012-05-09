@@ -75,7 +75,6 @@ import boto.ec2
 
 from boto.ec2.connection import EC2Connection
 from subprocess import Popen, PIPE
-import subprocess
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
 from ConfigParser import NoSectionError
