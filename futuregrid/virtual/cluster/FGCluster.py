@@ -84,6 +84,7 @@ from futuregrid.virtual.cluster.StopWatch import StopWatch
 #from CloudInstances import CloudInstances
 #from StopWatch import StopWatch
 
+
 class Cluster(object):
     """
     Class Cluster
@@ -391,7 +392,7 @@ class Cluster(object):
                     key_dir = "."
                 if self.cloud == 'nova':
                     os.environ["NOVA_KEY_DIR"] = key_dir
-                elif self.cloud =='eucalyptus':
+                elif self.cloud == 'eucalyptus':
                     os.environ['EUCA_KEY_DIR'] = key_dir
                 with open(os.path.expanduser(self.enrc)) as enrc_content:
                     for line in enrc_content:
@@ -470,7 +471,6 @@ class Cluster(object):
                                          self.user_login,
                                          instance['ip'])
         return self.if_success(cmd)
-        
 
     def euca_start_new_instance(self, instance, instance_index):
         '''
@@ -533,11 +533,12 @@ class Cluster(object):
         '''
 
         ip_lists = self.euca_describe_addresses()
-        # disassociate current one
+        # dis-associate current one
         self.disassociate_address(instance['ip'])
-        # associate a new random free ip
+        # associate a new random free IP
         self.debug('Associating new IP on %s' % instance['id'])
-        while not self.euca_associate_address(instance, ip_lists[random.randint(0,
+        while not self.euca_associate_address(instance,
+                                              ip_lists[random.randint(0,
                                                         len(ip_lists) - 1)]):
             self.stopWatch.increase('t_ipfail')
             self.msg('ERROR: Associating IP addresses failed, trying again')
@@ -547,6 +548,7 @@ class Cluster(object):
         Changes public IP address given instance using boto
         No returns
         '''
+
         ip_list = self.boto_describe_addresses()
         free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
         self.ec2_conn.disassociate_address(instance['ip'])
@@ -555,8 +557,9 @@ class Cluster(object):
 
     def euca_reboot(self, instance):
         '''
-        Reboot instance 
+        Reboot instance
         '''
+
         self.msg('Failed login to %s, rebooting' % instance['ip'])
         self.get_command_result('euca-reboot-instances %s' % instance['id'])
 
@@ -648,9 +651,10 @@ class Cluster(object):
                         ip_change = True
                 time.sleep(3)
             elif self.cloud == 'eucalyptus':
-                self.msg('Checking %s (%s) availability' % (instance['id'], instance['ip']))
+                self.msg('Checking %s (%s) availability'
+                         % (instance['id'], instance['ip']))
                 wait_count += 1
-                if wait_count > 100:
+                if wait_count > 60:
                     self.euca_reboot(instance)
                     wait_count = 0
                 time.sleep(3)
@@ -761,7 +765,10 @@ class Cluster(object):
         r_in = self.ec2_conn.get_all_instances(instance_ids=[instance_id])
         return r_in[0].instances[0]
 
-    def boto_associate_address(self, instance_id, address_public_ip, address_private_ip):
+    def boto_associate_address(self,
+                               instance_id,
+                               address_public_ip,
+                               address_private_ip):
         '''
         associate ip address using boto
         '''
@@ -776,7 +783,9 @@ class Cluster(object):
                 self.msg('ERROR: Associating ip %s with instance %s failed, '
                          'trying again' % (address_public_ip, instance_id))
         self.msg('ADDRESS: %s %s' % (address_public_ip, instance_id))
-        self.cloud_instances.set_ip_by_id(instance_id, address_public_ip, address_private_ip)
+        self.cloud_instances.set_ip_by_id(instance_id,
+                                          address_public_ip,
+                                          address_private_ip)
 
     def boto_run_instances(self, image, cluster_size, instance_type):
         '''
@@ -955,16 +964,23 @@ class Cluster(object):
                     return True
                 else:
                     return False
+
     def euca_get_ip(self, instance_id):
         '''
         Get instance public given instance id
         '''
+
         result = self.get_command_result('euca-describe-instances').split('\n')
         for i in result:
             if i.find(instance_id) >= 0:
-                return {'public':i.split('\t')[3], 'private':i.split('\t')[4]}
+                return {'public': i.split('\t')[3],
+                        'private': i.split('\t')[4]}
 
     def terminate_all(self, cluster_size):
+        '''
+        Termiate all instances
+        '''
+
         for instance_id in range(cluster_size):
             instance = self.cloud_instances.get_by_id(instance_id)
             self.terminate_instance(instance['id'])
@@ -1049,10 +1065,12 @@ class Cluster(object):
                         self.msg('ERROR: Not enough public IP addresses')
                         self.terminate_all(cluster_size)
                         sys.exit()
-                    while not self.euca_associate_address(instance, ip_lists[i]):
+                    while not self.euca_associate_address(instance,
+                                                          ip_lists[i]):
                         self.stopWatch.increase('t_ipfail')
-                        self.msg('Error in associating IP %s with instance %s, '
-                                 'trying again' % (ip_lists[i], instance['id']))
+                        self.msg('Error in associating IP %s '
+                                 'with instance %s, trying again'
+                                 % (ip_lists[i], instance['id']))
                 # eucalyptus gives instances with ip, so need to get that ip
                 elif self.cloud == 'eucalyptus':
                     ip_asso_count = 0
@@ -1108,8 +1126,10 @@ class Cluster(object):
                     ip_asso_count = 0
                     while True:
                         instance.update()
-                        if not instance.public_dns_name == instance.private_dns_name:
-                            self.msg('%s\t%s' % (instance.public_dns_name, instance.id))
+                        if not instance.public_dns_name == \
+                            instance.private_dns_name:
+                            self.msg('%s\t%s' % (instance.public_dns_name,
+                                                 instance.id))
                             break
                         else:
                             ip_asso_count += 1
@@ -1337,7 +1357,7 @@ class Cluster(object):
         '''
         Get suit of ubuntu
         '''
-        
+
         result = self.get_command_result("ssh -i %s %s@%s lsb_release -a"
                                          % (self.userkey,
                                             self.user_login,
@@ -1345,7 +1365,6 @@ class Cluster(object):
         for element in result.split('\n'):
             if element.find('Codename') >= 0:
                 return element.split('\t')[1]
-
 
     def define_repo(self, suit, instance):
         '''
@@ -1410,7 +1429,7 @@ class Cluster(object):
                 self.msg('ERROR: Install %s failure, program will exit' % package)
                 self.terminate_all(self.cloud_instances.get_cluster_size())
                 os._exit(1)
-        
+
     def install_update(self, instance):
         '''
         Do update on instance, if fail, quit the program
@@ -1461,10 +1480,11 @@ class Cluster(object):
         # not succeed, so try multiple times
         self.msg('Updating on %s' % instance['id'])
         self.install_update(instance)
-            
+
         # install SLURM
         self.msg('Installing slurm-llnl on %s' % instance['id'])
         self.install_package('slurm-llnl', instance)
+
         # install OpenMPI
         self.msg('Installing openmpi on %s' % instance['id'])
         self.install_package('openmpi-bin', instance)
@@ -1857,7 +1877,7 @@ class Cluster(object):
         command_result = [x for x in
                           self.describe_images(image_id).split()]
         return command_result[3] == 'available'
-        
+
     def restore_cluster(self, args):
         '''
         Method for restoring cluster
@@ -1889,7 +1909,7 @@ class Cluster(object):
         if self.cloud == 'eucalyptus':
             self.msg('bugs')
             sys.exit()
-        
+
         control_node_num = 1
 
         # only restore cluster which is saved
@@ -2402,4 +2422,3 @@ def commandline_parser():
 
 if __name__ == '__main__':
     commandline_parser()
-
