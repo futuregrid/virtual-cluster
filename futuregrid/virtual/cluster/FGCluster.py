@@ -1358,6 +1358,7 @@ class Cluster(object):
         Get suit of ubuntu
         '''
 
+        flag = False
         while True:
             result = self.get_command_result("ssh -i %s %s@%s lsb_release -a"
                                              % (self.userkey,
@@ -1366,7 +1367,10 @@ class Cluster(object):
             for element in result.split('\n'):
                 if element.find('Codename') >= 0:
                     ubuntu_suit = element.split('\t')[1]
+                    flag = True
                     break
+            if flag:
+                break
 
         return ubuntu_suit
 
