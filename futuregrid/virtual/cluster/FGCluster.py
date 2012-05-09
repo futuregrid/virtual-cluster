@@ -702,33 +702,6 @@ class Cluster(object):
                                              self.user_login,
                                              instance['ip']))
 
-    def update(self, instance):
-        '''
-        Executes a software update on the specified instance
-
-        Parameters:
-            instance -- cloud instance
-
-        No returns
-        '''
-
-        self.execute(instance, 'sudo apt-get update')
-
-    def install(self, instance, packagenames):
-        '''
-        Installs the package names that are specified
-        (blank separated on the given instance)
-
-        Parameter:
-            instance -- cloud instance
-            packagenames -- software names
-
-        No returns
-        '''
-
-        self.execute(instance, 'sudo apt-get install --yes '
-                     + packagenames)
-
 # ---------------------------------------------------------------------
 # METHODS TO CREATE A VIRTUAL CLUSTER
 # ---------------------------------------------------------------------
