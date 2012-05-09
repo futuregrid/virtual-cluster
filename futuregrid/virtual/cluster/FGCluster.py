@@ -1358,13 +1358,17 @@ class Cluster(object):
         Get suit of ubuntu
         '''
 
-        result = self.get_command_result("ssh -i %s %s@%s lsb_release -a"
-                                         % (self.userkey,
-                                            self.user_login,
-                                            instance['ip']))
-        for element in result.split('\n'):
-            if element.find('Codename') >= 0:
-                return element.split('\t')[1]
+        while True:
+            result = self.get_command_result("ssh -i %s %s@%s lsb_release -a"
+                                             % (self.userkey,
+                                                self.user_login,
+                                                instance['ip']))
+            for element in result.split('\n'):
+                if element.find('Codename') >= 0:
+                    ubuntu_suit = element.split('\t')[1]
+                    break
+
+        return ubuntu_suit
 
     def define_repo(self, suit, instance):
         '''
