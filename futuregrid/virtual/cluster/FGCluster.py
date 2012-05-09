@@ -682,10 +682,13 @@ class Cluster(object):
 
         No returns
         '''
-        os.system("ssh -i %s %s@%s '%s'" % (self.userkey,
-                                            self.user_login,
-                                            instance['ip'],
-                                            command))
+        cmd = "ssh -i %s %s@%s '%s'" % (self.userkey,
+                                        self.user_login,
+                                        instance['ip'],
+                                        command)
+        while not self.if_success(cmd):
+            self.msg("ERROR: Execute %s on %s failed, trying again"
+                     % (command, instance['ip']))
 
     def copyto(self, instance, filename):
         '''
@@ -697,10 +700,13 @@ class Cluster(object):
 
         No returns
         '''
-        os.system('scp -i %s %s %s@%s:~/' % (self.userkey,
-                                             filename,
-                                             self.user_login,
-                                             instance['ip']))
+        cmd = 'scp -i %s %s %s@%s:~/' % (self.userkey,
+                                         filename,
+                                         self.user_login,
+                                         instance['ip'])
+        while not self.if_success(cmd):
+            self.msg("ERROR: Copy %s to %s failed, trying again"
+                     % (filename, instance['ip']))
 
 # ---------------------------------------------------------------------
 # METHODS TO CREATE A VIRTUAL CLUSTER
