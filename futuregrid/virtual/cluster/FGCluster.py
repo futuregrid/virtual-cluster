@@ -75,6 +75,7 @@ import boto.ec2
 
 from boto.ec2.connection import EC2Connection
 from subprocess import Popen, PIPE
+import subprocess
 from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
 from ConfigParser import NoSectionError
@@ -454,7 +455,7 @@ class Cluster(object):
         Check if operation successed
         '''
 
-        check_process = Popen(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL)
+        check_process = Popen(cmd, shell=True, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
         status = os.waitpid(check_process.pid, 0)[1]
         if status == 0:
             return True
