@@ -449,21 +449,10 @@ class Cluster(object):
 # METHOD TO INSTALL
 # ---------------------------------------------------------------------
 
-    def check_avaliable(self, instance):
+    def if_success(self, cmd):
         '''
-        Check if instance is available
-
-        Parameters:
-            instance -- instance dictionary
-
-        Return:
-            True -- if instance is available
-            False -- if instance is unavailable
+        Check if operation successed
         '''
-
-        cmd = "ssh -i %s %s@%s uname" % (self.userkey,
-                                         self.user_login,
-                                         instance['ip'])
 
         check_process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         status = os.waitpid(check_process.pid, 0)[1]
@@ -471,6 +460,17 @@ class Cluster(object):
             return True
         else:
             return False
+
+    def check_avaliable(self, instance):
+        '''
+        Check if instance is available
+        '''
+
+        cmd = "ssh -i %s %s@%s uname" % (self.userkey,
+                                         self.user_login,
+                                         instance['ip'])
+        return self.if_success(cmd)
+        
 
     def euca_start_new_instance(self, instance, instance_index):
         '''
@@ -1414,6 +1414,39 @@ class Cluster(object):
             source.close()
         return instance['id']
 
+    def install_package(self, package, instance):
+        '''
+        Install package on instance, if fail, quit the program
+        '''
+
+        count = 0
+        cmd = "ssh -i %s %s@%s 'sudo apt-get install --yes %s'" % (self.userkey,
+                                                                   self.user_login,
+                                                                   instance['ip'],
+                                                                   package)
+        while not self.if_success(cmd):
+            self.msg('ERROR: Install %s failed, trying again' % package)
+            count += 1
+            if count >= 3:
+                self.msg('ERROR: Install %s failure, program will exit' % package)
+                self.terminate_all(self.cloud_instances.get_cluster_size())
+                sys.exit()
+        
+    def install_update(self, instance):
+        '''
+        Do update on instance, if fail, quit the program
+        '''
+
+        update_count = 0
+        update_cmd = "ssh -i %s %s@%s 'sudo apt-get update'" % (self.userkey, self.user_login, instance['ip'])
+        while not self.if_success(update_cmd):
+            self.msg('ERROR: Update failed, trying again')
+            update_count += 1
+            if update_count >= 3:
+                self.msg('ERROR: Update failure, program will exit')
+                self.terminate_all(self.cloud_instances.get_cluster_size())
+                sys.exit()
+
     def deploy_services(self, instance):
         '''
         Deploies SLURM and OpenMPI services
@@ -1446,13 +1479,15 @@ class Cluster(object):
             os.remove(sources_list_name)
 
         self.debug('Updating on %s' % instance['id'])
-        self.update(instance)
+        self.install_update(instance)
+            
         # install SLURM
-        self.debug('Installing slrum-llnl on %s' % instance['id'])
-        self.install(instance, 'slurm-llnl')
+        self.debug('Installing slurm-llnl on %s' % instance['id'])
+        self.install_package('slurm-llnl', instance)
         # install OpenMPI
         self.debug('Installing openmpi on %s' % instance['id'])
-        self.install(instance, "openmpi-bin libopenmpi-dev")
+        self.install_package('openmpi-bin', instance)
+        self.install_package('libopenmpi', instance)
 
 # ---------------------------------------------------------------------
 # METHODS TO SAVE RUNNING VIRTUAL CLUSTER
@@ -2379,7 +2414,10 @@ def commandline_parser():
     # choose interface
     virtual_cluster.set_cloud(args.cloud)
     virtual_cluster.set_interface(args.interface)
-    args.func(args)
+    try:
+        args.func(args)
+    except:
+        virtual_cluster.terminate_all(virtual_cluster.cloud_instances.get_cluster_size())
 
 if __name__ == '__main__':
     commandline_parser()
