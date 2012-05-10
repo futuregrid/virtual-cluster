@@ -800,7 +800,6 @@ class Cluster(object):
                                                instance_type=instance_type)
         except:
             self.msg('ERROR: Error in lunching instances, please try again')
-            self.ec2_conn.close()
             sys.exit()
 
     def euca_run_instance(
