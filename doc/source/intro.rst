@@ -516,6 +516,11 @@ In order to use our tool to run performance test on Openstack and Eucalyptus. Yo
 our tool correctly installed. You can refer to the tutorial about how to run in the pervious
 sections. Once you can successfully run our tool, you can proceed with the following steps.
 
+How to run
+----------
+
+Followings are steps you need to follow in order to successfully run performance test using our tool
+
 * **Step 1: Download our peroformance test tool**
 	
 	You can download the performan test tool from
