@@ -38,6 +38,9 @@ class Performance_Plot():
                     self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_shutdown'] = [float(values[5].strip())]
                     if self.get_cloud(test_name) == 'nova':
                         self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_setup_getip'] = [float(values[6].strip())]
+                        self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_ipfail'] = [float(values[7].strip())]
+                        self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_ipchange'] = [float(values[8].strip())]
+                        self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_restart'] = [float(values[9].strip())]
                 else:
                     self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_total'].append(float(values[1].strip()))
                     self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_setup_install'].append(float(values[2].strip()))
@@ -46,6 +49,9 @@ class Performance_Plot():
                     self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_shutdown'].append(float(values[5].strip()))
                     if self.get_cloud(test_name) == 'nova':
                         self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_setup_getip'].append(float(values[6].strip()))
+                        self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_ipfail'].append(float(values[7].strip()))
+                        self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_ipchange'].append(float(values[8].strip()))
+                        self.data[self.get_cloud(test_name)][self.get_instance_type(test_name)][self.get_node_num(test_name)]['t_restart'].append(float(values[9].strip()))
 
     def produce_graphs(self, args):
         self.process_data(args.file)
@@ -62,6 +68,9 @@ class Performance_Plot():
         
         for instance_type in instance_type_list:
             self.produce_one_graph('nova', instance_type, 't_setup_getip')
+            self.produce_one_graph('nova', instance_type, 't_ipfail')
+            self.produce_one_graph('nova', instance_type, 't_ipchange')
+            self.produce_one_graph('nova', instance_type, 't_restart')
         
         
     def get_node_num(self, test_name):
