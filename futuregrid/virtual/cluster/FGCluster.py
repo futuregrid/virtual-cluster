@@ -522,8 +522,8 @@ class Cluster(object):
                                           index=instance_index)
         ip_list = self.boto_describe_addresses()
         free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
-        self.boto_associate_address(new_instance.id, free_public_ip)
         new_instance.update()
+        self.boto_associate_address(new_instance.id, free_public_ip, new_instance.private_dns_name)
         return self.cloud_instances.get_by_id(instance_index)
 
     def euca_change_ip(self, instance):
@@ -553,7 +553,7 @@ class Cluster(object):
         free_public_ip = ip_list[random.randint(0, len(ip_list) - 1)]
         self.ec2_conn.disassociate_address(instance['ip'])
         self.get_instance_from_reservation(instance['id']).update()
-        self.boto_associate_address(instance['id'], free_public_ip)
+        self.boto_associate_address(instance['id'], free_public_ip, instance['private_ip'])
 
     def euca_reboot(self, instance):
         '''
@@ -1357,21 +1357,13 @@ class Cluster(object):
         Get suit of ubuntu
         '''
 
-        flag = False
-        while True:
-            result = self.get_command_result("ssh -i %s %s@%s lsb_release -a"
-                                             % (self.userkey,
-                                                self.user_login,
-                                                instance['ip']))
-            for element in result.split('\n'):
-                if element.find('Codename') >= 0:
-                    ubuntu_suit = element.split('\t')[1]
-                    flag = True
-                    break
-            if flag:
-                break
-
-        return ubuntu_suit
+        result = self.get_command_result("ssh -i %s %s@%s lsb_release -a"
+                                         % (self.userkey,
+                                            self.user_login,
+                                            instance['ip']))
+        for element in result.split('\n'):
+            if element.find('Codename') >= 0:
+                return element.split('\t')[1]
 
     def define_repo(self, suit, instance):
         '''
