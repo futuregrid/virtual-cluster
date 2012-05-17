@@ -3,6 +3,7 @@
 
 import os
 import ConfigParser
+import time
 
 ######################################
 #change here to parameterize the test#
@@ -82,6 +83,7 @@ def performance_test():
                 terminate_time =  terminate_cluster()
                 print 'Adding data'
                 process_data(create_time, run_prog, terminate_time)
+                time.sleep(60)
 
 def create_cluster(image_id, instance_type, number):
     print '\nInstance type -- %s' % instance_type
