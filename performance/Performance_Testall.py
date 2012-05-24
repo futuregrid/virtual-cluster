@@ -5,14 +5,15 @@ import os
 import ConfigParser
 import time
 
+# Before each test, please make sure you have the correct image
+# to use in euca and nova, fg-cluster should run among all ubuntu images
+# If it fails, please use --default-repository
+
+
 ######################################
 #change here to parameterize the test#
 ######################################
-'''
-This is Nova setting
-If want to test performance in eucalyputs, need to change futuregrid.cfg accordingly
-Image shoudld be ubuntu natty if u want to use IU ubuntu repository
-'''
+
 test_runs = 3
 node_nums = [1,2,4,8,16,24,32]
 cloud_specific_para = {'nova':{'image_id':'ami-0000001d', 'instance_type':['m1.small', 'm1.medium', 'm1.large']}, 
