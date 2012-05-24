@@ -307,7 +307,7 @@ Run following command will save a currently running virtual cluster into one
 control image and compute image for later resotre. (Installed softwares and 
 unfinished jobs will also be saved)::
 
-    $ fg-cluster checkpoint -c <control-node-bucket> -t <control-node-name> -m <compute-bucket> -e  <compute-name> -a <cluster-name>
+    $ fg-cluster checkpoint -c <control-node-bucket> -t <control-node-name> -m <compute-bucket> -e  <compute-name> -a <cluster-name> -s <image-size>
 
 Parameters:
 
@@ -316,10 +316,11 @@ Parameters:
   -m  	Compute node bucket name. Bucket name which you can identify your compute image
   -e  	Compute node image name. Image name which you can use to identify your compute image
   -a  	Virtual cluster name
+  -s    Image size, in MB
 
 For example::
 
-    $ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1
+    $ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1 -s 1024
     
 If you successfully upload your control image and compute image, you
 can find them in openstack image repository according to the bucker
@@ -331,7 +332,9 @@ name and image name you give to them by command::
 Note: Cluster name should be a name of cluster which is
 currently running. Generated image ids (including one control 
 node image id and one compute image id) will be registered which
-are used for later restore.
+are used for later restore. PLEASE check avaliable space on instances
+before you save cluster, image size should be smaller than the avaliable 
+space on the instance
 
 
 Restore a virtual cluster
