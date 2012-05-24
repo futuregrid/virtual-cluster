@@ -1870,8 +1870,7 @@ class Cluster(object):
                 self.euca_register(image).split('\t')[1].strip()
         except:
             self.msg('\nERROR: Failed to save instance, please check if instance has'
-                     'enough space or you input porper size for
-                     'image to bundle')
+                     'enough space or you input porper size for image to bundle')
             os._exit(1)
         out_queue.put(bundled_image_id)
 
