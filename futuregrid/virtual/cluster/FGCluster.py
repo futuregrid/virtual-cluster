@@ -81,8 +81,6 @@ from ConfigParser import NoSectionError
 
 from futuregrid.virtual.cluster.CloudInstances import CloudInstances
 from futuregrid.virtual.cluster.StopWatch import StopWatch
-#from CloudInstances import CloudInstances
-#from StopWatch import StopWatch
 
 
 class Cluster(object):
@@ -329,6 +327,8 @@ class Cluster(object):
             userkey = ~/PUT-YOUR-USER-NAME.pem
             # environment file
             enrc = ~/novarc
+            # cloud to use
+            cloud = nova (/eucalyptus)
 
             Checks if all files specified in configuration
             file are present.If create-key is set to true,
@@ -452,7 +452,14 @@ class Cluster(object):
 
     def if_success(self, cmd):
         '''
-        Check if operation successed
+        Check if command successed
+
+        Parameters:
+            cmd -- command
+
+        Returns:
+            True -- if succeed
+            False -- if fail
         '''
 
         check_process = Popen(cmd, shell=True, stderr=PIPE)
@@ -465,6 +472,13 @@ class Cluster(object):
     def check_avaliable(self, instance):
         '''
         Check if instance is available
+
+        Parameters:
+            instance -- instance dictionary
+
+        Returns:
+            True -- if success
+            False -- if fail
         '''
 
         cmd = "ssh -i %s %s@%s uname" % (self.userkey,
@@ -479,6 +493,12 @@ class Cluster(object):
         Parameter:
             instance -- old instance
             instance_index -- instance index
+
+        Logic:
+            Run a new instance given parameters, associate a random
+            free IP address with it, return this new instance 
+            dictionary
+
         Return:
             new instance
         '''
@@ -500,11 +520,15 @@ class Cluster(object):
 
     def boto_start_new_instance(self, instance, instance_index):
         '''
-        Starts new instance given old instance info using euca2ools
+        Starts new instance given old instance info using boto
 
         Parameter:
             instance -- old instance
             instance_index -- instance index
+
+        Logic:
+            Same as above
+
         Return:
             new instance
         '''
@@ -529,6 +553,14 @@ class Cluster(object):
     def euca_change_ip(self, instance):
         '''
         Changes public IP address given instance using euca2ools
+
+        Parameters:
+            instance -- instance dictionary
+
+        Logic:
+            Get free public IP addresses, disassociate the current one,
+            associate this new IP address with given instance
+
         No returns
         '''
 
@@ -546,6 +578,13 @@ class Cluster(object):
     def boto_change_ip(self, instance):
         '''
         Changes public IP address given instance using boto
+
+        Parameters:
+            instance -- instance dictionary
+
+        Logic:
+            Same as above
+
         No returns
         '''
 
@@ -558,6 +597,15 @@ class Cluster(object):
     def euca_reboot(self, instance):
         '''
         Reboot instance
+
+        Parameters:
+            instance -- instance dictionary
+
+        Logic:
+            Sometimes cannot ssh into instance due to some network or
+            other issues. Reboot instance to fix it
+
+        No returns
         '''
 
         self.msg('Failed login to %s, rebooting' % instance['ip'])
@@ -579,9 +627,18 @@ class Cluster(object):
             If install is set to true, installation of
             SLURM and OpenMPI will start on VM which is ready
 
-            Each instances associates a count of times for trying
-            If exceeds the max try limit, then gets free public IPs,
-            and associates it with a random new one, reset count to 0
+            On OpenStack:
+                Each instance associates a count of times for trying
+                If exceeds the max try limit, then gets free public IPs,
+                and associates it with a random new one, reset count to 0
+
+                If above method does not help, then terminate this instance,
+                and create a new instance with the same parameter
+
+            On Eucalyptus:
+                Each instance associates a count of times for trying
+                If exceeds the max try limit, then try reboot this
+                instance to fix it.
 
             Break after all threads are done
 
@@ -702,7 +759,9 @@ class Cluster(object):
             instance -- cloud instance
             filename -- the name of file to copy
 
-        No returns
+        Returns:
+            True: if copy succeeds
+            False: if copy fails
         '''
         cmd = 'scp -i %s %s %s@%s:~/' % (self.userkey,
                                          filename,
@@ -718,7 +777,12 @@ class Cluster(object):
 
     def ec2_connect(self, cloud):
         '''
-        create connection
+        Creates connection to cloud using boto
+
+        Parameters:
+            cloud -- cloud name (nova/eucalyptus)
+
+        No returns
         '''
         if cloud.strip() == 'nova':
             path = "/services/Cloud"
@@ -745,7 +809,12 @@ class Cluster(object):
 
     def boto_describe_addresses(self):
         '''
-        get all free ip addresses using boto
+        Gets all free ip addresses using boto
+
+        No parameters
+
+        Returns:
+            ip_list -- a list contains free public IP addresses
         '''
 
         ip_list = []
@@ -759,7 +828,13 @@ class Cluster(object):
 
     def get_instance_from_reservation(self, instance_id):
         '''
-        get instance from reservation
+        Get instance from reservation using boto
+
+        Parameters:
+            instance_id -- instance id
+
+        Returns:
+            instance
         '''
 
         r_in = self.ec2_conn.get_all_instances(instance_ids=[instance_id])
@@ -770,7 +845,14 @@ class Cluster(object):
                                address_public_ip,
                                address_private_ip):
         '''
-        associate ip address using boto
+        Associates ip address using boto
+
+        Parameters:
+            instance_id -- instance id
+            address_public_ip -- public IP address of instance
+            address_private_ip -- provate IP address of instance
+
+        No returns
         '''
 
         while True:
@@ -789,7 +871,14 @@ class Cluster(object):
 
     def boto_run_instances(self, image, cluster_size, instance_type):
         '''
-        run instance usign boto
+        Runs instance usign boto
+
+        Parameters:
+            image -- image id
+            cluster_size -- the size of cluster
+            instance_type -- the type of instance
+
+        No returns
         '''
 
         try:
@@ -952,7 +1041,20 @@ class Cluster(object):
 
     def if_status(self, instance_id, status):
         '''
-        Check if instance is running
+        Checks if instance is running
+
+        Parameters:
+            instance_id -- instance id
+            status -- possible status of instance
+
+        Logic:
+            Gets command result from euca-describe-instance, and parses it.
+            Finds out the if status of instance matchs given status as
+            parameter
+
+        Return:
+            True -- if instance is at status given as parameter
+            False -- if instance is not at status given as parameter
         '''
 
         result = self.get_command_result('euca-describe-instances').split('\n')
@@ -966,7 +1068,18 @@ class Cluster(object):
 
     def euca_get_ip(self, instance_id):
         '''
-        Get instance public given instance id
+        Gets instance public given instance id
+
+        Parameters:
+            instance_id -- instance_id
+
+        Logic:
+            Gets command result from euca-describe-instance, and parses it.
+            Finds out the public IP and priate IP addresses of instance, stores
+            them into a dictionary
+
+        Returns:
+            A dictionary contains public and private IP addresses of given instance
         '''
 
         result = self.get_command_result('euca-describe-instances').split('\n')
@@ -977,7 +1090,15 @@ class Cluster(object):
 
     def terminate_all(self, cluster_size):
         '''
-        Termiate all instances
+        Termiates all instances
+
+        Parameters:
+            cluster_size -- the size of cluster
+
+        Logic:
+            Gets intance by id from cloud_instances, and termates one by one
+
+        No returns
         '''
 
         for instance_id in range(cluster_size):
@@ -1354,7 +1475,16 @@ class Cluster(object):
 
     def get_version(self, instance):
         '''
-        Get suit of ubuntu
+        Gets suit of ubuntu
+
+        Parameters:
+            instance -- instance dictionary
+
+        Logic:
+            Gets command result of lsb_release -a, parses it.
+
+        Returns:
+            version of ubuntu
         '''
 
         result = self.get_command_result("ssh -i %s %s@%s lsb_release -a"
@@ -1413,7 +1543,17 @@ class Cluster(object):
 
     def install_package(self, package, instance):
         '''
-        Install package on instance, if fail, quit the program
+        Installs package on instance
+
+        Parameters:
+            package -- package name
+            instance -- instance dictonary
+
+        Logic:
+            Installs package on instance, if fails after 3 tries,
+            then quit the program
+
+        No returns
         '''
 
         count = 0
@@ -1431,7 +1571,15 @@ class Cluster(object):
 
     def install_update(self, instance):
         '''
-        Do update on instance, if fail, quit the program
+        Updates on instance
+
+        Parameters:
+            instance -- instance dictionary
+
+        Logic:
+            Updates on instance, if fails after 3 tries, quit the program
+
+        No returns
         '''
 
         update_count = 0
@@ -1872,6 +2020,16 @@ class Cluster(object):
     def check_image_availability(self, image_id):
         '''
         Checks if image is available
+
+        Parameters:
+            image_id -- image id
+
+        Logic:
+            Gets command result of euca-describe-images, parses it.
+
+        Returns:
+            True -- if image is avaliable
+            False -- if image if not avaliable
         '''
         command_result = [x for x in
                           self.describe_images(image_id).split()]
@@ -2042,7 +2200,17 @@ class Cluster(object):
         destf.close()
 
     def terminate_instance(self, instance_id):
-        '''terminate instance given instance id'''
+        '''
+        Terminates instance given instance id
+
+        Parameters:
+            instance_id -- instance id
+
+        Logic:
+            Terminates instance given id using either boto or euca2ools
+
+        No returns
+        '''
 
         self.msg('Terminating instance %s' % instance_id)
         if self.interface == 'euca2ools':
@@ -2236,6 +2404,24 @@ class Cluster(object):
 # METHODS TO RUN MPI PROGRAM
 # ---------------------------------------------------------------------
     def run_program(self, args):
+        '''
+        Method to run MPI program on a cluster
+
+        Parameters:
+            args -- this method deals with
+                    args.program -- program source file
+                    args.name -- cluster name
+                    args.mnumber -- number of nodes to run program
+                    args.script -- SLURM job script
+        Logic:
+            Checks if the cluster to run program is running, then copies
+            program source file to each instance, compiles it.
+            If args.script is provided, then copies script to control node,
+            submit job script by sbatch command. If not, then run programs
+            by salloc command
+
+        No returns
+        '''
 
         if self.cloud_instances.if_exist(args.name):
             self.debug('Getting cloud instance %s' % args.name)
@@ -2283,6 +2469,20 @@ class Cluster(object):
         self.msg('\n%s' % self.stopWatch.print_time('t_execute'))
 
     def copy_compile_prog(self, instance, prog, prog_name):
+        '''
+        Copies and compiles program
+
+        Parameters:
+            instance -- instance dictionary
+            prog -- program source file
+            prog_name -- program name
+
+        Logic:
+            Copies program source file into each instance, and
+            compiles them
+
+        No returns
+        '''
         self.copyto(instance, prog)
         self.execute(instance, "mpicc %s.c -o %s" % (prog_name, prog_name))
 ######################################################################
@@ -2414,6 +2614,8 @@ def commandline_parser():
     # choose interface
     virtual_cluster.set_cloud(args.cloud)
     virtual_cluster.set_interface(args.interface)
+
+    # If interrupted by keybord (Ctrl + C), then terminate the current cluster
     try:
         args.func(args)
     except KeyboardInterrupt:
