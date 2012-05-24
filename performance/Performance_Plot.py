@@ -9,11 +9,28 @@ from numpy import *
 
 class Performance_Plot():
 
+    # nodes num range from 1 to 32
     node_nums = [1, 2, 4, 8, 16, 24, 32]
+    # data used to draw graph
+    # 'data' indicates if nova or euca has data inside
     data = {'nova': {'small': {}, 'medium': {}, 'large': {}, 'data': False}, 
             'euca': {'small': {}, 'medium': {}, 'large': {}, 'data': False}}
 
     def process_data(self, file_name):
+        '''
+        Process data
+
+        Data will have the following format
+        Data is a dict, it has two keys nova and euca, value for each key
+        is also a dict, contains key (small, medium, large and data).
+        The value for each key (small, medium large) is also dict, node number
+        is key, each value (t_total, t_setup_install ...) is a list, which contains
+        result of each corresponding experiment
+        
+        for example:
+            'nova': {'small':{'1': {'t_total': [], ......}, .....}, ......}
+        '''
+        # check input file
         if not os.path.isfile(os.path.expanduser(file_name)):
             print "%s does not exist" % os.path.expanduser(file_name)
             sys.exit()
@@ -57,7 +74,8 @@ class Performance_Plot():
         self.process_data(args.file)
         cloud_list = ['nova', 'euca']
         instance_type_list = ['small','medium', 'large']
-        
+
+        # draw common graph for euca and nova
         for cloud in cloud_list:
             for instance_type in instance_type_list:
                 self.produce_one_graph(cloud, instance_type, 't_total')
@@ -65,7 +83,8 @@ class Performance_Plot():
                 self.produce_one_graph(cloud, instance_type, 't_setup_configure')
                 self.produce_one_graph(cloud, instance_type, 't_execute')
                 self.produce_one_graph(cloud, instance_type, 't_shutdown')
-        
+
+        # draw special graph for nova
         for instance_type in instance_type_list:
             self.produce_one_graph('nova', instance_type, 't_setup_getip')
             self.produce_one_graph('nova', instance_type, 't_ipfail')
@@ -74,12 +93,15 @@ class Performance_Plot():
         
         
     def get_node_num(self, test_name):
+        # parse node number
         return int(test_name.split('-')[-1])
     
     def get_instance_type(self, test_name):
+        # parse instance type
         return test_name.split('-')[-2].split('.')[-1]
     
     def get_cloud(self, test_name):
+        # pase  cloud name
         return test_name.split('-')[0]
     
     def produce_one_graph(self, cloud, instance_type, key):
