@@ -279,8 +279,7 @@ class Cluster(object):
                 return True
         return False
 
-    @classmethod
-    def add_keypair(cls, name, key):
+    def add_keypair(self, name, key):
         '''
         Adds keypair
 
@@ -295,7 +294,7 @@ class Cluster(object):
         No returns
         '''
 
-        os.system('euca-add-keypair %s > %s' % (name, key))
+        self.execute_local('euca-add-keypair %s > %s' % (name, key))
         os.chmod(os.path.expanduser(key), 0600)
 
 # ---------------------------------------------------------------------
@@ -751,6 +750,17 @@ class Cluster(object):
             self.msg("ERROR: Execute %s on %s failed, trying again"
                      % (command, instance['ip']))
 
+    def execute_local(self, command):
+        '''
+        Executes a command on local machine
+
+        Parameters:
+            command -- command to execute
+
+        No returns
+        '''
+        os.system(command)
+
     def copyto(self, instance, filename):
         '''
         Copies the named file to the instance
@@ -1013,7 +1023,7 @@ class Cluster(object):
 
         self.msg('Disaasociating %s' % current_ip)
         self.debug('euca-disassociate-address %s' % current_ip)
-        os.system('euca-disassociate-address %s' % current_ip)
+        self.execute_local('euca-disassociate-address %s' % current_ip)
 
     def euca_describe_addresses(self):
         '''
@@ -1347,7 +1357,7 @@ class Cluster(object):
         output = ''.join(input_content) % vars()
 
         self.msg('\nControl node %s' % controlMachine)
-        self.msg('\nControl node private IP%s' % ControlAddr)
+        self.msg('\nControl node private IP %s' % ControlAddr)
 
         self.debug('Writting into %s' % slurm_conf_file)
         # write control machine into slurm.conf file
@@ -1647,6 +1657,7 @@ class Cluster(object):
         ramdisk_id,
         instance_ip,
         instance_name,
+        image_size
         ):
         '''
         Saves one instance
@@ -1656,6 +1667,7 @@ class Cluster(object):
             ramdisk_id: image ramdisk id
             instance_ip: instance public IP address
             instance_name: image name
+            image_size: image size
 
         Logic:
             Uses euca-bundle-vol to create a bundle of current image on
@@ -1665,66 +1677,39 @@ class Cluster(object):
         '''
 
         if kernel_id == None:
-            self.debug("ssh -i %s %s@%s '. ~/.profile;"
-                       " sudo euca-bundle-vol -c ${EC2_CERT}"
-                       " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
-                       " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
-                       " -p %s -s 1024 -d /mnt/'"
-                       % (self.userkey,
-                          self.user_login,
-                          instance_ip,
-                          instance_name))
             return self.get_command_result("ssh -i %s %s@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
-                            " -p %s -s 1024 -d /mnt/'"
+                            " -p %s -s %s -d /mnt/'"
                              % (self.userkey,
                                 self.user_login,
                                 instance_ip,
-                                instance_name))
+                                instance_name,
+                                image_size))
         elif ramdisk_id == None:
-            self.debug("ssh -i %s %s@%s '. ~/.profile;"
-                       " sudo euca-bundle-vol -c ${EC2_CERT}"
-                       " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
-                       " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
-                       " -p %s -s 1024 -d /mnt/ --kernel %s'"
-                       % (self.userkey,
-                          self.user_login,
-                          instance_ip,
-                          instance_name,
-                          kernel_id))
             return self.get_command_result("ssh -i %s %s@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
-                            " -p %s -s 1024 -d /mnt/ --kernel %s'"
+                            " -p %s -s %s -d /mnt/ --kernel %s'"
                              % (self.userkey,
                                 self.user_login,
                                 instance_ip,
                                 instance_name,
-                            kernel_id))
+                                image_size,
+                                kernel_id))
         else:
-            self.debug("ssh -i %s %s@%s '. ~/.profile;"
-                       " sudo euca-bundle-vol -c ${EC2_CERT}"
-                       " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
-                       " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
-                       " -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
-                       % (self.userkey,
-                          self.user_login,
-                          instance_ip,
-                          instance_name,
-                          kernel_id,
-                          ramdisk_id))
             return self.get_command_result("ssh -i %s %s@%s '. ~/.profile;"
                             " sudo euca-bundle-vol -c ${EC2_CERT}"
                             " -k ${EC2_PRIVATE_KEY} -u ${EC2_USER_ID}"
                             " --ec2cert ${EUCALYPTUS_CERT} --no-inherit"
-                            " -p %s -s 1024 -d /mnt/ --kernel %s --ramdisk %s'"
+                            " -p %s -s %s -d /mnt/ --kernel %s --ramdisk %s'"
                              % (self.userkey,
                                 self.user_login,
                                 instance_ip,
                                 instance_name,
+                                image_size,
                                 kernel_id,
                                 ramdisk_id))
 
@@ -1800,9 +1785,9 @@ class Cluster(object):
 
         command_result = [x for x in
                           self.describe_images(image_id).split()]
-        if len(command_result) >= 8:
-            self.debug('Kernel ID %s' % command_result[7])
-            return command_result[7]
+
+        self.debug('Kernel ID %s' % command_result[7])
+        return command_result[7]
 
     def get_ramdisk_id(self, image_id):
         '''
@@ -1823,7 +1808,8 @@ class Cluster(object):
 
         command_result = [x for x in
                           self.describe_images(image_id).split()]
-        if len(command_result) == 9:
+
+        if len(command_result) >= 9:
             self.debug("Ramdisk ID %s" % command_result[8])
             return command_result[8]
 
@@ -1833,6 +1819,7 @@ class Cluster(object):
         instance_ip,
         bucket_name,
         image_name,
+        image_size,
         node_type,
         out_queue
         ):
@@ -1844,6 +1831,7 @@ class Cluster(object):
             instance_ip -- instance public IP address
             bucket_name -- bucket name for bundled image
             image_name -- image name for bundled image
+            image_size -- image size for bundled image
             node_type -- control node or compute node
             out_queue -- queue in which puts output
 
@@ -1863,22 +1851,28 @@ class Cluster(object):
         ramdisk_id = self.get_ramdisk_id(image_id)
         self.debug("Ramdisk ID %s" % ramdisk_id)
         # get manifest from the last unit
-        manifest = [x for x in self.save_instance(kernel_id,
-                    ramdisk_id, instance_ip, image_name).split()].pop()
+        try:
+            manifest = [x for x in self.save_instance(kernel_id,
+                        ramdisk_id, instance_ip, image_name, image_size).split()].pop()
 
-        self.msg('\nManifest generated: %s' % manifest)
-        self.msg('\nUploading bundle')
-
-        # upload image
-        image = [x for x in self.upload_bundle(instance_ip, bucket_name,
-                 manifest).split()].pop()
-        self.debug(image)
-        self.msg('\nUploading done')
-        self.msg('\nRegistering image')
-
-        # register image, and return image id
-        bundled_image_id[node_type] = \
-            self.euca_register(image).split('\t')[1].strip()
+            self.msg('\nManifest generated: %s' % manifest)
+            self.msg('\nUploading bundle')
+    
+            # upload image
+            image = [x for x in self.upload_bundle(instance_ip, bucket_name,
+                     manifest).split()].pop()
+            self.debug(image)
+            self.msg('\nUploading done')
+            self.msg('\nRegistering image')
+    
+            # register image, and return image id
+            bundled_image_id[node_type] = \
+                self.euca_register(image).split('\t')[1].strip()
+        except:
+            self.msg('\nERROR: Failed to save instance, please check if instance has'
+                     'enough space or you input porper size for
+                     'image to bundle')
+            os._exit(1)
         out_queue.put(bundled_image_id)
 
     def euca_register(self, image):
@@ -1897,6 +1891,7 @@ class Cluster(object):
                     args.controln -- control node image name
                     args.computeb -- compute node bucket name
                     args.computen -- compute node image name
+                    args.size -- bundled image size
 
         Logic;
             Checks existence before saving virtual cluster
@@ -1912,9 +1907,6 @@ class Cluster(object):
         '''
         if self.interface == 'boto':
             self.msg('UNIMPLEMENTED')
-            sys.exit()
-        if self.cloud == 'eucalyptus':
-            self.msg('bugs')
             sys.exit()
 
         self.debug('Checking if %s is existed' % args.name)
@@ -1951,6 +1943,9 @@ class Cluster(object):
             self.copyto(instance, os.environ['EC2_PRIVATE_KEY'])
             self.copyto(instance, os.environ['EUCALYPTUS_CERT'])
             self.copyto(instance, self.enrc)
+            if self.cloud == 'eucalyptus':
+#                self.copyto(instance, os.environ['EC2_JVM_ARGS'])
+                self.copyto(instance, os.environ['AWS_CREDENTIAL_FILE'])
             self.execute(instance, 'cat %s >> ~/.profile'
                          % self.enrc.split('/')[-1])
             self.execute(instance, 'source ~/.profile')
@@ -1961,6 +1956,7 @@ class Cluster(object):
                                                       control['ip'],
                                                       args.controlb,
                                                       args.controln,
+                                                      args.size,
                                                       'control',
                                                       save_queue
                                                       ]).start()
@@ -1969,6 +1965,7 @@ class Cluster(object):
                                                       compute['ip'],
                                                       args.computeb,
                                                       args.computen,
+                                                      args.size,
                                                       'compute',
                                                       save_queue
                                                       ]).start()
@@ -2035,6 +2032,19 @@ class Cluster(object):
                           self.describe_images(image_id).split()]
         return command_result[3] == 'available'
 
+    def euca_deregister(self, image_id):
+        '''
+        Deregisters image after restore
+
+        Parameters:
+            image_id -- image id
+
+        No returns
+        '''
+
+        self.execute_local('euca-deregister %s' % image_id)
+        
+
     def restore_cluster(self, args):
         '''
         Method for restoring cluster
@@ -2062,9 +2072,6 @@ class Cluster(object):
         '''
         if self.interface == 'boto':
             self.msg('UNIMPLEMENTED')
-            sys.exit()
-        if self.cloud == 'eucalyptus':
-            self.msg('bugs')
             sys.exit()
 
         control_node_num = 1
@@ -2134,19 +2141,36 @@ class Cluster(object):
             instance = self.cloud_instances.get_by_id(i)
             time.sleep(1)
             if self.cloud == 'nova':
-                while not self.euca_associate_address(instance, ip_lists[i]):
-                    self.msg('Error in associating IP %s with instance %s, '
-                         'trying again'
-                         % (ip_lists[i], instance['id']))
-                    time.sleep(1)
+                if len(ip_lists) < cluster_size:
+                    self.msg('ERROR: Not enough public IP addresses')
+                    self.terminate_all(cluster_size)
+                    sys.exit()
+                while not self.euca_associate_address(instance,
+                                                      ip_lists[i]):
+                    self.msg('Error in associating IP %s '
+                             'with instance %s, trying again'
+                             % (ip_lists[i], instance['id']))
             elif self.cloud == 'eucalyptus':
-                addresses = self.euca_get_ip(instance['id'])
-                public_ip_address = addresses['public']
-                private_ip_address = addresses['private']
+                ip_asso_count = 0
+                while True:
+                    addresses = self.euca_get_ip(instance['id'])
+                    public_ip_address = addresses['public']
+                    private_ip_address = addresses['private']
+
+                    if not public_ip_address == private_ip_address:
+                        break
+                    else:
+                        ip_asso_count += 1
+                        time.sleep(1)
+                    if ip_asso_count > 200:
+                        self.msg('ERROR: Not enough public IP addresses')
+                        self.terminate_all(cluster_size)
+                        sys.exit()
+
                 self.msg('ADDRESS %s' % public_ip_address)
                 self.cloud_instances.set_ip_by_id(instance['id'],
-                                                  public_ip_address,
-                                                  private_ip_address)
+                                                    public_ip_address,
+                                                    private_ip_address)
 
         # check ssh port but not install
         self.debug('Checking alive instance for deploying')
@@ -2166,6 +2190,8 @@ class Cluster(object):
         self.cloud_instances.del_by_name(args.name)
         self.debug('Saving cloud instance info')
         self.cloud_instances.save_instances()
+        self.euca_deregister(control_node_id)
+        self.euca_deregister(compute_node_id)
 
 # ---------------------------------------------------------------------
 # METHODS TO TERMINATE NAD CLEANUP
@@ -2214,7 +2240,7 @@ class Cluster(object):
 
         self.msg('Terminating instance %s' % instance_id)
         if self.interface == 'euca2ools':
-            os.system('euca-terminate-instances %s' % instance_id)
+            self.execute_local('euca-terminate-instances %s' % instance_id)
         elif self.interface == 'boto':
             try:
                 self.ec2_conn.terminate_instances([instance_id])
@@ -2575,6 +2601,9 @@ def commandline_parser():
     checkpoint_parser.add_argument('-e', '--computen', action='store',
                                    required=True,
                                    help='Compute node image name')
+    checkpoint_parser.add_argument('-s', '--size', action='store',
+                                   required=True,
+                                   help='image size (in MB)')
     checkpoint_parser.set_defaults(func=virtual_cluster.checkpoint_cluster)
 
     # restore command
