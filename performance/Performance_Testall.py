@@ -14,8 +14,8 @@ import time
 #change here to parameterize the test#
 ######################################
 
-test_runs = 3
-node_nums = [1,2,4,8,16,24,32]
+test_runs = 10
+node_nums = [1, 2, 4, 8, 16, 24, 32]
 cloud_specific_para = {'nova':{'image_id':'ami-0000001d', 'instance_type':['m1.small', 'm1.medium', 'm1.large']}, 
                        'eucalyptus':{'image_id':'emi-D21D3F6C', 'instance_type':['m1.small', 'c1.medium', 'm1.large']}}
 
