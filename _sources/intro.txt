@@ -44,7 +44,7 @@ First Setup
 We assume that yo do not have super user priviledges on the computer
 where you like to install our tool.
 
-* **Step 0:** Prerequisites (not using india.futuregrid.org machines):
+* **Step 0: Prerequisites (not using india.futuregrid.org machines):**
     
   In order to make the installation process work smoothly, please make 
   sure that the computer you like to install our tool has already
@@ -307,7 +307,7 @@ Run following command will save a currently running virtual cluster into one
 control image and compute image for later resotre. (Installed softwares and 
 unfinished jobs will also be saved)::
 
-    $ fg-cluster checkpoint -c <control-node-bucket> -t <control-node-name> -m <compute-bucket> -e  <compute-name> -a <cluster-name>
+    $ fg-cluster checkpoint -c <control-node-bucket> -t <control-node-name> -m <compute-bucket> -e  <compute-name> -a <cluster-name> -s <image-size>
 
 Parameters:
 
@@ -316,10 +316,11 @@ Parameters:
   -m  	Compute node bucket name. Bucket name which you can identify your compute image
   -e  	Compute node image name. Image name which you can use to identify your compute image
   -a  	Virtual cluster name
+  -s    Image size, in MB
 
 For example::
 
-    $ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1
+    $ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1 -s 1024
     
 If you successfully upload your control image and compute image, you
 can find them in openstack image repository according to the bucker
@@ -331,7 +332,9 @@ name and image name you give to them by command::
 Note: Cluster name should be a name of cluster which is
 currently running. Generated image ids (including one control 
 node image id and one compute image id) will be registered which
-are used for later restore.
+are used for later restore. PLEASE check avaliable space on instances
+before you save cluster, image size should be smaller than the avaliable 
+space on the instance
 
 
 Restore a virtual cluster
@@ -418,7 +421,7 @@ For example::
     $ fg-cluster list
 
 
-Run a simple MPI program on virtual cluster
+RUN SIMPLE MPI PROGRAMS UNDER SLURM
 ===========================================
 
 A simple MPI version of helloworld can be found at: 
@@ -516,6 +519,11 @@ In order to use our tool to run performance test on Openstack and Eucalyptus. Yo
 our tool correctly installed. You can refer to the tutorial about how to run in the pervious
 sections. Once you can successfully run our tool, you can proceed with the following steps.
 
+How to run
+----------
+
+Followings are steps you need to follow in order to successfully run performance test using our tool
+
 * **Step 1: Download our peroformance test tool**
 	
 	You can download the performan test tool from
@@ -526,6 +534,9 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 
 	It has two files, Performance_Testall.py is the test script that you can use to run the performance test. 
 	Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected
+
+	Also, you can download our source code from github, and then you can find performance tool under 
+	performance folder.
 
 	NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
 	futuregrid.cfg file correctly configuared.
@@ -548,20 +559,38 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 
 	When you finish performance test, you will get result like following::
 
+		Test Name           	Total Time     	Installation   	Configuration  	Execution      	Termination    	IP association 	IP association fail 	IP change 	Restart
+		euca-m1.small-1     	115.702837944  	96.9913449287  	6.05437302589  	0.58861207962  	0.159124135971 	N/A            	N/A                 	N/A       	N/A
+		euca-m1.small-1     	111.77609396   	92.9926450253  	6.03100919724  	0.55158996582  	0.157529830933 	N/A            	N/A                 	N/A       	N/A
+		euca-m1.small-1     	110.741933107  	92.9937160015  	5.04305911064  	0.598108053207 	0.16206908226  	N/A            	N/A                 	N/A       	N/A 
+		nova-m1.small-1     	151.426457167  	134.004024982  	2.22711896896  	0.196369886398 	1.20041799545  	4.12035417557  	0                   	0         	0         
+		nova-m1.small-1     	163.470904827  	146.006072998  	2.24714803696  	0.179543972015 	1.0476629734   	4.10231184959  	0                   	0         	0         
+		nova-m1.small-1     	153.810782194  	136.004303932  	2.69106817245  	0.219621181488 	1.00952887535  	4.1146697998   	0                   	0         	0
+
 	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
-	medium, large
+	medium, large (TODO: Allow users to custormize)
 
 * **Step 3: Process performance test data**
 
-	Once you have done the performance test and outpus the raw data file. You can create excel sheet by
-	the following command::
+	Once you have done the performance test and outpus the raw data file. You can create excel sheets using	
+	our tool.
 
-	$ python Performance_Statistic.py
+	However, before you can proceed, you need to install numpy which is required by the tool::
 
-	This will create two excels for you. One is for OpenStack data, and the other one is for Eucalyptus 
-	data. 
+	$ pip install numpy
 
-	The file has the following format:
+	Then, you can process the data by the following command::
+
+	$ python Performance_Statistic.py -f performance_test_raw
+
+	This will create two excels for you which you can view via excel. One is for OpenStack data, 
+	and the other one is for Eucalyptus data. 
+
+	The file has the following format (in plain text)::
+
+		name,t_total_avg,t_total_min,t_total_max,t_total_stdev,t_setup_install_avg,t_setup_install_min,t_setup_install_max,t_setup_install_stdev,t_setup_configure_avg,t_setup_configure_min,t_setup_configure_max,t_setup_configure_stdev,t_execute_avg,t_execute_min,t_execute_max,t_execute_stdev,t_shutdown_avg,t_shutdown_min,t_shutdown_max,t_shutdown_stdev
+		euca-m1.small-2,139.072920442,113.236577034,164.909263849,25.8363434075,114.992971659,85.9957351685,143.990208149,28.9972364903,6.78620207309,6.69066214561,6.88174200058,0.095539927485,0.642117619514,0.613047122955,0.671188116074,0.0290704965595,0.256532430649,0.254338026047,0.258726835251,0.002194404602
+		euca-m1.small-1,112.740288337,110.741933107,115.702837944,2.13696003674,94.3259019852,92.9926450253,96.9913449287,1.88475283095,5.70948044459,5.04305911064,6.05437302589,0.471327566829,0.579436699549,0.55158996582,0.598108053207,0.0200686125267,0.159574349721,0.157529830933,0.16206908226,0.00188028720646
 
 FOR DEVELOPERS ONLY
 ===================

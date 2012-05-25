@@ -117,12 +117,13 @@
 <li><a class="reference internal" href="#list-the-virtual-clusters">List the virtual clusters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#run-a-simple-mpi-program-on-virtual-cluster">Run a simple MPI program on virtual cluster</a><ul>
+<li><a class="reference internal" href="#run-simple-mpi-programs-under-slurm">RUN SIMPLE MPI PROGRAMS UNDER SLURM</a><ul>
 <li><a class="reference internal" href="#using-fg-cluster-tool">Using fg-cluster tool</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#performance-test">PERFORMANCE TEST</a><ul>
 <li><a class="reference internal" href="#id2">Prerequisites</a></li>
+<li><a class="reference internal" href="#id3">How to run</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#for-developers-only">FOR DEVELOPERS ONLY</a><ul>
@@ -209,7 +210,7 @@ operations to virtual clusters on FutureGrid.</p>
 <p>We assume that yo do not have super user priviledges on the computer
 where you like to install our tool.</p>
 <ul>
-<li><p class="first"><strong>Step 0:</strong> Prerequisites (not using india.futuregrid.org machines):</p>
+<li><p class="first"><strong>Step 0: Prerequisites (not using india.futuregrid.org machines):</strong></p>
 <p>In order to make the installation process work smoothly, please make
 sure that the computer you like to install our tool has already
 installed euca2ools (version 1.2) and Python (version 2.7). If you do
@@ -460,7 +461,7 @@ virtual clusters.</p>
 <p>Run following command will save a currently running virtual cluster into one
 control image and compute image for later resotre. (Installed softwares and
 unfinished jobs will also be saved):</p>
-<div class="highlight-python"><pre>$ fg-cluster checkpoint -c &lt;control-node-bucket&gt; -t &lt;control-node-name&gt; -m &lt;compute-bucket&gt; -e  &lt;compute-name&gt; -a &lt;cluster-name&gt;</pre>
+<div class="highlight-python"><pre>$ fg-cluster checkpoint -c &lt;control-node-bucket&gt; -t &lt;control-node-name&gt; -m &lt;compute-bucket&gt; -e  &lt;compute-name&gt; -a &lt;cluster-name&gt; -s &lt;image-size&gt;</pre>
 </div>
 <p>Parameters:</p>
 <blockquote>
@@ -483,11 +484,14 @@ unfinished jobs will also be saved):</p>
 <tr><td class="option-group">
 <kbd><span class="option">-a</span></kbd></td>
 <td>Virtual cluster name</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-s</span></kbd></td>
+<td>Image size, in MB</td></tr>
 </tbody>
 </table>
 </div></blockquote>
 <p>For example:</p>
-<div class="highlight-python"><pre>$ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1</pre>
+<div class="highlight-python"><pre>$ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1 -s 1024</pre>
 </div>
 <p>If you successfully upload your control image and compute image, you
 can find them in openstack image repository according to the bucker
@@ -497,7 +501,9 @@ name and image name you give to them by command:</p>
 <p>Note: Cluster name should be a name of cluster which is
 currently running. Generated image ids (including one control
 node image id and one compute image id) will be registered which
-are used for later restore.</p>
+are used for later restore. PLEASE check avaliable space on instances
+before you save cluster, image size should be smaller than the avaliable
+space on the instance</p>
 </div>
 <div class="section" id="restore-a-virtual-cluster">
 <h2>Restore a virtual cluster<a class="headerlink" href="#restore-a-virtual-cluster" title="Permalink to this headline">¶</a></h2>
@@ -591,8 +597,8 @@ a cluster that is currently running</p>
 </div>
 </div>
 </div>
-<div class="section" id="run-a-simple-mpi-program-on-virtual-cluster">
-<h1>Run a simple MPI program on virtual cluster<a class="headerlink" href="#run-a-simple-mpi-program-on-virtual-cluster" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="run-simple-mpi-programs-under-slurm">
+<h1>RUN SIMPLE MPI PROGRAMS UNDER SLURM<a class="headerlink" href="#run-simple-mpi-programs-under-slurm" title="Permalink to this headline">¶</a></h1>
 <p>A simple MPI version of helloworld can be found at:</p>
 <ul class="simple">
 <li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c">https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c</a></li>
@@ -693,6 +699,10 @@ The virtual cluster name should be a name of cluster which is currently running.
 <p>In order to use our tool to run performance test on Openstack and Eucalyptus. You must have
 our tool correctly installed. You can refer to the tutorial about how to run in the pervious
 sections. Once you can successfully run our tool, you can proceed with the following steps.</p>
+</div>
+<div class="section" id="id3">
+<h2>How to run<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>Followings are steps you need to follow in order to successfully run performance test using our tool</p>
 <ul>
 <li><p class="first"><strong>Step 1: Download our peroformance test tool</strong></p>
 <blockquote>
@@ -703,6 +713,8 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 </ul>
 <p>It has two files, Performance_Testall.py is the test script that you can use to run the performance test.
 Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected</p>
+<p>Also, you can download our source code from github, and then you can find performance tool under
+performance folder.</p>
 <p>NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
 futuregrid.cfg file correctly configuared.</p>
 </div></blockquote>
@@ -721,19 +733,36 @@ futuregrid.cfg file correctly configuared.</p>
 running MPI program and terminating virtual clusters, then produces performance_test_raw which contains
 all the performance data you collected.</p>
 <p>When you finish performance test, you will get result like following:</p>
+<div class="highlight-python"><pre>Test Name               Total Time      Installation    Configuration   Execution       Termination     IP association  IP association fail     IP change       Restart
+euca-m1.small-1         115.702837944   96.9913449287   6.05437302589   0.58861207962   0.159124135971  N/A             N/A                     N/A             N/A
+euca-m1.small-1         111.77609396    92.9926450253   6.03100919724   0.55158996582   0.157529830933  N/A             N/A                     N/A             N/A
+euca-m1.small-1         110.741933107   92.9937160015   5.04305911064   0.598108053207  0.16206908226   N/A             N/A                     N/A             N/A
+nova-m1.small-1         151.426457167   134.004024982   2.22711896896   0.196369886398  1.20041799545   4.12035417557   0                       0               0
+nova-m1.small-1         163.470904827   146.006072998   2.24714803696   0.179543972015  1.0476629734    4.10231184959   0                       0               0
+nova-m1.small-1         153.810782194   136.004303932   2.69106817245   0.219621181488  1.00952887535   4.1146697998    0                       0               0</pre>
+</div>
 <p>NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small,
-medium, large</p>
+medium, large (TODO: Allow users to custormize)</p>
 </div></blockquote>
 </li>
 <li><p class="first"><strong>Step 3: Process performance test data</strong></p>
 <blockquote>
-<div><p>Once you have done the performance test and outpus the raw data file. You can create excel sheet by
-the following command:</p>
-<div class="highlight-python"><pre>$ python Performance_Statistic.py</pre>
+<div><p>Once you have done the performance test and outpus the raw data file. You can create excel sheets using
+our tool.</p>
+<p>However, before you can proceed, you need to install numpy which is required by the tool:</p>
+<div class="highlight-python"><pre>$ pip install numpy</pre>
 </div>
-<p>This will create two excels for you. One is for OpenStack data, and the other one is for Eucalyptus
-data.</p>
-<p>The file has the following format:</p>
+<p>Then, you can process the data by the following command:</p>
+<div class="highlight-python"><pre>$ python Performance_Statistic.py -f performance_test_raw</pre>
+</div>
+<p>This will create two excels for you which you can view via excel. One is for OpenStack data,
+and the other one is for Eucalyptus data.</p>
+<p>The file has the following format (in plain text):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">name</span><span class="p">,</span><span class="n">t_total_avg</span><span class="p">,</span><span class="n">t_total_min</span><span class="p">,</span><span class="n">t_total_max</span><span class="p">,</span><span class="n">t_total_stdev</span><span class="p">,</span><span class="n">t_setup_install_avg</span><span class="p">,</span><span class="n">t_setup_install_min</span><span class="p">,</span><span class="n">t_setup_install_max</span><span class="p">,</span><span class="n">t_setup_install_stdev</span><span class="p">,</span><span class="n">t_setup_configure_avg</span><span class="p">,</span><span class="n">t_setup_configure_min</span><span class="p">,</span><span class="n">t_setup_configure_max</span><span class="p">,</span><span class="n">t_setup_configure_stdev</span><span class="p">,</span><span class="n">t_execute_avg</span><span class="p">,</span><span class="n">t_execute_min</span><span class="p">,</span><span class="n">t_execute_max</span><span class="p">,</span><span class="n">t_execute_stdev</span><span class="p">,</span><span class="n">t_shutdown_avg</span><span class="p">,</span><span class="n">t_shutdown_min</span><span class="p">,</span><span class="n">t_shutdown_max</span><span class="p">,</span><span class="n">t_shutdown_stdev</span>
+<span class="n">euca</span><span class="o">-</span><span class="n">m1</span><span class="o">.</span><span class="n">small</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mf">139.072920442</span><span class="p">,</span><span class="mf">113.236577034</span><span class="p">,</span><span class="mf">164.909263849</span><span class="p">,</span><span class="mf">25.8363434075</span><span class="p">,</span><span class="mf">114.992971659</span><span class="p">,</span><span class="mf">85.9957351685</span><span class="p">,</span><span class="mf">143.990208149</span><span class="p">,</span><span class="mf">28.9972364903</span><span class="p">,</span><span class="mf">6.78620207309</span><span class="p">,</span><span class="mf">6.69066214561</span><span class="p">,</span><span class="mf">6.88174200058</span><span class="p">,</span><span class="mf">0.095539927485</span><span class="p">,</span><span class="mf">0.642117619514</span><span class="p">,</span><span class="mf">0.613047122955</span><span class="p">,</span><span class="mf">0.671188116074</span><span class="p">,</span><span class="mf">0.0290704965595</span><span class="p">,</span><span class="mf">0.256532430649</span><span class="p">,</span><span class="mf">0.254338026047</span><span class="p">,</span><span class="mf">0.258726835251</span><span class="p">,</span><span class="mf">0.002194404602</span>
+<span class="n">euca</span><span class="o">-</span><span class="n">m1</span><span class="o">.</span><span class="n">small</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mf">112.740288337</span><span class="p">,</span><span class="mf">110.741933107</span><span class="p">,</span><span class="mf">115.702837944</span><span class="p">,</span><span class="mf">2.13696003674</span><span class="p">,</span><span class="mf">94.3259019852</span><span class="p">,</span><span class="mf">92.9926450253</span><span class="p">,</span><span class="mf">96.9913449287</span><span class="p">,</span><span class="mf">1.88475283095</span><span class="p">,</span><span class="mf">5.70948044459</span><span class="p">,</span><span class="mf">5.04305911064</span><span class="p">,</span><span class="mf">6.05437302589</span><span class="p">,</span><span class="mf">0.471327566829</span><span class="p">,</span><span class="mf">0.579436699549</span><span class="p">,</span><span class="mf">0.55158996582</span><span class="p">,</span><span class="mf">0.598108053207</span><span class="p">,</span><span class="mf">0.0200686125267</span><span class="p">,</span><span class="mf">0.159574349721</span><span class="p">,</span><span class="mf">0.157529830933</span><span class="p">,</span><span class="mf">0.16206908226</span><span class="p">,</span><span class="mf">0.00188028720646</span>
+</pre></div>
+</div>
 </div></blockquote>
 </li>
 </ul>
