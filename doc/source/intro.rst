@@ -225,7 +225,7 @@ this tool for locating necessary files in order to run. You can create
 configuration file using text editor, or using an example we provide
 to you
 
-* https://github.com/futuregrid/virtual-cluster/blob/master/etc/futuregrid.cfg
+* https://raw.github.com/futuregrid/virtual-cluster/master/etc/slurm.conf.in
 
 It has the following format::
 
@@ -260,7 +260,7 @@ NOTE: Please make sure all the files are placed under the location as
 you specified in configuration file. You can also find an example of
 slurm.conf.in file which is used by configuring SLURM system from
 
-* https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in 
+*  https://raw.github.com/futuregrid/virtual-cluster/master/etc/futuregrid.cfg
 
 You can modify SLURM configuration parameters for your customized
 SLURM. But please leave "controlMachine" and "COMPUTE NODES"
@@ -426,7 +426,7 @@ RUN SIMPLE MPI PROGRAMS UNDER SLURM
 
 A simple MPI version of helloworld can be found at: 
 
-* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c
+* https://raw.github.com/futuregrid/virtual-cluster/master/etc/helloworld.c
 
 You may use this for test purpose.
 
@@ -528,9 +528,9 @@ Followings are steps you need to follow in order to successfully run performance
 	
 	You can download the performan test tool from
 
-	* https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Testall.py
+	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Testall.py
 
-	* https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Statistic.py
+	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Statistic.py
 
 	It has two files, Performance_Testall.py is the test script that you can use to run the performance test. 
 	Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected
@@ -545,7 +545,7 @@ Followings are steps you need to follow in order to successfully run performance
 
 	Beaucase each test involves running a MPI program, so please download our sample MPI helloworld from
 
-	* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c
+	* https://raw.github.com/futuregrid/virtual-cluster/master/etc/helloworld.c
 
 	and put it where you would like you run the test script.
 
