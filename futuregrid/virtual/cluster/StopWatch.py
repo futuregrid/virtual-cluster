@@ -16,13 +16,13 @@ class StopWatch(object):
 
     def start(self, start_timer_name):
         '''
-        timer name as key, start time as value
+        timer name as key, start time as value (in second)
         '''
         self.__start_data_table[start_timer_name] = time.time()
 
     def stop(self, end_timer_name):
         '''
-        timer name as key, end time as value
+        timer name as key, end time as value (in second)
         '''
         self.__end_data_table[end_timer_name] = time.time()
 

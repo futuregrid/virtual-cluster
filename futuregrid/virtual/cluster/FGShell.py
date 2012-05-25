@@ -55,7 +55,7 @@ class Shell(Cmd):
                     help="cloud name (nova/eucalyptus)")
         ])
     def do_config(self, args, opts):
-        '''config - read the configuration from a file'''
+        ''' config - read the configuration from a file'''
         if not opts.file:
             self.cluster.parse_conf()
         else:
@@ -77,6 +77,7 @@ class Shell(Cmd):
                     help="image id"),
         ])
     def do_run(self, args, opts):
+        ''' run to create a virtual cluster given parameter'''
         self.cluster.create_cluster(opts)
 
     @options([
@@ -94,6 +95,7 @@ class Shell(Cmd):
                     help="image size"),
         ])
     def do_checkpoint(self, args, opts):
+        ''' checkpoint current virtual cluster'''
         self.cluster.checkpoint_cluster(opts)
 
     @options([
@@ -101,6 +103,7 @@ class Shell(Cmd):
                     help="cluster name"),
         ])
     def do_restore(self, args, opts):
+        ''' restore a virtual cluster from backup'''
         self.cluster.restore_cluster(opts)
 
     @options([
@@ -108,6 +111,7 @@ class Shell(Cmd):
                     help="cluster name"),
         ])
     def do_terminate(self, args, opts):
+        ''' terminates virtual cluster'''
         self.cluster.shut_down(opts)
 
     @options([
@@ -115,9 +119,11 @@ class Shell(Cmd):
                     help="cluster name"),
         ])
     def do_status(self, args, opts):
+        ''' show status of virtual cluster'''
         self.cluster.show_status(opts)
 
     def do_list(self, args):
+        ''' show list of virtual clusters'''
         self.cluster.get_list(args)
 
 
