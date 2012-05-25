@@ -55,7 +55,7 @@ class Shell(Cmd):
                     help="cloud name (nova/eucalyptus)")
         ])
     def do_config(self, args, opts):
-        '''config - add the configuration from a file'''
+        '''config - read the configuration from a file'''
         if not opts.file:
             self.cluster.parse_conf()
         else:
@@ -89,8 +89,9 @@ class Shell(Cmd):
         make_option('-m', '--computeb', type="string",
                     help="compute node bucket"),
         make_option('-e', '--computen', type="string",
-                    default='not specified',
                     help="compute node image"),
+        make_option('-s', '--size', type="string",
+                    help="image size"),
         ])
     def do_checkpoint(self, args, opts):
         self.cluster.checkpoint_cluster(opts)
