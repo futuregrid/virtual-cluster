@@ -65,7 +65,7 @@ where you like to install our tool.
 * **Step 1: Prerequisites (using india.futuregrid.org machines):**
 	
 	india.futuregrid.org has installed every tools you may need to finish this
-	installation, so to activate euca2ools (version 1.2) after you login into
+	installation, so to activate euca2ools (version 2.0) after you login into
 	india futuregrid machines, just simply do::
     
 		$ module load euca2ools
