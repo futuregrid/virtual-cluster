@@ -632,9 +632,9 @@ Followings are steps you need to follow in order to successfully run performance
 	$ pip install numpy
 	$ pip install matplotlib
 
-	Then, you can process the data by the following command::
+	Then, you can creats excel sheets by the following command::
 
-	$ python Performance_Statistic.py -f performance_test_raw
+	$ python Performance_Statistic.py -f <your-performance-test-result-file>
 
 	This will create two excels for you which you can view via excel. One is for OpenStack data, 
 	and the other one is for Eucalyptus data. 
@@ -645,6 +645,14 @@ Followings are steps you need to follow in order to successfully run performance
 		euca-m1.small-2,139.072920442,113.236577034,164.909263849,25.8363434075,114.992971659,85.9957351685,143.990208149,28.9972364903,6.78620207309,6.69066214561,6.88174200058,0.095539927485,0.642117619514,0.613047122955,0.671188116074,0.0290704965595,0.256532430649,0.254338026047,0.258726835251,0.002194404602
 		euca-m1.small-1,112.740288337,110.741933107,115.702837944,2.13696003674,94.3259019852,92.9926450253,96.9913449287,1.88475283095,5.70948044459,5.04305911064,6.05437302589,0.471327566829,0.579436699549,0.55158996582,0.598108053207,0.0200686125267,0.159574349721,0.157529830933,0.16206908226,0.00188028720646
 
+	You can also create graphs for each cloud by the following command::
+
+	$ python Performance_Plot.py -f <your-performance-test-result.file>
+
+	and create comparsion graphs by::
+
+	$ python Performance_Comp.py -ie <your-performance-test-result-about-eucalyptus-on-india> -se <your-performance-test-result-about-eucalyptus-on-sierra> -in <your-performance-test-result-about-openstack-on-india>
+
 Switch between OpenStack and Eucalyptus
 ---------------------------------------
 
@@ -652,8 +660,9 @@ If you want to use our tool to do performance test on OpenStack and Eucalyptus, 
 clouds just by changing futuregrid.cfg configuration file. You can refer to the configuration file section 
 to change your configuration file accodringly.
 
-Before you run a test script, you need to change to a proper image before each run. And rename output file to 
-a different one, later you can use these performance files to produce graphs.
+Before you run a test script, you need to choose to a proper image before each run (You can use euca2ools 
+to test the image before you run our script). And use different outputfile, and later you can use these 
+performance output files to produce graphs.
 
 FOR DEVELOPERS ONLY
 ===================
