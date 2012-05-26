@@ -750,6 +750,22 @@ class Cluster(object):
             self.msg("ERROR: Execute %s on %s failed, trying again"
                      % (command, instance['ip']))
 
+    def execute_without_retry(self, instance, command):
+        '''
+        Executes a command on the instance without retry if fails
+
+        Parameters:
+            instance -- cloud instance
+            command -- shell command
+
+        No returns
+        '''
+
+        os.system("ssh -i %s %s@%s '%s'" % (self.userkey,
+                                            self.user_login,
+                                            instance['ip'],
+                                            command))
+
     def execute_local(self, command):
         '''
         Executes a command on local machine
@@ -759,6 +775,7 @@ class Cluster(object):
 
         No returns
         '''
+
         os.system(command)
 
     def copyto(self, instance, filename):
@@ -2477,17 +2494,17 @@ class Cluster(object):
         # run program on control node
         if args.script == None:
             self.stopWatch.start('t_execute')
-            self.execute(self.cloud_instances.get_by_id(0),
-                         "salloc -N %d mpirun %s"
-                         % (int(args.number), program_name))
+            self.execute_without_retry(self.cloud_instances.get_by_id(0),
+                                       "salloc -N %d mpirun %s"
+                                       % (int(args.number), program_name))
             self.stopWatch.stop('t_execute')
         else:
             script_name = args.script.split('/')[-1]
             self.copyto(self.cloud_instances.get_by_id(0), args.script)
             self.stopWatch.start('t_execute')
-            self.execute(self.cloud_instances.get_by_id(0),
-                         "sbatch %s"
-                         % script_name)
+            self.execute_without_retry(self.cloud_instances.get_by_id(0),
+                                       "sbatch %s"
+                                       % script_name)
             self.stopWatch.stop('t_execute')
 
         self.msg('\n\n\n\nPerformance data: Job running time')
