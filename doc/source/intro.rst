@@ -427,7 +427,7 @@ Show status of virtual cluster(s)
 ---------------------------
 
 Run following command will show status of currently running 
-virtual cluster(s) including cluster size, image id, instance id, ip::
+virtual cluster(s) including cluster size, image id, instance id, IP addresses::
 
     $ fg-cluster status -a <cluster-name>
 
@@ -444,10 +444,11 @@ Show status of one specific cluster given cluster name::
 
 Show status of all currently running clusters::
 
-    fg-cluster -status
+    fg-cluster status
 
-Note: If argument -a is specified, then name of cluster should be 
-a cluster that is currently running
+Note: If argument -a is specified, then the cluster you want to show status should be 
+a cluster that is currently running. If argument -a is not specified, the tool will 
+show the status of all virtual clusters.
 
 
 List the virtual clusters
