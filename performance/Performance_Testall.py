@@ -3,6 +3,7 @@
 
 import os
 import ConfigParser
+import argparse
 import time
 
 # Before each test, please make sure you have the correct image
@@ -16,10 +17,10 @@ import time
 
 test_runs = 10
 node_nums = [1, 2, 4, 8, 16, 24, 32]
-cloud_specific_para = {'nova':{'image_id':'ami-0000001d', 'instance_type':['m1.small', 'm1.medium', 'm1.large']}, 
-                       'eucalyptus':{'image_id':'emi-D21D3F6C', 'instance_type':['m1.small', 'c1.medium', 'm1.large']}}
+cloud_specific_para = {'nova':{'instance_type':['m1.small', 'm1.medium', 'm1.large']}, 
+                       'eucalyptus':{'instance_type':['m1.small', 'c1.medium', 'm1.large']}}
 
-def process_data(create_time, run_prog, terminate_time):
+def process_data(create_time, run_prog, terminate_time, file_name):
 
     #if no output
     if not create_time.split()[0] == 'Performance':
@@ -40,23 +41,23 @@ def process_data(create_time, run_prog, terminate_time):
     data.insert(8, create_time_parts[7])
     data.insert(9, create_time_parts[8])
  
-    with open('performance_test_raw', 'a') as pt:
+    with open(file_name, 'a') as pt:
         pt.write('%-20s\t%-15s\t%-15s\t%-15s\t%-15s\t%-15s\t%-15s\t%-20s\t%-10s\t%-10s\n'
                      % (data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]))
     pt.close()
     
-def performance_test():
+def performance_test(args):
 
     config = ConfigParser.ConfigParser()
     config.read([os.path.expanduser('~/.futuregrid/futuregrid.cfg'),
                          'futuregrid.cfg'])
     cloud = config.get('virtual-cluster', 'cloud')
-    image_id = cloud_specific_para[cloud]['image_id']
+    image_id = args.image
     instance_types = cloud_specific_para[cloud]['instance_type']
 
     # Writes the first row
-    if not os.path.isfile('performance_test_raw'):
-        with open('performance_test_raw', 'w') as pt:
+    if not os.path.isfile(args.output):
+        with open(args.output, 'w') as pt:
             pt.write('%-20s\t%-15s\t%-15s\t%-15s\t%-15s\t%-15s\t%-15s\t%-20s\t%-10s\t%-10s\n'
                      % ('Test Name',
                         'Total Time',
@@ -74,16 +75,17 @@ def performance_test():
     for instance_type in instance_types:
         for node_num in node_nums:
             for i in range(test_runs):
-                print '\n\nRunning Test %d' % int(i + 1)
+                print '\nRunning Test %d' % int(i + 1)
                 print 'Node-num: %s\tInstance-type: %s' % (node_num, instance_type)
-                print '\n\nCreating cluster'
+                print '\nCreating cluster'
                 create_time =  create_cluster(image_id, instance_type, node_num)
-                print '\n\nRunning MPI program'
+                time.sleep(10)
+                print '\nRunning MPI program'
                 run_prog =  run_program(node_num)
-                print '\n\nTerminating cluster'
+                print '\nTerminating cluster'
                 terminate_time =  terminate_cluster()
-                print 'Adding data'
-                process_data(create_time, run_prog, terminate_time)
+                print '\nTest Done. Adding data'
+                process_data(create_time, run_prog, terminate_time, args.output)
                 time.sleep(60)
 
 def create_cluster(image_id, instance_type, number):
@@ -99,7 +101,17 @@ def run_program(number):
 
     
 def main():
-    performance_test()
+    parser = argparse.ArgumentParser(description='Performance test tool -- Test Script')
+    parser.add_argument('-o', '--output', action='store',
+                        required=True,
+                        help='Performance output file')
+    parser.add_argument('-i', '--image', action='store',
+                        required=True,
+                        help='image id')
+    parser.set_defaults(func=performance_test)
+    args = parser.parse_args()
+    args.func(args)
+    
 
 if __name__ == '__main__':
     main()
