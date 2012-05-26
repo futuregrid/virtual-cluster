@@ -420,8 +420,7 @@ For example::
     $ fg-cluster terminate -a mycluster2
 
 Note: Cluster name should be a name of cluster which is currently
-running. After executing this command, cluster info will be removed
-from backup file which is specified by configuration file
+running.
 
 
 Show status of virtual cluster(s)
