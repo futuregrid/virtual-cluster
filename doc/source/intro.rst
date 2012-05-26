@@ -4,7 +4,7 @@ INTRODUCTION
 System requirements
 ------------------
 
-* euca2ools: verison 2.0
+* euca2ools: verison 2.0.2
 * python: version 2.7
 * virtualenv (optional, if you do not have sudo rights)
 
@@ -48,11 +48,11 @@ where you like to install our tool.
     
   In order to make the installation process work smoothly, please make 
   sure that the computer you like to install our tool has already
-  installed euca2ools (version 2.0) and Python (version 2.7). If you do
+  installed euca2ools (version 2.0.2) and Python (version 2.7). If you do
   not have those tools or correct version installed. you may install 
-  euca2ools (version 2.0) from 
+  euca2ools (version 2.0.2) from 
   
-  * http://eucalyptussoftware.com/downloads/releases/
+  * http://www.eucalyptus.com/download/euca2ools
 
   and install python (version 2.7) from 
 
@@ -65,7 +65,7 @@ where you like to install our tool.
 * **Step 1: Prerequisites (using india.futuregrid.org machines):**
 	
 	india.futuregrid.org has installed every tools you may need to finish this
-	installation, so to activate euca2ools (version 2.0) after you login into
+	installation, so to activate euca2ools (version 2.0.2) after you login into
 	india futuregrid machines, just simply do::
     
 		$ module load euca2ools
