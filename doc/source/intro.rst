@@ -588,7 +588,7 @@ Followings are steps you need to follow in order to successfully run performance
 	between clouds you tested
 
 	Also, you can download our source code from github, and then you can find performance tool under 
-	performance folder.
+	virtual-cluster/performance folder.
 
 	NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
 	futuregrid.cfg file correctly configuared.
@@ -603,11 +603,11 @@ Followings are steps you need to follow in order to successfully run performance
 
 	If you have done all the steps above, then you can run the test scripte by::
 
-	$ python Performance_Testall.py
+	$ python Performance_Testall.py -o <output-file> -i <image-id>
 
 	This will run tests which involve creating different virtual clusters with various parameters, 
-	running MPI program and terminating virtual clusters, then produces performance_test_raw which contains
-	all the performance data you collected.
+	running MPI program and terminating virtual clusters, then produces output file which contains
+	all the performance test result data you collected.
 
 	When you finish performance test, you will get result like following::
 
@@ -620,16 +620,17 @@ Followings are steps you need to follow in order to successfully run performance
 		nova-m1.small-1     	153.810782194  	136.004303932  	2.69106817245  	0.219621181488 	1.00952887535  	4.1146697998   	0                   	0         	0
 
 	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
-	medium, large (TODO: Allow users to custormize)
+	medium, large
 
 * **Step 3: Process performance test data**
 
-	Once you have done the performance test and outpus the raw data file. You can create excel sheets using	
-	our tool.
+	Once you have done the performance test and outpus the raw data file. You can create excel sheets 
+	or graphs using	our tool.
 
-	However, before you can proceed, you need to install numpy which is required by the tool::
+	However, before you can proceed, you need to install numpy and matplotlib which are required by the tool::
 
 	$ pip install numpy
+	$ pip install matplotlib
 
 	Then, you can process the data by the following command::
 
