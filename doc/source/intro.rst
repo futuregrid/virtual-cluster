@@ -533,11 +533,11 @@ For example::
 
 If you want to submit a job script to the SLURM, you can simply run command::
 
-    # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name> -c <script-name>
+    # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name> -s <script-name>
 
 For example::
 
-    # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -c helloworld.sh
+    # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -s helloworld.sh
 
 Parameters
 
