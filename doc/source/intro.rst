@@ -274,6 +274,42 @@ clouds (nova/eucalyptus).
 After you finished all steps above, you can use our tool to manage
 your virtual clusters
 
+* **OpenStack configuration example
+
+To correctly configure the tool to use OpenStack resources, you can refer to example::
+
+    [virtual-cluster]                         
+    # Backup file for saving and loading virtual cluster(s)  
+    backup = ~/.futuregrid/virtual-cluster
+    # Slurm configuration input file
+    slurm = ~/.futuregrid/slurm.conf.in
+    # userkey pem file
+    userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
+    # environment file
+    enrc = ~/novarc
+    # program interface
+    interface = euca2ools
+    # cloud to use
+    cloud = nova
+    
+* **Eucalyptus configuration example
+
+To correctly configure the tool to use Eucalyptus resources, you can refer to example::
+
+    [virtual-cluster]                         
+    # Backup file for saving and loading virtual cluster(s)  
+    backup = ~/.futuregrid/virtual-cluster
+    # Slurm configuration input file
+    slurm = ~/.futuregrid/slurm.conf.in
+    # userkey pem file
+    userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
+    # environment file
+    enrc = ~/eucarc
+    # program interface
+    interface = euca2ools
+    # cloud to use
+    cloud = eucalyptus
+    
 
 Create a virtual cluster
 -------------------------
