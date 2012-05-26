@@ -225,7 +225,7 @@ this tool for locating necessary files in order to run. You can create
 configuration file using text editor, or using an example we provide
 to you
 
-* https://raw.github.com/futuregrid/virtual-cluster/master/etc/slurm.conf.in
+* https://raw.github.com/futuregrid/virtual-cluster/master/etc/futuregrid.cfg
 
 It has the following format::
 
@@ -260,11 +260,16 @@ NOTE: Please make sure all the files are placed under the location as
 you specified in configuration file. You can also find an example of
 slurm.conf.in file which is used by configuring SLURM system from
 
-*  https://raw.github.com/futuregrid/virtual-cluster/master/etc/futuregrid.cfg
+*  https://raw.github.com/futuregrid/virtual-cluster/master/etc/slurm.conf.in
 
 You can modify SLURM configuration parameters for your customized
-SLURM. But please leave "controlMachine" and "COMPUTE NODES"
+SLURM. But please leave "controlMachine", "ControlAddr" and "COMPUTE NODES"
 untouched.
+
+In the configuration file, you can choose different interface for this tool to use 
+(euca2ool or boto), just need to change interface parameter in the configuration file. 
+You also need to change enrc and cloud parameters in order to switch between different 
+clouds (nova/eucalyptus).
 
 After you finished all steps above, you can use our tool to manage
 your virtual clusters
