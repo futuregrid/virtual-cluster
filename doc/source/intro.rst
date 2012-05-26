@@ -572,10 +572,20 @@ Followings are steps you need to follow in order to successfully run performance
 
 	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Testall.py
 
+	Performance_Testall.py is the test script that you can use to run the performance test. 
+
 	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Statistic.py
 
-	It has two files, Performance_Testall.py is the test script that you can use to run the performance test. 
-	Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected
+	Performance_Statistic is the data process program which could prodeuce excel sheets on data you collected
+
+	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Plot.py
+
+	Performance_Plot is the graph produce program which could prodeuce graphs for each cloud you tested
+
+	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Comp.py
+
+	Performance_Comp is the comparsion graph produce program which could produce comparsion graphs 
+	between clouds you tested
 
 	Also, you can download our source code from github, and then you can find performance tool under 
 	performance folder.
