@@ -660,9 +660,9 @@ If you want to use our tool to do performance test on OpenStack and Eucalyptus, 
 clouds just by changing futuregrid.cfg configuration file. You can refer to the configuration file section 
 to change your configuration file accodringly.
 
-Before you run a test script, you need to choose to a proper image before each run (You can use euca2ools 
-to test the image before you run our script). And use different outputfile, and later you can use these 
-performance output files to produce graphs.
+Before you run a test script, you need to choose to a proper image (ubuntu) before each run (You can use euca2ools 
+to test the image before you run our script). To avoid output files overwritten, please use different file names, 
+and later you can use these performance output files to produce nice graphs.
 
 FOR DEVELOPERS ONLY
 ===================
