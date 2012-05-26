@@ -7,10 +7,10 @@ from pylab import *
 from numpy import *
 
 '''
-Performance_Ploy.py (python)
+Performance_Plot.py (python)
 -------------------------
 
-Creates charts for data
+Creates charts for collected data
 
 Description
 
