@@ -274,6 +274,7 @@ clouds (nova/eucalyptus).
 After you finished all steps above, you can use our tool to manage
 your virtual clusters
 
+
 Create a virtual cluster
 -------------------------
 
