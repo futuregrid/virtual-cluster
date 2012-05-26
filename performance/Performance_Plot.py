@@ -6,6 +6,21 @@ import os
 from pylab import *
 from numpy import *
 
+'''
+Performance_Ploy.py (python)
+-------------------------
+
+Creates charts for data
+
+Description
+
+usage:
+
+    python Performance_Plot.py <parameters>
+
+    -f -- raw data file
+          This data file must be collected by performance tool
+'''
 
 class Performance_Plot():
 
