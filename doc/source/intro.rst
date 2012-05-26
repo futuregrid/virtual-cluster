@@ -4,7 +4,7 @@ INTRODUCTION
 System requirements
 ------------------
 
-* euca2ools: verison 1.2
+* euca2ools: verison 2.0
 * python: version 2.7
 * virtualenv (optional, if you do not have sudo rights)
 
@@ -20,9 +20,9 @@ Introduction
 ------------
 
 Project futuregrid.virtual.cluster is a virtual cluster management
-software utilizing openstack resources on FutureGrid. The software
-contains several parts that could help users easily manage their
-operations to virtual clusters on FutureGrid.
+software utilizing OpenStack and Eucalyptus resources on FutureGrid. 
+The software contains several parts that could help users easily 
+manage their operations to virtual clusters on FutureGrid.
 
 Managment operations include: 
 
@@ -185,16 +185,12 @@ HOW TO RUN
 Prerequisites
 -------------
 
-In order to use our tool, you need to obatin nova credentials and
-configuration files for FutureGrid system, you can obtain your nova
-credentials and configuration files for the FutureGrid systems. These
+In order to use our tool, you need to obatin nova, eucalyptus 
+credentials and configuration files for FutureGrid system. These
 should have been placed in your home directory on the INDIA
-system. Log in with your FutureGrid username (and SSH public key) and
-look for a file called 'username'-nova.zip. If you do not have a
-portal and HPC account please create one.  The credential zip file
-(username-nova.zip)contains the user keys and rc file .Unzip this
-file in your hom e directory. The novarc file contains the necessary
-environment variables.
+system. If you do not have a portal and HPC account please create one.  
+The credential zip file contains the rc file .Unzip this file in your 
+hom e directory. The novarc file contains the necessary environment variables.
 
 Create your private key by (Recommended: Use your user name as your
 private key name)::
@@ -211,10 +207,14 @@ any subcommands when you first run our tool. For more help see also::
     
 However, this documentation is much more comprehensive than the help message.
 
-NOTE: For more information about nova credentials, you can refer 
+NOTE: For more information about credentials, you can refer 
 to tutorial at:: 
 
 * https://portal.futuregrid.org/tutorials/openstack
+
+and::
+
+* https://portal.futuregrid.org/using-eucalyptus-futuregrid
 
 
 Create configuration file
