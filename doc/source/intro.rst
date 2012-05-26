@@ -366,8 +366,7 @@ For example::
     $ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1 -s 1024
     
 If you successfully upload your control image and compute image, you
-can find them in openstack image repository according to the bucker
-name and image name you give to them by command::
+can find them by command::
 
     $ euca-describe-images
 
@@ -375,9 +374,9 @@ name and image name you give to them by command::
 Note: Cluster name should be a name of cluster which is
 currently running. Generated image ids (including one control 
 node image id and one compute image id) will be registered which
-are used for later restore. PLEASE check avaliable space on instances
+are used for later restore. Please CHECK avaliable space on instances
 before you save cluster, image size should be smaller than the avaliable 
-space on the instance
+space on each instance of the virtual cluster you want to save.
 
 
 Restore a virtual cluster
