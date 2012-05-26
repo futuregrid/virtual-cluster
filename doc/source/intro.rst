@@ -647,7 +647,7 @@ Followings are steps you need to follow in order to successfully run performance
 
 	You can also create graphs for each cloud by the following command::
 
-	$ python Performance_Plot.py -f <your-performance-test-result.file>
+	$ python Performance_Plot.py -f <your-performance-test-result-file>
 
 	and create comparsion graphs by::
 
