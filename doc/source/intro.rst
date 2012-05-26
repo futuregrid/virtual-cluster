@@ -323,7 +323,7 @@ parameters (command example is given below)::
 Parameters:
 
 	-n 	Number of computation nodes. 
-	-s 	Instance type. 
+	-t 	Instance type. 
 		Instance type includes: m1.tiny, m1.small and m1.large.
 	-i 	Image id. You can obtain image with a commandline tool such as ``euca-describe-images``.
 	-a 	Cluster name. 
