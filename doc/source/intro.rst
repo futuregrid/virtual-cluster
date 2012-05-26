@@ -274,7 +274,7 @@ clouds (nova/eucalyptus).
 After you finished all steps above, you can use our tool to manage
 your virtual clusters
 
-* **OpenStack configuration example
+* **OpenStack configuration example:**
 
 To correctly configure the tool to use OpenStack resources, you can refer to example::
 
@@ -292,7 +292,7 @@ To correctly configure the tool to use OpenStack resources, you can refer to exa
     # cloud to use
     cloud = nova
     
-* **Eucalyptus configuration example
+* **Eucalyptus configuration example:**
 
 To correctly configure the tool to use Eucalyptus resources, you can refer to example::
 
