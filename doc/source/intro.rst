@@ -584,14 +584,14 @@ Followings are steps you need to follow in order to successfully run performance
 
 	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Comp.py
 
-	Performance_Comp is the comparsion graph produce program which could produce comparsion graphs 
-	between clouds you tested
+	Performance_Comp is the comparison graph produce program which could produce comparison graphs 
+	between clouds you tested on
 
 	Also, you can download our source code from github, and then you can find performance tool under 
 	virtual-cluster/performance folder.
 
 	NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
-	futuregrid.cfg file correctly configuared.
+	futuregrid.cfg file correctly configuared. See below section about switching between clouds.
 
 * **Step 2: Run performance test script**
 
@@ -649,7 +649,7 @@ Followings are steps you need to follow in order to successfully run performance
 
 	$ python Performance_Plot.py -f <your-performance-test-result-file>
 
-	and create comparsion graphs by::
+	and create comparison graphs by::
 
 	$ python Performance_Comp.py -ie <your-performance-test-result-about-eucalyptus-on-india> -se <your-performance-test-result-about-eucalyptus-on-sierra> -in <your-performance-test-result-about-openstack-on-india>
 
