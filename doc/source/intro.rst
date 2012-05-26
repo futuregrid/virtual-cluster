@@ -189,8 +189,9 @@ In order to use our tool, you need to obatin nova, eucalyptus
 credentials and configuration files for FutureGrid system. These
 should have been placed in your home directory on the INDIA
 system. If you do not have a portal and HPC account please create one.  
-The credential zip file contains the rc file .Unzip this file in your 
-hom e directory. The novarc file contains the necessary environment variables.
+The credential zip file contains the rc file. Unzip this file in your 
+home directory. The novarc(OpenStack) and eucarc(Eucalyptus)file contains 
+the necessary environment variables.
 
 Create your private key by (Recommended: Use your user name as your
 private key name)::
