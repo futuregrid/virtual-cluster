@@ -54,7 +54,7 @@
 <table>
   <tr>
     <td>
-      <a href="index.html"><img src="_static/fg-logo-grid.png" border="0" alt="FutureGrid Virtual CLuster"/></a>
+      <a href="index.html"><img src="_static/fg-logo-grid-glow.png" border="0" alt="FutureGrid Virtual CLuster"/></a>
     </td>
     <td>
       <font size="5" color="white"><b><i>FutureGrid</i></b></font><br><br>
@@ -124,6 +124,7 @@
 <li><a class="reference internal" href="#performance-test">PERFORMANCE TEST</a><ul>
 <li><a class="reference internal" href="#id2">Prerequisites</a></li>
 <li><a class="reference internal" href="#id3">How to run</a></li>
+<li><a class="reference internal" href="#switch-between-openstack-and-eucalyptus">Switch between OpenStack and Eucalyptus</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#for-developers-only">FOR DEVELOPERS ONLY</a><ul>
@@ -172,7 +173,7 @@
 <div class="section" id="system-requirements">
 <h2>System requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>euca2ools: verison 1.2</li>
+<li>euca2ools: verison 2.0.2</li>
 <li>python: version 2.7</li>
 <li>virtualenv (optional, if you do not have sudo rights)</li>
 </ul>
@@ -188,9 +189,9 @@
 <div class="section" id="id1">
 <h2>Introduction<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>Project futuregrid.virtual.cluster is a virtual cluster management
-software utilizing openstack resources on FutureGrid. The software
-contains several parts that could help users easily manage their
-operations to virtual clusters on FutureGrid.</p>
+software utilizing OpenStack and Eucalyptus resources on FutureGrid.
+The software contains several parts that could help users easily
+manage their operations to virtual clusters on FutureGrid.</p>
 <p>Managment operations include:</p>
 <ul class="simple">
 <li>Create virtual cluster(s)</li>
@@ -213,11 +214,11 @@ where you like to install our tool.</p>
 <li><p class="first"><strong>Step 0: Prerequisites (not using india.futuregrid.org machines):</strong></p>
 <p>In order to make the installation process work smoothly, please make
 sure that the computer you like to install our tool has already
-installed euca2ools (version 1.2) and Python (version 2.7). If you do
+installed euca2ools (version 2.0.2) and Python (version 2.7). If you do
 not have those tools or correct version installed. you may install
-euca2ools (version 1.2) from</p>
+euca2ools (version 2.0.2) from</p>
 <ul class="simple">
-<li><a class="reference external" href="http://eucalyptussoftware.com/downloads/releases/">http://eucalyptussoftware.com/downloads/releases/</a></li>
+<li><a class="reference external" href="http://www.eucalyptus.com/download/euca2ools">http://www.eucalyptus.com/download/euca2ools</a></li>
 </ul>
 <p>and install python (version 2.7) from</p>
 <ul class="simple">
@@ -229,7 +230,7 @@ you may proceed with following steps to start installation.</p>
 <li><p class="first"><strong>Step 1: Prerequisites (using india.futuregrid.org machines):</strong></p>
 <blockquote>
 <div><p>india.futuregrid.org has installed every tools you may need to finish this
-installation, so to activate euca2ools (version 1.2) after you login into
+installation, so to activate euca2ools (version 2.0.2) after you login into
 india futuregrid machines, just simply do:</p>
 <div class="highlight-python"><pre>$ module load euca2ools</pre>
 </div>
@@ -287,7 +288,7 @@ newest version, you can do it by following command:</p>
 <li><p class="first"><strong>Step 1: Environment Setup (using india.futuregrid.org machines):</strong></p>
 <blockquote>
 <div><p>india.futuregrid.org has installed every tools you may need to finish this
-installation, so to activate euca2ools (version 1.2) after you login into
+installation, so to activate euca2ools (version 2.0.2) after you login into
 india futuregrid machines, just simply do:</p>
 <div class="highlight-python"><pre>$ module load euca2ools</pre>
 </div>
@@ -343,16 +344,13 @@ following the instaructions from the next section</p>
 <h1>HOW TO RUN<a class="headerlink" href="#how-to-run" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
-<p>In order to use our tool, you need to obatin nova credentials and
-configuration files for FutureGrid system, you can obtain your nova
-credentials and configuration files for the FutureGrid systems. These
+<p>In order to use our tool, you need to obatin nova, eucalyptus
+credentials and configuration files for FutureGrid system. These
 should have been placed in your home directory on the INDIA
-system. Log in with your FutureGrid username (and SSH public key) and
-look for a file called &#8216;username&#8217;-nova.zip. If you do not have a
-portal and HPC account please create one.  The credential zip file
-(username-nova.zip)contains the user keys and rc file .Unzip this
-file in your hom e directory. The novarc file contains the necessary
-environment variables.</p>
+system. If you do not have a portal and HPC account please create one.
+The credential zip file contains the rc file. Unzip this file in your
+home directory. The novarc (OpenStack) and eucarc (Eucalyptus) file contains
+the necessary environment variables.</p>
 <p>Create your private key by (Recommended: Use your user name as your
 private key name):</p>
 <div class="highlight-python"><pre>$ euca-add-keypair youruserkey &gt; youruserkey.pem
@@ -365,9 +363,12 @@ any subcommands when you first run our tool. For more help see also:</p>
 <div class="highlight-python"><pre>$ fg-cluster --help</pre>
 </div>
 <p>However, this documentation is much more comprehensive than the help message.</p>
-<p>NOTE: For more information about nova credentials, you can refer
+<p>NOTE: For more information about credentials, you can refer
 to tutorial at:</p>
 <div class="highlight-python"><pre>* https://portal.futuregrid.org/tutorials/openstack</pre>
+</div>
+<p>and:</p>
+<div class="highlight-python"><pre>* https://portal.futuregrid.org/using-eucalyptus-futuregrid</pre>
 </div>
 </div>
 <div class="section" id="create-configuration-file">
@@ -377,7 +378,7 @@ this tool for locating necessary files in order to run. You can create
 configuration file using text editor, or using an example we provide
 to you</p>
 <ul class="simple">
-<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/etc/futuregrid.cfg">https://github.com/futuregrid/virtual-cluster/blob/master/etc/futuregrid.cfg</a></li>
+<li><a class="reference external" href="https://raw.github.com/futuregrid/virtual-cluster/master/etc/futuregrid.cfg">https://raw.github.com/futuregrid/virtual-cluster/master/etc/futuregrid.cfg</a></li>
 </ul>
 <p>It has the following format:</p>
 <div class="highlight-python"><pre>[virtual-cluster]
@@ -409,13 +410,53 @@ before you specify each subcommand you would like to run.:</p>
 you specified in configuration file. You can also find an example of
 slurm.conf.in file which is used by configuring SLURM system from</p>
 <ul class="simple">
-<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in">https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in</a></li>
+<li><a class="reference external" href="https://raw.github.com/futuregrid/virtual-cluster/master/etc/slurm.conf.in">https://raw.github.com/futuregrid/virtual-cluster/master/etc/slurm.conf.in</a></li>
 </ul>
 <p>You can modify SLURM configuration parameters for your customized
-SLURM. But please leave &#8220;controlMachine&#8221; and &#8220;COMPUTE NODES&#8221;
+SLURM. But please leave &#8220;controlMachine&#8221;, &#8220;ControlAddr&#8221; and &#8220;COMPUTE NODES&#8221;
 untouched.</p>
+<p>In the configuration file, you can choose different interface for this tool to use
+(euca2ool or boto), just need to change interface parameter in the configuration file.
+You also need to change enrc and cloud parameters in order to switch between different
+clouds (nova/eucalyptus).</p>
 <p>After you finished all steps above, you can use our tool to manage
 your virtual clusters</p>
+<ul class="simple">
+<li><strong>OpenStack configuration example:</strong></li>
+</ul>
+<p>To correctly configure the tool to use OpenStack resources, you can refer to example:</p>
+<div class="highlight-python"><pre>[virtual-cluster]
+# Backup file for saving and loading virtual cluster(s)
+backup = ~/.futuregrid/virtual-cluster
+# Slurm configuration input file
+slurm = ~/.futuregrid/slurm.conf.in
+# userkey pem file
+userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
+# environment file
+enrc = ~/novarc
+# program interface
+interface = euca2ools
+# cloud to use
+cloud = nova</pre>
+</div>
+<ul class="simple">
+<li><strong>Eucalyptus configuration example:</strong></li>
+</ul>
+<p>To correctly configure the tool to use Eucalyptus resources, you can refer to example:</p>
+<div class="highlight-python"><pre>[virtual-cluster]
+# Backup file for saving and loading virtual cluster(s)
+backup = ~/.futuregrid/virtual-cluster
+# Slurm configuration input file
+slurm = ~/.futuregrid/slurm.conf.in
+# userkey pem file
+userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
+# environment file
+enrc = ~/eucarc
+# program interface
+interface = euca2ools
+# cloud to use
+cloud = eucalyptus</pre>
+</div>
 </div>
 <div class="section" id="create-a-virtual-cluster">
 <h2>Create a virtual cluster<a class="headerlink" href="#create-a-virtual-cluster" title="Permalink to this headline">¶</a></h2>
@@ -433,7 +474,7 @@ parameters (command example is given below):</p>
 <kbd><span class="option">-n</span></kbd></td>
 <td>Number of computation nodes.</td></tr>
 <tr><td class="option-group">
-<kbd><span class="option">-s</span></kbd></td>
+<kbd><span class="option">-t</span></kbd></td>
 <td>Instance type.
 Instance type includes: m1.tiny, m1.small and m1.large.</td></tr>
 <tr><td class="option-group">
@@ -494,16 +535,15 @@ unfinished jobs will also be saved):</p>
 <div class="highlight-python"><pre>$ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1 -s 1024</pre>
 </div>
 <p>If you successfully upload your control image and compute image, you
-can find them in openstack image repository according to the bucker
-name and image name you give to them by command:</p>
+can find them by command:</p>
 <div class="highlight-python"><pre>$ euca-describe-images</pre>
 </div>
 <p>Note: Cluster name should be a name of cluster which is
 currently running. Generated image ids (including one control
 node image id and one compute image id) will be registered which
-are used for later restore. PLEASE check avaliable space on instances
+are used for later restore. Please CHECK avaliable space on instances
 before you save cluster, image size should be smaller than the avaliable
-space on the instance</p>
+space on each instance of the virtual cluster you want to save.</p>
 </div>
 <div class="section" id="restore-a-virtual-cluster">
 <h2>Restore a virtual cluster<a class="headerlink" href="#restore-a-virtual-cluster" title="Permalink to this headline">¶</a></h2>
@@ -555,13 +595,12 @@ and which can be shown by following command:</p>
 <div class="highlight-python"><pre>$ fg-cluster terminate -a mycluster2</pre>
 </div>
 <p>Note: Cluster name should be a name of cluster which is currently
-running. After executing this command, cluster info will be removed
-from backup file which is specified by configuration file</p>
+running.</p>
 </div>
 <div class="section" id="show-status-of-virtual-cluster-s">
 <h2>Show status of virtual cluster(s)<a class="headerlink" href="#show-status-of-virtual-cluster-s" title="Permalink to this headline">¶</a></h2>
 <p>Run following command will show status of currently running
-virtual cluster(s) including cluster size, image id, instance id, ip:</p>
+virtual cluster(s) including cluster size, image id, instance id, IP addresses:</p>
 <div class="highlight-python"><pre>$ fg-cluster status -a &lt;cluster-name&gt;</pre>
 </div>
 <p>Parameters:</p>
@@ -581,11 +620,11 @@ virtual cluster(s) including cluster size, image id, instance id, ip:</p>
 <div class="highlight-python"><pre>fg-cluster status -a mycluster1</pre>
 </div>
 <p>Show status of all currently running clusters:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">fg</span><span class="o">-</span><span class="n">cluster</span> <span class="o">-</span><span class="n">status</span>
-</pre></div>
+<div class="highlight-python"><pre>fg-cluster status</pre>
 </div>
-<p>Note: If argument -a is specified, then name of cluster should be
-a cluster that is currently running</p>
+<p>Note: If argument -a is specified, then the cluster you want to show status should be
+a cluster that is currently running. If argument -a is not specified, the tool will
+show the status of all virtual clusters.</p>
 </div>
 <div class="section" id="list-the-virtual-clusters">
 <h2>List the virtual clusters<a class="headerlink" href="#list-the-virtual-clusters" title="Permalink to this headline">¶</a></h2>
@@ -601,7 +640,7 @@ a cluster that is currently running</p>
 <h1>RUN SIMPLE MPI PROGRAMS UNDER SLURM<a class="headerlink" href="#run-simple-mpi-programs-under-slurm" title="Permalink to this headline">¶</a></h1>
 <p>A simple MPI version of helloworld can be found at:</p>
 <ul class="simple">
-<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c">https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c</a></li>
+<li><a class="reference external" href="https://raw.github.com/futuregrid/virtual-cluster/master/etc/helloworld.c">https://raw.github.com/futuregrid/virtual-cluster/master/etc/helloworld.c</a></li>
 </ul>
 <p>You may use this for test purpose.</p>
 <p>We assume that you are using helloworld.c from above link. So in order to run this MPI program
@@ -659,11 +698,11 @@ And you can also use our tool to achieve this.</p>
 </pre></div>
 </div>
 <p>If you want to submit a job script to the SLURM, you can simply run command:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="c"># fg-cluster mpirun -p &lt;program-source-file&gt; -n &lt;compute-nodes-to-use&gt; -a &lt;cluster-name&gt; -c &lt;script-name&gt;</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># fg-cluster mpirun -p &lt;program-source-file&gt; -n &lt;compute-nodes-to-use&gt; -a &lt;cluster-name&gt; -s &lt;script-name&gt;</span>
 </pre></div>
 </div>
 <p>For example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="c"># fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -c helloworld.sh</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -s helloworld.sh</span>
 </pre></div>
 </div>
 <p>Parameters</p>
@@ -682,7 +721,7 @@ And you can also use our tool to achieve this.</p>
 <kbd><span class="option">-a</span></kbd></td>
 <td>Name of virtual cluster you want to run program on</td></tr>
 <tr><td class="option-group">
-<kbd><span class="option">-c</span></kbd></td>
+<kbd><span class="option">-s</span></kbd></td>
 <td>Job script you would like to submit to SLURM</td></tr>
 </tbody>
 </table>
@@ -708,30 +747,41 @@ sections. Once you can successfully run our tool, you can proceed with the follo
 <blockquote>
 <div><p>You can download the performan test tool from</p>
 <ul class="simple">
-<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Testall.py">https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Testall.py</a></li>
-<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Statistic.py">https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Statistic.py</a></li>
+<li><a class="reference external" href="https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Testall.py">https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Testall.py</a></li>
 </ul>
-<p>It has two files, Performance_Testall.py is the test script that you can use to run the performance test.
-Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected</p>
+<p>Performance_Testall.py is the test script that you can use to run the performance test.</p>
+<ul class="simple">
+<li><a class="reference external" href="https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Statistic.py">https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Statistic.py</a></li>
+</ul>
+<p>Performance_Statistic is the data process program which could prodeuce excel sheets on data you collected</p>
+<ul class="simple">
+<li><a class="reference external" href="https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Plot.py">https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Plot.py</a></li>
+</ul>
+<p>Performance_Plot is the graph produce program which could prodeuce graphs for each cloud you tested</p>
+<ul class="simple">
+<li><a class="reference external" href="https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Comp.py">https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Comp.py</a></li>
+</ul>
+<p>Performance_Comp is the comparison graph produce program which could produce comparison graphs
+between clouds you tested on</p>
 <p>Also, you can download our source code from github, and then you can find performance tool under
-performance folder.</p>
+virtual-cluster/performance folder.</p>
 <p>NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
-futuregrid.cfg file correctly configuared.</p>
+futuregrid.cfg file correctly configuared. See below section about switching between clouds.</p>
 </div></blockquote>
 </li>
 <li><p class="first"><strong>Step 2: Run performance test script</strong></p>
 <blockquote>
 <div><p>Beaucase each test involves running a MPI program, so please download our sample MPI helloworld from</p>
 <ul class="simple">
-<li><a class="reference external" href="https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c">https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c</a></li>
+<li><a class="reference external" href="https://raw.github.com/futuregrid/virtual-cluster/master/etc/helloworld.c">https://raw.github.com/futuregrid/virtual-cluster/master/etc/helloworld.c</a></li>
 </ul>
 <p>and put it where you would like you run the test script.</p>
 <p>If you have done all the steps above, then you can run the test scripte by:</p>
-<div class="highlight-python"><pre>$ python Performance_Testall.py</pre>
+<div class="highlight-python"><pre>$ python Performance_Testall.py -o &lt;output-file&gt; -i &lt;image-id&gt;</pre>
 </div>
 <p>This will run tests which involve creating different virtual clusters with various parameters,
-running MPI program and terminating virtual clusters, then produces performance_test_raw which contains
-all the performance data you collected.</p>
+running MPI program and terminating virtual clusters, then produces output file which contains
+all the performance test result data you collected.</p>
 <p>When you finish performance test, you will get result like following:</p>
 <div class="highlight-python"><pre>Test Name               Total Time      Installation    Configuration   Execution       Termination     IP association  IP association fail     IP change       Restart
 euca-m1.small-1         115.702837944   96.9913449287   6.05437302589   0.58861207962   0.159124135971  N/A             N/A                     N/A             N/A
@@ -742,18 +792,19 @@ nova-m1.small-1         163.470904827   146.006072998   2.24714803696   0.179543
 nova-m1.small-1         153.810782194   136.004303932   2.69106817245   0.219621181488  1.00952887535   4.1146697998    0                       0               0</pre>
 </div>
 <p>NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small,
-medium, large (TODO: Allow users to custormize)</p>
+medium, large</p>
 </div></blockquote>
 </li>
 <li><p class="first"><strong>Step 3: Process performance test data</strong></p>
 <blockquote>
-<div><p>Once you have done the performance test and outpus the raw data file. You can create excel sheets using
-our tool.</p>
-<p>However, before you can proceed, you need to install numpy which is required by the tool:</p>
-<div class="highlight-python"><pre>$ pip install numpy</pre>
+<div><p>Once you have done the performance test and outpus the raw data file. You can create excel sheets
+or graphs using our tool.</p>
+<p>However, before you can proceed, you need to install numpy and matplotlib which are required by the tool:</p>
+<div class="highlight-python"><pre>$ pip install numpy
+$ pip install matplotlib</pre>
 </div>
-<p>Then, you can process the data by the following command:</p>
-<div class="highlight-python"><pre>$ python Performance_Statistic.py -f performance_test_raw</pre>
+<p>Then, you can creats excel sheets by the following command:</p>
+<div class="highlight-python"><pre>$ python Performance_Statistic.py -f &lt;your-performance-test-result-file&gt;</pre>
 </div>
 <p>This will create two excels for you which you can view via excel. One is for OpenStack data,
 and the other one is for Eucalyptus data.</p>
@@ -763,9 +814,24 @@ and the other one is for Eucalyptus data.</p>
 <span class="n">euca</span><span class="o">-</span><span class="n">m1</span><span class="o">.</span><span class="n">small</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mf">112.740288337</span><span class="p">,</span><span class="mf">110.741933107</span><span class="p">,</span><span class="mf">115.702837944</span><span class="p">,</span><span class="mf">2.13696003674</span><span class="p">,</span><span class="mf">94.3259019852</span><span class="p">,</span><span class="mf">92.9926450253</span><span class="p">,</span><span class="mf">96.9913449287</span><span class="p">,</span><span class="mf">1.88475283095</span><span class="p">,</span><span class="mf">5.70948044459</span><span class="p">,</span><span class="mf">5.04305911064</span><span class="p">,</span><span class="mf">6.05437302589</span><span class="p">,</span><span class="mf">0.471327566829</span><span class="p">,</span><span class="mf">0.579436699549</span><span class="p">,</span><span class="mf">0.55158996582</span><span class="p">,</span><span class="mf">0.598108053207</span><span class="p">,</span><span class="mf">0.0200686125267</span><span class="p">,</span><span class="mf">0.159574349721</span><span class="p">,</span><span class="mf">0.157529830933</span><span class="p">,</span><span class="mf">0.16206908226</span><span class="p">,</span><span class="mf">0.00188028720646</span>
 </pre></div>
 </div>
+<p>You can also create graphs for each cloud by the following command:</p>
+<div class="highlight-python"><pre>$ python Performance_Plot.py -f &lt;your-performance-test-result-file&gt;</pre>
+</div>
+<p>and create comparison graphs by:</p>
+<div class="highlight-python"><pre>$ python Performance_Comp.py -ie &lt;your-performance-test-result-about-eucalyptus-on-india&gt; -se &lt;your-performance-test-result-about-eucalyptus-on-sierra&gt; -in &lt;your-performance-test-result-about-openstack-on-india&gt;</pre>
+</div>
 </div></blockquote>
 </li>
 </ul>
+</div>
+<div class="section" id="switch-between-openstack-and-eucalyptus">
+<h2>Switch between OpenStack and Eucalyptus<a class="headerlink" href="#switch-between-openstack-and-eucalyptus" title="Permalink to this headline">¶</a></h2>
+<p>If you want to use our tool to do performance test on OpenStack and Eucalyptus, you can switch between
+clouds just by changing futuregrid.cfg configuration file. You can refer to the configuration file section
+to change your configuration file accodringly.</p>
+<p>Before you run a test script, you need to choose to a proper image (ubuntu) before each run (You can use euca2ools
+to test the image before you run our script). To avoid output files overwritten, please use different file names,
+and later you can use these performance output files to produce nice graphs.</p>
 </div>
 </div>
 <div class="section" id="for-developers-only">

@@ -4,7 +4,7 @@ INTRODUCTION
 System requirements
 ------------------
 
-* euca2ools: verison 1.2
+* euca2ools: verison 2.0.2
 * python: version 2.7
 * virtualenv (optional, if you do not have sudo rights)
 
@@ -20,9 +20,9 @@ Introduction
 ------------
 
 Project futuregrid.virtual.cluster is a virtual cluster management
-software utilizing openstack resources on FutureGrid. The software
-contains several parts that could help users easily manage their
-operations to virtual clusters on FutureGrid.
+software utilizing OpenStack and Eucalyptus resources on FutureGrid. 
+The software contains several parts that could help users easily 
+manage their operations to virtual clusters on FutureGrid.
 
 Managment operations include: 
 
@@ -48,11 +48,11 @@ where you like to install our tool.
     
   In order to make the installation process work smoothly, please make 
   sure that the computer you like to install our tool has already
-  installed euca2ools (version 1.2) and Python (version 2.7). If you do
+  installed euca2ools (version 2.0.2) and Python (version 2.7). If you do
   not have those tools or correct version installed. you may install 
-  euca2ools (version 1.2) from 
+  euca2ools (version 2.0.2) from 
   
-  * http://eucalyptussoftware.com/downloads/releases/
+  * http://www.eucalyptus.com/download/euca2ools
 
   and install python (version 2.7) from 
 
@@ -65,7 +65,7 @@ where you like to install our tool.
 * **Step 1: Prerequisites (using india.futuregrid.org machines):**
 	
 	india.futuregrid.org has installed every tools you may need to finish this
-	installation, so to activate euca2ools (version 1.2) after you login into
+	installation, so to activate euca2ools (version 2.0.2) after you login into
 	india futuregrid machines, just simply do::
     
 		$ module load euca2ools
@@ -124,7 +124,7 @@ We assume that you are using the same machine as the first time you ran our tool
 * **Step 1: Environment Setup (using india.futuregrid.org machines):**
 	
 	india.futuregrid.org has installed every tools you may need to finish this
-	installation, so to activate euca2ools (version 1.2) after you login into
+	installation, so to activate euca2ools (version 2.0.2) after you login into
 	india futuregrid machines, just simply do::
     
 		$ module load euca2ools
@@ -185,16 +185,13 @@ HOW TO RUN
 Prerequisites
 -------------
 
-In order to use our tool, you need to obatin nova credentials and
-configuration files for FutureGrid system, you can obtain your nova
-credentials and configuration files for the FutureGrid systems. These
+In order to use our tool, you need to obatin nova, eucalyptus 
+credentials and configuration files for FutureGrid system. These
 should have been placed in your home directory on the INDIA
-system. Log in with your FutureGrid username (and SSH public key) and
-look for a file called 'username'-nova.zip. If you do not have a
-portal and HPC account please create one.  The credential zip file
-(username-nova.zip)contains the user keys and rc file .Unzip this
-file in your hom e directory. The novarc file contains the necessary
-environment variables.
+system. If you do not have a portal and HPC account please create one.  
+The credential zip file contains the rc file. Unzip this file in your 
+home directory. The novarc (OpenStack) and eucarc (Eucalyptus) file contains 
+the necessary environment variables.
 
 Create your private key by (Recommended: Use your user name as your
 private key name)::
@@ -211,10 +208,14 @@ any subcommands when you first run our tool. For more help see also::
     
 However, this documentation is much more comprehensive than the help message.
 
-NOTE: For more information about nova credentials, you can refer 
+NOTE: For more information about credentials, you can refer 
 to tutorial at:: 
 
 * https://portal.futuregrid.org/tutorials/openstack
+
+and::
+
+* https://portal.futuregrid.org/using-eucalyptus-futuregrid
 
 
 Create configuration file
@@ -225,7 +226,7 @@ this tool for locating necessary files in order to run. You can create
 configuration file using text editor, or using an example we provide
 to you
 
-* https://github.com/futuregrid/virtual-cluster/blob/master/etc/futuregrid.cfg
+* https://raw.github.com/futuregrid/virtual-cluster/master/etc/futuregrid.cfg
 
 It has the following format::
 
@@ -260,14 +261,56 @@ NOTE: Please make sure all the files are placed under the location as
 you specified in configuration file. You can also find an example of
 slurm.conf.in file which is used by configuring SLURM system from
 
-* https://github.com/futuregrid/virtual-cluster/blob/master/etc/slurm.conf.in 
+*  https://raw.github.com/futuregrid/virtual-cluster/master/etc/slurm.conf.in
 
 You can modify SLURM configuration parameters for your customized
-SLURM. But please leave "controlMachine" and "COMPUTE NODES"
+SLURM. But please leave "controlMachine", "ControlAddr" and "COMPUTE NODES"
 untouched.
+
+In the configuration file, you can choose different interface for this tool to use 
+(euca2ool or boto), just need to change interface parameter in the configuration file. 
+You also need to change enrc and cloud parameters in order to switch between different 
+clouds (nova/eucalyptus).
 
 After you finished all steps above, you can use our tool to manage
 your virtual clusters
+
+* **OpenStack configuration example:**
+
+To correctly configure the tool to use OpenStack resources, you can refer to example::
+
+    [virtual-cluster]                         
+    # Backup file for saving and loading virtual cluster(s)  
+    backup = ~/.futuregrid/virtual-cluster
+    # Slurm configuration input file
+    slurm = ~/.futuregrid/slurm.conf.in
+    # userkey pem file
+    userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
+    # environment file
+    enrc = ~/novarc
+    # program interface
+    interface = euca2ools
+    # cloud to use
+    cloud = nova
+    
+* **Eucalyptus configuration example:**
+
+To correctly configure the tool to use Eucalyptus resources, you can refer to example::
+
+    [virtual-cluster]                         
+    # Backup file for saving and loading virtual cluster(s)  
+    backup = ~/.futuregrid/virtual-cluster
+    # Slurm configuration input file
+    slurm = ~/.futuregrid/slurm.conf.in
+    # userkey pem file
+    userkey = ~/PUT-YOUR-USER-NAME-HERE.pem
+    # environment file
+    enrc = ~/eucarc
+    # program interface
+    interface = euca2ools
+    # cloud to use
+    cloud = eucalyptus
+    
 
 Create a virtual cluster
 -------------------------
@@ -280,7 +323,7 @@ parameters (command example is given below)::
 Parameters:
 
 	-n 	Number of computation nodes. 
-	-s 	Instance type. 
+	-t 	Instance type. 
 		Instance type includes: m1.tiny, m1.small and m1.large.
 	-i 	Image id. You can obtain image with a commandline tool such as ``euca-describe-images``.
 	-a 	Cluster name. 
@@ -323,8 +366,7 @@ For example::
     $ fg-cluster checkpoint -c myname -t c1.img -m myname -e c2.img -a mycluster1 -s 1024
     
 If you successfully upload your control image and compute image, you
-can find them in openstack image repository according to the bucker
-name and image name you give to them by command::
+can find them by command::
 
     $ euca-describe-images
 
@@ -332,9 +374,9 @@ name and image name you give to them by command::
 Note: Cluster name should be a name of cluster which is
 currently running. Generated image ids (including one control 
 node image id and one compute image id) will be registered which
-are used for later restore. PLEASE check avaliable space on instances
+are used for later restore. Please CHECK avaliable space on instances
 before you save cluster, image size should be smaller than the avaliable 
-space on the instance
+space on each instance of the virtual cluster you want to save.
 
 
 Restore a virtual cluster
@@ -378,15 +420,14 @@ For example::
     $ fg-cluster terminate -a mycluster2
 
 Note: Cluster name should be a name of cluster which is currently
-running. After executing this command, cluster info will be removed
-from backup file which is specified by configuration file
+running.
 
 
 Show status of virtual cluster(s)
 ---------------------------
 
 Run following command will show status of currently running 
-virtual cluster(s) including cluster size, image id, instance id, ip::
+virtual cluster(s) including cluster size, image id, instance id, IP addresses::
 
     $ fg-cluster status -a <cluster-name>
 
@@ -403,10 +444,11 @@ Show status of one specific cluster given cluster name::
 
 Show status of all currently running clusters::
 
-    fg-cluster -status
+    fg-cluster status
 
-Note: If argument -a is specified, then name of cluster should be 
-a cluster that is currently running
+Note: If argument -a is specified, then the cluster you want to show status should be 
+a cluster that is currently running. If argument -a is not specified, the tool will 
+show the status of all virtual clusters.
 
 
 List the virtual clusters
@@ -426,7 +468,7 @@ RUN SIMPLE MPI PROGRAMS UNDER SLURM
 
 A simple MPI version of helloworld can be found at: 
 
-* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c
+* https://raw.github.com/futuregrid/virtual-cluster/master/etc/helloworld.c
 
 You may use this for test purpose.
 
@@ -491,18 +533,18 @@ For example::
 
 If you want to submit a job script to the SLURM, you can simply run command::
 
-    # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name> -c <script-name>
+    # fg-cluster mpirun -p <program-source-file> -n <compute-nodes-to-use> -a <cluster-name> -s <script-name>
 
 For example::
 
-    # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -c helloworld.sh
+    # fg-cluster mpirun -p helloworld.c -n 2 -a mycluster1 -s helloworld.sh
 
 Parameters
 
   -p 	Program source code file
   -n 	Number of computaion nodes you want to run with. 
   -a 	Name of virtual cluster you want to run program on
-  -c    Job script you would like to submit to SLURM
+  -s    Job script you would like to submit to SLURM
 
 Make sure that the number you input is no larger than the acutal number of computaion node you created. 
 The virtual cluster name should be a name of cluster which is currently running.
@@ -528,34 +570,44 @@ Followings are steps you need to follow in order to successfully run performance
 	
 	You can download the performan test tool from
 
-	* https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Testall.py
+	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Testall.py
 
-	* https://github.com/futuregrid/virtual-cluster/blob/master/performance/Performance_Statistic.py
+	Performance_Testall.py is the test script that you can use to run the performance test. 
 
-	It has two files, Performance_Testall.py is the test script that you can use to run the performance test. 
-	Performance_Statistic is the data process program which could prodeuces excel sheets on data you collected
+	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Statistic.py
+
+	Performance_Statistic is the data process program which could prodeuce excel sheets on data you collected
+
+	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Plot.py
+
+	Performance_Plot is the graph produce program which could prodeuce graphs for each cloud you tested
+
+	* https://raw.github.com/futuregrid/virtual-cluster/master/performance/Performance_Comp.py
+
+	Performance_Comp is the comparison graph produce program which could produce comparison graphs 
+	between clouds you tested on
 
 	Also, you can download our source code from github, and then you can find performance tool under 
-	performance folder.
+	virtual-cluster/performance folder.
 
 	NOTE: When you switch performance test between OpenStack and Eucalyptus, please make sure that you have
-	futuregrid.cfg file correctly configuared.
+	futuregrid.cfg file correctly configuared. See below section about switching between clouds.
 
 * **Step 2: Run performance test script**
 
 	Beaucase each test involves running a MPI program, so please download our sample MPI helloworld from
 
-	* https://github.com/futuregrid/virtual-cluster/blob/master/etc/helloworld.c
+	* https://raw.github.com/futuregrid/virtual-cluster/master/etc/helloworld.c
 
 	and put it where you would like you run the test script.
 
 	If you have done all the steps above, then you can run the test scripte by::
 
-	$ python Performance_Testall.py
+	$ python Performance_Testall.py -o <output-file> -i <image-id>
 
 	This will run tests which involve creating different virtual clusters with various parameters, 
-	running MPI program and terminating virtual clusters, then produces performance_test_raw which contains
-	all the performance data you collected.
+	running MPI program and terminating virtual clusters, then produces output file which contains
+	all the performance test result data you collected.
 
 	When you finish performance test, you will get result like following::
 
@@ -568,20 +620,21 @@ Followings are steps you need to follow in order to successfully run performance
 		nova-m1.small-1     	153.810782194  	136.004303932  	2.69106817245  	0.219621181488 	1.00952887535  	4.1146697998   	0                   	0         	0
 
 	NOTE: The script will create clusters with size 1, 2, 4, 8, 16, 24, 32; with instance type small, 
-	medium, large (TODO: Allow users to custormize)
+	medium, large
 
 * **Step 3: Process performance test data**
 
-	Once you have done the performance test and outpus the raw data file. You can create excel sheets using	
-	our tool.
+	Once you have done the performance test and outpus the raw data file. You can create excel sheets 
+	or graphs using	our tool.
 
-	However, before you can proceed, you need to install numpy which is required by the tool::
+	However, before you can proceed, you need to install numpy and matplotlib which are required by the tool::
 
 	$ pip install numpy
+	$ pip install matplotlib
 
-	Then, you can process the data by the following command::
+	Then, you can creats excel sheets by the following command::
 
-	$ python Performance_Statistic.py -f performance_test_raw
+	$ python Performance_Statistic.py -f <your-performance-test-result-file>
 
 	This will create two excels for you which you can view via excel. One is for OpenStack data, 
 	and the other one is for Eucalyptus data. 
@@ -591,6 +644,25 @@ Followings are steps you need to follow in order to successfully run performance
 		name,t_total_avg,t_total_min,t_total_max,t_total_stdev,t_setup_install_avg,t_setup_install_min,t_setup_install_max,t_setup_install_stdev,t_setup_configure_avg,t_setup_configure_min,t_setup_configure_max,t_setup_configure_stdev,t_execute_avg,t_execute_min,t_execute_max,t_execute_stdev,t_shutdown_avg,t_shutdown_min,t_shutdown_max,t_shutdown_stdev
 		euca-m1.small-2,139.072920442,113.236577034,164.909263849,25.8363434075,114.992971659,85.9957351685,143.990208149,28.9972364903,6.78620207309,6.69066214561,6.88174200058,0.095539927485,0.642117619514,0.613047122955,0.671188116074,0.0290704965595,0.256532430649,0.254338026047,0.258726835251,0.002194404602
 		euca-m1.small-1,112.740288337,110.741933107,115.702837944,2.13696003674,94.3259019852,92.9926450253,96.9913449287,1.88475283095,5.70948044459,5.04305911064,6.05437302589,0.471327566829,0.579436699549,0.55158996582,0.598108053207,0.0200686125267,0.159574349721,0.157529830933,0.16206908226,0.00188028720646
+
+	You can also create graphs for each cloud by the following command::
+
+	$ python Performance_Plot.py -f <your-performance-test-result-file>
+
+	and create comparison graphs by::
+
+	$ python Performance_Comp.py -ie <your-performance-test-result-about-eucalyptus-on-india> -se <your-performance-test-result-about-eucalyptus-on-sierra> -in <your-performance-test-result-about-openstack-on-india>
+
+Switch between OpenStack and Eucalyptus
+---------------------------------------
+
+If you want to use our tool to do performance test on OpenStack and Eucalyptus, you can switch between 
+clouds just by changing futuregrid.cfg configuration file. You can refer to the configuration file section 
+to change your configuration file accodringly.
+
+Before you run a test script, you need to choose to a proper image (ubuntu) before each run (You can use euca2ools 
+to test the image before you run our script). To avoid output files overwritten, please use different file names, 
+and later you can use these performance output files to produce nice graphs.
 
 FOR DEVELOPERS ONLY
 ===================
