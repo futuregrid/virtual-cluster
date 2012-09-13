@@ -9,7 +9,7 @@ from cmd2 import Cmd
 from cmd2 import make_option
 from cmd2 import options
 #from cmd2 import Cmd2TestCase
-from futuregrid.virtual.cluster.FGCluster import Cluster
+from fgvirtualcluster.FGCluster import Cluster
 #from FGCluster import Cluster
 import unittest
 import sys

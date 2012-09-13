@@ -79,8 +79,8 @@ from ConfigParser import NoOptionError
 from ConfigParser import MissingSectionHeaderError
 from ConfigParser import NoSectionError
 
-from futuregrid.virtual.cluster.CloudInstances import CloudInstances
-from futuregrid.virtual.cluster.StopWatch import StopWatch
+from fgvirtualcluster.CloudInstances import CloudInstances
+from fgvirtualcluster.StopWatch import StopWatch
 
 
 class Cluster(object):
