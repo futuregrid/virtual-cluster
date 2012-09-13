@@ -8,7 +8,7 @@ program is included to test the functionality. of teh virtual cluster.
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.2.4'
+version = '0.3.0'
 
 # due to a bug we are not including VERION.py yet
 # execfile('VERSION.py)
@@ -42,7 +42,7 @@ doclines = __doc__.split("\n")
 
 
 setup(
-    name='futuregrid.virtual.cluster',
+    name='fgvirtualcluster',
     version=version,
     description = doclines[0],
     classifiers = filter(None, classifiers.split("\n")),
@@ -77,3 +77,4 @@ setup(
              'boto',
              ],
     )
+
