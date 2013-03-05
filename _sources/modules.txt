@@ -1,11 +1,11 @@
 Modules
 =====
 
-.. automodule:: futuregrid.virtual.cluster.CloudInstances
+.. automodule:: fgvirtualcluster.CloudInstances
     :members:
 
-.. automodule:: futuregrid.virtual.cluster.FGCluster
+.. automodule:: fgvirtualcluster.FGCluster
     :members:
 
-.. automodule:: futuregrid.virtual.cluster.Shell
+.. automodule:: fgvirtualcluster.Shell
     :members:

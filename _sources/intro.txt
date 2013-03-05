@@ -19,7 +19,7 @@ Our code and web page is maintained in github
 Introduction
 ------------
 
-Project futuregrid.virtual.cluster is a virtual cluster management
+This project contains a virtual cluster management
 software utilizing OpenStack and Eucalyptus resources on FutureGrid. 
 The software contains several parts that could help users easily 
 manage their operations to virtual clusters on FutureGrid.
@@ -105,12 +105,12 @@ where you like to install our tool.
 	Once virtualenv is activated, you can use pip to install our tool by
 	following command::
 
-	    $ ENV/bin/pip install futuregrid.virtual.cluster
+	    $ ENV/bin/pip install fgvirtualcluster
 
 	If you already had our tool installed, and you want to upgrade to
 	newest version, you can do it by following command::
 
-		$ ENV/bin/pip install --upgrade futuregrid.virtual.cluster
+		$ ENV/bin/pip install --upgrade fgvirtualcluster
 	
 	.. note: For more information about virtualenv, you may see documentation of virtualenv at
 	
