@@ -1,3 +1,4 @@
 futuregrid.virtual.cluster.egg-info
 dist
 *~
+*.pyc

@@ -41,7 +41,8 @@ help:
 clean:
 	-rm -rf $(BUILDDIR)/*
 
-html: clean api
+html: clean 
+	#api
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
