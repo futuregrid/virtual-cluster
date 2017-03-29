@@ -47,7 +47,9 @@ a good tutorial on this is posted at http://mah.everybody.org/docs/ssh
 CREATING A KEY
 --------------
 
->>>> ssh-keygen -t dsa -f ~/.ssh/id_dsa -C "label f the key"
+::
+  
+  >>>> ssh-keygen -t dsa -f ~/.ssh/id_dsa -C "label f the key"
 
 REMOTE HOST PREPARATION
 -----------------------
